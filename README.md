@@ -1,16 +1,37 @@
-# React + Vite
+# Naruto Arena Team Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + Vite experience for exploring Naruto Arena rosters with energy-aware team analysis, synergy highlights, and lineup recommendations.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Install dependencies:
+   ```bash
+   npm ci
+   ```
+2. Start the dev server:
+   ```bash
+   npm run dev
+   ```
 
-## React Compiler
+## Production build
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Build the optimized bundle:
+```bash
+npm run build
+```
+The output is generated in `dist/`.
 
-## Expanding the ESLint configuration
+## GitHub Pages deployment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This repository includes a GitHub Actions workflow that publishes the static build to GitHub Pages:
+
+- The workflow runs on pushes to `main` and on manual dispatch.
+- It derives the `VITE_BASE_PATH` automatically from the repository name (for example `/naruto-arena-app/`) and normalizes any custom input you provide during a manual dispatch so there is exactly one leading and trailing slash.
+- Artifacts from `npm run build` are automatically uploaded and deployed to the `github-pages` environment.
+- If no base path is provided, the Vite build now defaults to relative asset paths so the page still renders even if GitHub Pages is configured to serve from a different subfolder.
+
+To enable the site:
+1. Push the repository to GitHub with a `main` branch.
+2. Go to **Settings → Pages** and choose "GitHub Actions" as the source.
+3. Trigger the "Deploy to GitHub Pages" workflow (push to `main` or use **Run workflow**). Optional: provide a custom base path input if your Pages site needs a different subfolder (the workflow will normalize your input).
+4. After the workflow finishes, the published URL will appear in the workflow summary under the `github-pages` environment.

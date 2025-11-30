@@ -112,19 +112,29 @@ function App() {
   }, [selectedTeam])
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 font-sans">
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-orange-500 mb-2 tracking-wider">NARUTO ARENA</h1>
-        <p className="text-gray-400 uppercase tracking-widest text-sm">Team Builder</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white p-4 md:p-10 font-sans relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-40">
+        <div className="absolute -left-10 top-10 w-72 h-72 bg-orange-500/30 blur-3xl rounded-full"></div>
+        <div className="absolute right-0 bottom-10 w-80 h-80 bg-blue-500/20 blur-3xl rounded-full"></div>
+      </div>
+
+      <header className="mb-10 text-center relative z-10">
+        <p className="text-xs tracking-[0.4em] text-gray-400 uppercase mb-3">Naruto Arena Companion</p>
+        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-200 to-yellow-400 drop-shadow-lg">
+          Team Builder & Analyzer
+        </h1>
+        <p className="text-gray-300 mt-3 max-w-3xl mx-auto text-sm md:text-base">
+          Draft smarter squads with skill-driven synergy insights, turn-to-kill projections, and energy costs to secure the finish.
+        </p>
       </header>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 relative z-10">
 
         {/* LEFT COLUMN: Team & Analysis */}
         <div className="lg:col-span-1 space-y-6">
           {/* Selected Team */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg">
-            <h2 className="text-xl font-bold mb-4 text-blue-400 flex justify-between items-center">
+          <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-orange-500/10 backdrop-blur">
+            <h2 className="text-xl font-bold mb-4 text-orange-300 flex justify-between items-center">
               Your Team
               <span className="text-sm bg-gray-700 px-2 py-1 rounded text-white">{selectedTeam.length}/3</span>
             </h2>
@@ -136,7 +146,7 @@ function App() {
                     {char ? (
                       <div className="w-full h-full flex items-center bg-gray-800 border-2 border-blue-500 rounded-lg relative group">
                         <img
-                          src={`/images/characters/${char.id}.png`}
+                          src={`${import.meta.env.BASE_URL}images/characters/${char.id}.png`}
                           alt={char.name}
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
                           className="h-full w-24 object-cover"
@@ -180,7 +190,7 @@ function App() {
 
           {/* Suggested Characters */}
           {selectedTeam.length > 0 && selectedTeam.length < 3 && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg">
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
               <h3 className="font-bold text-gray-300 mb-3 flex items-center gap-2">
                 <span className="text-yellow-500">★</span> Suggested Teammates
               </h3>
@@ -219,7 +229,7 @@ function App() {
 
           {/* Saved Teams List */}
           {savedTeams.length > 0 && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg max-h-60 overflow-y-auto">
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10 max-h-60 overflow-y-auto">
               <h3 className="font-bold text-gray-300 mb-3 flex justify-between items-center">
                 Saved Teams
                 <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">{savedTeams.length}</span>
@@ -257,35 +267,81 @@ function App() {
 
           {/* Team Analysis */}
           {selectedTeam.length > 0 && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg">
-              <h3 className="font-bold text-gray-300 mb-3">Energy Requirements</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(teamAnalysis).map(([type, count]) => (
-                  count > 0 && (
-                    <div key={type} className={`flex justify-between items-center px-3 py-1 rounded ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
-                      <span className="capitalize text-sm">{type}</span>
-                      <span className="font-bold">{count}</span>
+            <div className="space-y-4">
+              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-slate-200">Energy Footprint</h3>
+                  <span className="text-xs uppercase tracking-widest text-slate-500">skill costs</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(teamAnalysis).map(([type, count]) => (
+                    count > 0 && (
+                      <div key={type} className={`flex justify-between items-center px-3 py-2 rounded-lg ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
+                        <span className="capitalize text-sm">{type}</span>
+                        <span className="font-bold text-white/90">{count}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Synergy</p>
+                    <p className="text-3xl font-extrabold text-orange-300">{fullTeamAnalysis.synergyScore}%</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-400">Turn to Kill</p>
+                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
                     </div>
-                  )
-                ))}
+                    <div>
+                      <p className="text-slate-400">Energy to Kill</p>
+                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Burst Damage</p>
+                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.burstDamage || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Pressure</p>
+                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.pressureRating}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {fullTeamAnalysis.synergyHighlights.length > 0 && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                    <p className="text-xs uppercase tracking-widest text-orange-200 mb-2">Synergy Reads</p>
+                    <ul className="space-y-2 text-sm text-slate-100">
+                      {fullTeamAnalysis.synergyHighlights.map((note, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-orange-300">•</span>
+                          <span>{note}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Full Team Analysis - Strengths, Weaknesses, Strategies */}
           {selectedTeam.length === 3 && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg">
-              <h3 className="font-bold text-blue-400 mb-3 text-lg">📊 Team Analysis</h3>
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
+              <h3 className="font-bold text-blue-200 mb-3 text-lg flex items-center gap-2">📊 Deep Dive</h3>
 
               {/* Strengths */}
               {fullTeamAnalysis.strengths.length > 0 && (
                 <div className="mb-4">
-                  <h4 className="font-semibold text-green-400 mb-2 flex items-center gap-2">
+                  <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
                     <span>✓</span> Strengths
                   </h4>
                   <ul className="space-y-1">
                     {fullTeamAnalysis.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-sm text-gray-300 pl-4">• {strength}</li>
+                      <li key={idx} className="text-sm text-gray-200 pl-4">• {strength}</li>
                     ))}
                   </ul>
                 </div>
@@ -294,12 +350,12 @@ function App() {
               {/* Weaknesses */}
               {fullTeamAnalysis.weaknesses.length > 0 && (
                 <div className="mb-4">
-                  <h4 className="font-semibold text-yellow-400 mb-2 flex items-center gap-2">
+                  <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
                     <span>⚠</span> Weaknesses
                   </h4>
                   <ul className="space-y-1">
                     {fullTeamAnalysis.weaknesses.map((weakness, idx) => (
-                      <li key={idx} className="text-sm text-gray-300 pl-4">• {weakness}</li>
+                      <li key={idx} className="text-sm text-gray-200 pl-4">• {weakness}</li>
                     ))}
                   </ul>
                 </div>
@@ -308,12 +364,12 @@ function App() {
               {/* Strategies */}
               {fullTeamAnalysis.strategies.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-purple-400 mb-2 flex items-center gap-2">
+                  <h4 className="font-semibold text-purple-300 mb-2 flex items-center gap-2">
                     <span>🎯</span> How to Play
                   </h4>
                   <ul className="space-y-1">
                     {fullTeamAnalysis.strategies.map((strategy, idx) => (
-                      <li key={idx} className="text-sm text-gray-300 pl-4">• {strategy}</li>
+                      <li key={idx} className="text-sm text-gray-200 pl-4">• {strategy}</li>
                     ))}
                   </ul>
                 </div>
@@ -326,7 +382,7 @@ function App() {
         <div className="lg:col-span-3 space-y-6">
 
           {/* Filters */}
-          <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-wrap gap-4 items-center">
+          <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/60 flex flex-wrap gap-4 items-center shadow-lg shadow-orange-500/10">
             <div className="flex-1 min-w-[200px]">
               <input
                 type="text"
@@ -371,7 +427,7 @@ function App() {
             {filteredCharacters.slice(0, 60).map(char => (
               <div
                 key={char.id}
-                className="bg-gray-800 rounded-lg border border-gray-700 hover:border-orange-500 transition-all hover:shadow-orange-500/20 hover:shadow-lg overflow-hidden group cursor-pointer flex flex-col"
+                className="bg-slate-900/80 rounded-2xl border border-slate-800/80 hover:border-orange-400/80 transition-all hover:shadow-orange-500/25 hover:shadow-xl overflow-hidden group cursor-pointer flex flex-col"
                 onClick={() => setViewCharacter(char)}
               >
                 <div className="flex h-24">
