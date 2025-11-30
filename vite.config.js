@@ -8,8 +8,5 @@ const base = process.env.VITE_BASE_PATH || '/naruto-arena-app/'
 
 export default defineConfig({
   base,
-  build: {
-    outDir: 'docs',
-  },
   plugins: [react()],
 })
