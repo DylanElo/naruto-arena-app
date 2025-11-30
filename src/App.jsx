@@ -21,6 +21,11 @@ const ENERGY_BG_COLORS = {
   none: 'bg-gray-800 border-gray-700'
 }
 
+const assetPath = (relativePath) => {
+  const trimmedPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath
+  return `${import.meta.env.BASE_URL}${trimmedPath}`
+}
+
 function App() {
   const [search, setSearch] = useState('')
   const [energyFilter, setEnergyFilter] = useState('all')
@@ -146,7 +151,7 @@ function App() {
                     {char ? (
                       <div className="w-full h-full flex items-center bg-gray-800 border-2 border-blue-500 rounded-lg relative group">
                         <img
-                          src={`${import.meta.env.BASE_URL}images/characters/${char.id}.png`}
+                          src={assetPath(`images/characters/${char.id}.png`)}
                           alt={char.name}
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
                           className="h-full w-24 object-cover"
@@ -200,7 +205,7 @@ function App() {
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-[10px] text-gray-500 overflow-hidden">
                         <img
-                          src={`/images/characters/${char.id}.png`}
+                          src={assetPath(`images/characters/${char.id}.png`)}
                           alt={char.name}
                           onError={(e) => { e.target.style.display = 'none' }}
                           className="w-full h-full object-cover"
@@ -432,7 +437,7 @@ function App() {
               >
                 <div className="flex h-24">
                   <img
-                    src={`/images/characters/${char.id}.png`}
+                    src={assetPath(`images/characters/${char.id}.png`)}
                     alt={char.name}
                     onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
                     className="w-24 h-24 object-cover bg-gray-900"
@@ -480,7 +485,7 @@ function App() {
             {/* Header */}
             <div className="p-6 bg-gray-900 border-b border-gray-700 flex gap-6">
               <img
-                src={`/images/characters/${viewCharacter.id}.png`}
+                src={assetPath(`images/characters/${viewCharacter.id}.png`)}
                 alt={viewCharacter.name}
                 onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
                 className="w-32 h-32 object-cover rounded-lg border-2 border-orange-500 shadow-lg"
