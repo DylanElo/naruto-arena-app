@@ -146,7 +146,7 @@ function App() {
                     {char ? (
                       <div className="w-full h-full flex items-center bg-gray-800 border-2 border-blue-500 rounded-lg relative group">
                         <img
-                          src={`/images/characters/${char.id}.png`}
+                          src={`${import.meta.env.BASE_URL}images/characters/${char.id}.png`}
                           alt={char.name}
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
                           className="h-full w-24 object-cover"
