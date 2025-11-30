@@ -4,11 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      base_path:
-        description: "Optional custom base path (include leading/trailing slashes, e.g. /naruto-arena-app/)"
-        required: false
-        default: ""
 
 permissions:
   contents: read
@@ -26,27 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
-      - name: Determine base path
-        id: basepath
-        run: |
-          input_path="${{ github.event.inputs.base_path || '' }}"
-          if [ -n "${input_path}" ]; then
-            # Ensure input has a single leading and trailing slash
-            cleaned="/${input_path#/}"
-            cleaned="${cleaned%/}"
-            base_path="${cleaned}/"
-          else
-            repo_name="${GITHUB_REPOSITORY#*/}"
-            base_path="/${repo_name}/"
-          fi
-
-          echo "Normalized base path: ${base_path}"
-          echo "value=${base_path}" >> "${GITHUB_OUTPUT}"
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -59,7 +33,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BASE_PATH: ${{ steps.basepath.outputs.value }}
+          VITE_BASE_PATH: "/naruto-arena-app/"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -26,12 +26,10 @@ The output is generated in `dist/`.
 This repository includes a GitHub Actions workflow that publishes the static build to GitHub Pages:
 
 - The workflow runs on pushes to `main` and on manual dispatch.
-- It derives the `VITE_BASE_PATH` automatically from the repository name (for example `/naruto-arena-app/`) and normalizes any custom input you provide during a manual dispatch so there is exactly one leading and trailing slash.
+- During the build step it sets `VITE_BASE_PATH="/naruto-arena-app/"` so assets resolve correctly when hosted at `https://<username>.github.io/naruto-arena-app/`.
 - Artifacts from `npm run build` are automatically uploaded and deployed to the `github-pages` environment.
-- If no base path is provided, the Vite build now defaults to relative asset paths so the page still renders even if GitHub Pages is configured to serve from a different subfolder.
 
 To enable the site:
 1. Push the repository to GitHub with a `main` branch.
 2. Go to **Settings → Pages** and choose "GitHub Actions" as the source.
-3. Trigger the "Deploy to GitHub Pages" workflow (push to `main` or use **Run workflow**). Optional: provide a custom base path input if your Pages site needs a different subfolder (the workflow will normalize your input).
-4. After the workflow finishes, the published URL will appear in the workflow summary under the `github-pages` environment.
+3. Trigger the "Deploy to GitHub Pages" workflow (push to `main` or use **Run workflow**). The published URL will appear in the workflow summary under the `github-pages` environment.
