@@ -28,7 +28,11 @@ const MECHANIC_PATTERNS = {
     antiTank: /unable to reduce damage|ignore all enemy stun effects/i,
     cleanse: /remove harmful effects|cure|purge/i,
     stun: /stun|unable to use skills/i,
-    invulnerable: /invulnerable/i
+    invulnerable: /invulnerable/i,
+
+    // V4: Advanced Mechanics
+    achievement: /^Achievement:|Achievement,/i,
+    setup: /For \d+ turns?,.*will/i
 }
 
 // Synergy Matrix: Defines how Mechanic A (Row) interacts with Mechanic B (Column)
@@ -55,6 +59,15 @@ const SYNERGY_MATRIX = {
     immunity: {
         glassCannon: 25, // EXCELLENT: Keeps carry alive/acting
         channeling: 15   // GOOD: Prevents interruption
+    },
+    setup: {
+        immunity: 15,      // GOOD: Protection while buffing
+        invulnerable: 15,  // GOOD: Safe setup time
+        energyGen: 10      // GOOD: More energy = easier to setup
+    },
+    achievement: {
+        control: 10,       // GOOD: Control enemies while unlocking
+        support: 5         // GOOD: Support helps survive to unlock
     }
 }
 
@@ -63,7 +76,7 @@ const DEFAULT_ANALYSIS = {
     mechanics: {
         counter: 0, invisible: 0, immunity: 0, piercing: 0, punisher: 0, antiTank: 0, cleanse: 0,
         aoe: 0, stacking: 0, energyGen: 0, skillSteal: 0, stun: 0, invulnerable: 0,
-        triggerOnAction: 0, triggerOnHit: 0
+        triggerOnAction: 0, triggerOnHit: 0, achievement: 0, setup: 0
     },
     energyDistribution: { green: 0, red: 0, blue: 0, white: 0, black: 0 },
     maxDPE: 0,
@@ -93,13 +106,13 @@ export const analyzeCharacter = (char) => {
     const mechanics = {
         counter: 0, invisible: 0, immunity: 0, piercing: 0, punisher: 0, antiTank: 0, cleanse: 0,
         aoe: 0, stacking: 0, energyGen: 0, skillSteal: 0, stun: 0, invulnerable: 0,
-        triggerOnAction: 0, triggerOnHit: 0
+        triggerOnAction: 0, triggerOnHit: 0, achievement: 0, setup: 0
     };
     // NEW: Track which skills trigger which mechanic
     const mechanicDetails = {
         counter: [], invisible: [], immunity: [], piercing: [], punisher: [], antiTank: [], cleanse: [],
         aoe: [], stacking: [], energyGen: [], skillSteal: [], stun: [], invulnerable: [],
-        triggerOnAction: [], triggerOnHit: []
+        triggerOnAction: [], triggerOnHit: [], achievement: [], setup: []
     };
 
     if (!char.skills) return { roles, mechanics, mechanicDetails };
@@ -346,19 +359,25 @@ export const analyzeTeam = (team) => {
     const mechanics = {
         counter: 0, invisible: 0, immunity: 0, piercing: 0, punisher: 0, antiTank: 0, cleanse: 0,
         aoe: 0, stacking: 0, energyGen: 0, skillSteal: 0, stun: 0, invulnerable: 0,
-        triggerOnAction: 0, triggerOnHit: 0
+        triggerOnAction: 0, triggerOnHit: 0, achievement: 0, setup: 0
     }
     // NEW: Aggregate details
     const teamMechanicDetails = {
         counter: [], invisible: [], immunity: [], piercing: [], punisher: [], antiTank: [], cleanse: [],
         aoe: [], stacking: [], energyGen: [], skillSteal: [], stun: [], invulnerable: [],
-        triggerOnAction: [], triggerOnHit: []
+        triggerOnAction: [], triggerOnHit: [], achievement: [], setup: []
     };
 
     const energyDistribution = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
     const dpeValues = []
     const sustain = { healingTools: 0, mitigationTools: 0, cleanseTools: 0 }
     const warnings = []
+
+    // V4: Energy Flexibility Tracking
+    let lowCostSkillCount = 0
+    let totalSkillCost = 0
+    let totalSkills = 0
+    const uniqueColors = new Set()
 
     // Analyze Team
     team.forEach(member => {
@@ -379,11 +398,20 @@ export const analyzeTeam = (team) => {
 
         if (member.skills) {
             member.skills.forEach(skill => {
+                // Energy distribution tracking
                 if (skill.energy) {
                     skill.energy.forEach(e => {
                         if (energyDistribution[e] !== undefined) energyDistribution[e]++
+                        if (e !== 'none' && e !== 'black') uniqueColors.add(e)
                     })
+
+                    // V4: Energy flexibility calculation
+                    const skillCost = skill.energy.filter(e => e !== 'none').length
+                    totalSkillCost += skillCost
+                    totalSkills++
+                    if (skillCost <= 1) lowCostSkillCount++
                 }
+
                 const dpe = damagePerEnergy(skill)
                 if (dpe > 0) dpeValues.push(dpe)
                 const sustainValues = summarizeSustain(skill)
@@ -437,6 +465,19 @@ export const analyzeTeam = (team) => {
     if (mechanics.energyGen > 0 && maxDPE > 40) strategies.push('Battery: Feed energy to your carry')
     if (mechanics.aoe >= 2) strategies.push('Spread Pressure: Whittle down entire enemy team')
 
+    // V4: Energy Flexibility Insights
+    const avgCost = totalSkills > 0 ? totalSkillCost / totalSkills : 0
+    const colorSpread = uniqueColors.size
+
+    if (avgCost <= 1.5) strengths.push('Energy Efficient (low avg cost)')
+    if (lowCostSkillCount >= 6) strengths.push('High Action Consistency (6+ low-cost skills)')
+    if (colorSpread >= 4) strengths.push('Energy Flexible (4+ colors)')
+    if (mechanics.setup > 0) strengths.push(`Setup Archetype${getEvidence('setup')}`)
+    if (mechanics.achievement > 0) strengths.push(`Achievement Potential${getEvidence('achievement')}`)
+
+    if (avgCost > 3) warnings.push('⚠️ High Energy Requirements (avg > 3)')
+    if (colorSpread <= 2) warnings.push('⚠️ Energy Bottleneck (only 1-2 colors)')
+
     const tempo = estimateTempo(team, maxDPE)
 
     // Synergy Score Calculation
@@ -444,11 +485,20 @@ export const analyzeTeam = (team) => {
     if (mechanics.immunity > 0 && roles.dps >= 2) synergyHighlights.push('Immunity protects Carries')
     if (mechanics.stun > 0 && mechanics.setup > 0) synergyHighlights.push('Stun allows safe setup')
 
+    // V4: Energy Flexibility Modifiers
+    let energyFlexibilityBonus = 0
+    if (avgCost <= 1.5) energyFlexibilityBonus += 10
+    if (lowCostSkillCount >= 6) energyFlexibilityBonus += 10
+    if (mechanics.setup > 0) energyFlexibilityBonus += 5
+    if (avgCost > 3) energyFlexibilityBonus -= 15
+    if (colorSpread <= 2) energyFlexibilityBonus -= 10
+
     const synergyScore = clamp(
         Math.round(
             (Object.values(roles).reduce((a, b) => a + b, 0) * 5) +
             (Object.values(mechanics).reduce((a, b) => a + b, 0) * 2) +
-            (tempo.pressureRating * 0.3) -
+            (tempo.pressureRating * 0.3) +
+            energyFlexibilityBonus -
             (warnings.length * 15) // Penalize warnings
         ),
         0,
