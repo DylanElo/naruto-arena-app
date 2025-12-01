@@ -1,0 +1,236 @@
+{
+  "totalCharacters": 449,
+  "uniqueClasses": [
+    "Achievement",
+    "Action",
+    "Affliction",
+    "Affliction*",
+    "Control",
+    "Energy",
+    "Instant",
+    "Instant*",
+    "Instant**",
+    "Mental",
+    "Physical",
+    "Strategic"
+  ],
+  "statusEffects": [
+    "absorb",
+    "burn",
+    "counter",
+    "drain",
+    "invulnerable",
+    "poison",
+    "protect",
+    "reflect",
+    "root",
+    "stun"
+  ],
+  "topPhrases": [
+    [
+      "for 1 turn",
+      1232
+    ],
+    [
+      "damage to one",
+      564
+    ],
+    [
+      "to one enemy",
+      563
+    ],
+    [
+      "invulnerable for 1",
+      448
+    ],
+    [
+      "this skill makes",
+      372
+    ],
+    [
+      "piercing damage to",
+      286
+    ],
+    [
+      "for 2 turns",
+      250
+    ],
+    [
+      "this skill will",
+      229
+    ],
+    [
+      "this skill is",
+      222
+    ],
+    [
+      "one enemy for",
+      221
+    ],
+    [
+      "one enemy and",
+      212
+    ],
+    [
+      "during this time",
+      211
+    ],
+    [
+      "turn this skill",
+      171
+    ],
+    [
+      "uses a new",
+      171
+    ],
+    [
+      "damage to all",
+      170
+    ],
+    [
+      "1 random energy",
+      168
+    ],
+    [
+      "skill is invisible",
+      166
+    ],
+    [
+      "a new skill",
+      165
+    ],
+    [
+      "1 turn this",
+      162
+    ],
+    [
+      "5 additional damage",
+      157
+    ],
+    [
+      "to all enemies",
+      146
+    ],
+    [
+      "for 3 turns",
+      145
+    ],
+    [
+      "for the rest",
+      145
+    ],
+    [
+      "the rest of",
+      145
+    ],
+    [
+      "this skill stacks",
+      138
+    ],
+    [
+      "rest of the",
+      138
+    ],
+    [
+      "of the game",
+      138
+    ],
+    [
+      "targets one enemy",
+      137
+    ],
+    [
+      "skills for 1",
+      134
+    ],
+    [
+      "this skill cannot",
+      128
+    ],
+    [
+      "affliction damage to",
+      125
+    ],
+    [
+      "skill cannot be",
+      124
+    ],
+    [
+      "enemy for 1",
+      120
+    ],
+    [
+      "points of damage",
+      116
+    ],
+    [
+      "will cost 1",
+      113
+    ],
+    [
+      "20 damage to",
+      110
+    ],
+    [
+      "will deal 5",
+      110
+    ],
+    [
+      "skill will be",
+      109
+    ],
+    [
+      "of damage reduction",
+      105
+    ],
+    [
+      "will be replaced",
+      105
+    ],
+    [
+      "1 turn if",
+      103
+    ],
+    [
+      "a new harmful",
+      102
+    ],
+    [
+      "be replaced by",
+      96
+    ],
+    [
+      "deals 20 damage",
+      95
+    ],
+    [
+      "enemy uses a",
+      94
+    ],
+    [
+      "10 points of",
+      91
+    ],
+    [
+      "20 piercing damage",
+      91
+    ],
+    [
+      "10 additional damage",
+      90
+    ],
+    [
+      "additional damage from",
+      90
+    ],
+    [
+      "damage to them",
+      89
+    ]
+  ],
+  "conditionals": {
+    "additional damage": 283,
+    "affected by": 74,
+    "if used on": 29
+  }
+}
