@@ -1,17 +1,3 @@
-name: Deploy to GitHub Pages
-
-on:
-  push:
-<<<<<<< HEAD
-    branches: ['main']
-=======
-    branches: [main]
->>>>>>> 16eecc7e67cf3c064496e2ecdf1369c51a7f9048
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
   id-token: write
 
 concurrency:
