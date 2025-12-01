@@ -95,12 +95,19 @@ export const analyzeCharacter = (char) => {
         aoe: 0, stacking: 0, energyGen: 0, skillSteal: 0, stun: 0, invulnerable: 0,
         triggerOnAction: 0, triggerOnHit: 0
     };
+    // NEW: Track which skills trigger which mechanic
+    const mechanicDetails = {
+        counter: [], invisible: [], immunity: [], piercing: [], punisher: [], antiTank: [], cleanse: [],
+        aoe: [], stacking: [], energyGen: [], skillSteal: [], stun: [], invulnerable: [],
+        triggerOnAction: [], triggerOnHit: []
+    };
 
-    if (!char.skills) return { roles, mechanics };
+    if (!char.skills) return { roles, mechanics, mechanicDetails };
 
     char.skills.forEach(skill => {
         const desc = (skill.description || '').toLowerCase();
         const classes = (skill.classes || '').toLowerCase();
+        const skillName = skill.name;
 
         // 1. Role Detection
         if (ROLE_KEYWORDS.tank.some(k => desc.includes(k))) roles.tank++;
@@ -117,6 +124,7 @@ export const analyzeCharacter = (char) => {
         Object.entries(MECHANIC_PATTERNS).forEach(([key, regex]) => {
             if (regex.test(desc)) {
                 mechanics[key]++;
+                mechanicDetails[key].push(skillName);
             }
         });
 
@@ -124,16 +132,19 @@ export const analyzeCharacter = (char) => {
         // If a skill triggers on enemy action, it's a "Punisher" mechanic
         if (MECHANIC_PATTERNS.triggerOnAction.test(desc)) {
             mechanics.punisher++;
+            mechanicDetails.punisher.push(skillName);
         }
 
         // Special Logic: Class-based overrides
         if (classes.includes('instant') && classes.includes('strategic') && desc.includes('invulnerable')) {
             mechanics.immunity++;
             mechanics.invulnerable++;
+            mechanicDetails.immunity.push(skillName);
+            mechanicDetails.invulnerable.push(skillName);
         }
     });
 
-    return { roles, mechanics };
+    return { roles, mechanics, mechanicDetails };
 };
 
 // --- SYNERGY CALCULATION ---
@@ -333,6 +344,13 @@ export const analyzeTeam = (team) => {
         aoe: 0, stacking: 0, energyGen: 0, skillSteal: 0, stun: 0, invulnerable: 0,
         triggerOnAction: 0, triggerOnHit: 0
     }
+    // NEW: Aggregate details
+    const teamMechanicDetails = {
+        counter: [], invisible: [], immunity: [], piercing: [], punisher: [], antiTank: [], cleanse: [],
+        aoe: [], stacking: [], energyGen: [], skillSteal: [], stun: [], invulnerable: [],
+        triggerOnAction: [], triggerOnHit: []
+    };
+
     const energyDistribution = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
     const dpeValues = []
     const sustain = { healingTools: 0, mitigationTools: 0, cleanseTools: 0 }
@@ -340,9 +358,20 @@ export const analyzeTeam = (team) => {
 
     // Analyze Team
     team.forEach(member => {
-        const { roles: memberRoles, mechanics: memberMechanics } = analyzeCharacter(member)
+        const { roles: memberRoles, mechanics: memberMechanics, mechanicDetails } = analyzeCharacter(member)
         Object.keys(memberRoles).forEach(r => roles[r] += memberRoles[r])
         Object.keys(memberMechanics).forEach(m => mechanics[m] += (memberMechanics[m] || 0))
+
+        // Aggregate mechanic details with character names
+        if (mechanicDetails) {
+            Object.keys(mechanicDetails).forEach(m => {
+                if (mechanicDetails[m] && mechanicDetails[m].length > 0) {
+                    mechanicDetails[m].forEach(skillName => {
+                        teamMechanicDetails[m].push(`${member.name}: ${skillName}`);
+                    });
+                }
+            });
+        }
 
         if (member.skills) {
             member.skills.forEach(skill => {
@@ -373,16 +402,24 @@ export const analyzeTeam = (team) => {
     const weaknesses = []
     const strategies = []
 
+    // Helper to format evidence
+    const getEvidence = (mechanicKey) => {
+        const details = teamMechanicDetails[mechanicKey];
+        if (!details || details.length === 0) return "";
+        // Limit to top 2 examples to keep it concise
+        return ` (${details.slice(0, 2).join(', ')})`;
+    };
+
     // Strengths
     if (avgDPE > 30) strengths.push('High damage output')
-    if (roles.control >= 3) strengths.push('Excellent crowd control')
-    if (mechanics.antiTank > 0) strengths.push('Shield Breaker (Anti-Tank)')
-    if (mechanics.piercing >= 2) strengths.push('Armor Piercing')
-    if (mechanics.immunity >= 1) strengths.push('Effect Immunity')
-    if (mechanics.counter >= 1) strengths.push('Counter-Play')
-    if (mechanics.invisible >= 1) strengths.push('Stealth Tactics')
-    if (mechanics.energyGen > 0) strengths.push('Energy Generation')
-    if (mechanics.aoe >= 2) strengths.push('AoE Pressure')
+    if (roles.control >= 3) strengths.push(`Excellent crowd control${getEvidence('stun')}`)
+    if (mechanics.antiTank > 0) strengths.push(`Shield Breaker (Anti-Tank)${getEvidence('antiTank')}`)
+    if (mechanics.piercing >= 2) strengths.push(`Armor Piercing${getEvidence('piercing')}`)
+    if (mechanics.immunity >= 1) strengths.push(`Effect Immunity${getEvidence('immunity')}`)
+    if (mechanics.counter >= 1) strengths.push(`Counter-Play${getEvidence('counter')}`)
+    if (mechanics.invisible >= 1) strengths.push(`Stealth Tactics${getEvidence('invisible')}`)
+    if (mechanics.energyGen > 0) strengths.push(`Energy Generation${getEvidence('energyGen')}`)
+    if (mechanics.aoe >= 2) strengths.push(`AoE Pressure${getEvidence('aoe')}`)
 
     // Weaknesses
     if (avgDPE < 15) weaknesses.push('Low damage output')
@@ -391,8 +428,8 @@ export const analyzeTeam = (team) => {
     if (sustain.healingTools === 0 && sustain.mitigationTools === 0) weaknesses.push('No sustain/healing')
 
     // Strategies
-    if (mechanics.punisher > 0) strategies.push('Trap & Punish: Force enemies to make bad choices')
-    if (mechanics.stacking > 0) strategies.push('Ramp Up: Survive early game to stack damage')
+    if (mechanics.punisher > 0) strategies.push(`Trap & Punish: Force enemies to make bad choices${getEvidence('punisher')}`)
+    if (mechanics.stacking > 0) strategies.push(`Ramp Up: Survive early game to stack damage${getEvidence('stacking')}`)
     if (mechanics.energyGen > 0 && maxDPE > 40) strategies.push('Battery: Feed energy to your carry')
     if (mechanics.aoe >= 2) strategies.push('Spread Pressure: Whittle down entire enemy team')
 
