@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam } from './utils/recommendationEngine'
+import CollectionManager from './components/CollectionManager'
+import CounterBuilder from './components/CounterBuilder'
+import MetaBuilder from './components/MetaBuilder'
 
 // Energy Colors Mapping
 const ENERGY_COLORS = {
@@ -27,6 +30,7 @@ const assetPath = (relativePath) => {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState('builder')
   const [search, setSearch] = useState('')
   const [energyFilter, setEnergyFilter] = useState('all')
   const [classFilter, setClassFilter] = useState('all')
@@ -133,349 +137,391 @@ function App() {
         </p>
       </header>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 relative z-10">
+      {/* Tab Navigation */}
+      <div className="max-w-7xl mx-auto mb-4 relative z-10">
+        <div className="flex gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-700/60">
+          <button onClick={() => setActiveTab('builder')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'builder' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+            🏗️ Team Builder
+          </button>
+          <button onClick={() => setActiveTab('collection')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'collection' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+            📚 My Collection
+          </button>
+          <button onClick={() => setActiveTab('counter')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'counter' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+            🎯 Counter Builder
+          </button>
+          <button onClick={() => setActiveTab('meta')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'meta' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+            📊 Meta Teams
+          </button>
+        </div>
+      </div>
 
-        {/* LEFT COLUMN: Team & Analysis */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Selected Team */}
-          <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-orange-500/10 backdrop-blur">
-            <h2 className="text-xl font-bold mb-4 text-orange-300 flex justify-between items-center">
-              Your Team
-              <span className="text-sm bg-gray-700 px-2 py-1 rounded text-white">{selectedTeam.length}/3</span>
-            </h2>
-            <div className="space-y-3">
-              {[0, 1, 2].map(index => {
-                const char = selectedTeam[index]
-                return (
-                  <div key={index} className="h-24 bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-600 relative flex items-center justify-center overflow-hidden">
-                    {char ? (
-                      <div className="w-full h-full flex items-center bg-gray-800 border-2 border-blue-500 rounded-lg relative group">
-                        <img
-                          src={assetPath(`images/characters/${char.id}.png`)}
-                          alt={char.name}
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
-                          className="h-full w-24 object-cover"
-                        />
-                        <div className="p-2 flex-1 min-w-0">
-                          <div className="font-bold text-sm truncate">{char.name}</div>
-                          <button
-                            onClick={() => removeFromTeam(char.id)}
-                            className="text-xs text-red-400 hover:text-red-300 mt-1"
-                          >
-                            Remove
-                          </button>
+      {/* Team Builder Tab */}
+      {activeTab === 'builder' && (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 relative z-10">
+
+          {/* LEFT COLUMN: Team & Analysis */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Selected Team */}
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-orange-500/10 backdrop-blur">
+              <h2 className="text-xl font-bold mb-4 text-orange-300 flex justify-between items-center">
+                Your Team
+                <span className="text-sm bg-gray-700 px-2 py-1 rounded text-white">{selectedTeam.length}/3</span>
+              </h2>
+              <div className="space-y-3">
+                {[0, 1, 2].map(index => {
+                  const char = selectedTeam[index]
+                  return (
+                    <div key={index} className="h-24 bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-600 relative flex items-center justify-center overflow-hidden">
+                      {char ? (
+                        <div className="w-full h-full flex items-center bg-gray-800 border-2 border-blue-500 rounded-lg relative group">
+                          <img
+                            src={assetPath(`images/characters/${char.id}.png`)}
+                            alt={char.name}
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
+                            className="h-full w-24 object-cover"
+                          />
+                          <div className="p-2 flex-1 min-w-0">
+                            <div className="font-bold text-sm truncate">{char.name}</div>
+                            <button
+                              onClick={() => removeFromTeam(char.id)}
+                              className="text-xs text-red-400 hover:text-red-300 mt-1"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Empty Slot</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Save Team Controls */}
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <input
+                  type="text"
+                  placeholder="Team Name"
+                  className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white mb-2 focus:border-orange-500 outline-none"
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                />
+                <button
+                  onClick={saveTeam}
+                  disabled={selectedTeam.length === 0 || !teamName.trim()}
+                  className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm py-2 rounded transition-colors font-bold"
+                >
+                  Save Team
+                </button>
+              </div>
+            </div>
+
+            {/* Suggested Characters */}
+            {selectedTeam.length > 0 && selectedTeam.length < 3 && (
+              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
+                <h3 className="font-bold text-gray-300 mb-3 flex items-center gap-2">
+                  <span className="text-yellow-500">★</span> Suggested Teammates
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.map(char => (
+                    <div key={char.id} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between items-center group cursor-pointer hover:border-yellow-500/50 transition-colors" onClick={() => setViewCharacter(char)}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-[10px] text-gray-500 overflow-hidden">
+                          <img
+                            src={assetPath(`images/characters/${char.id}.png`)}
+                            alt={char.name}
+                            onError={(e) => { e.target.style.display = 'none' }}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-gray-200 truncate">{char.name}</div>
+                          <div className="text-[10px] text-green-400">Synergy Score: {char.synergyScore}</div>
                         </div>
                       </div>
-                    ) : (
-                      <span className="text-gray-500 text-sm">Empty Slot</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Save Team Controls */}
-            <div className="mt-4 pt-4 border-t border-gray-700">
-              <input
-                type="text"
-                placeholder="Team Name"
-                className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white mb-2 focus:border-orange-500 outline-none"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-              />
-              <button
-                onClick={saveTeam}
-                disabled={selectedTeam.length === 0 || !teamName.trim()}
-                className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm py-2 rounded transition-colors font-bold"
-              >
-                Save Team
-              </button>
-            </div>
-          </div>
-
-          {/* Suggested Characters */}
-          {selectedTeam.length > 0 && selectedTeam.length < 3 && (
-            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
-              <h3 className="font-bold text-gray-300 mb-3 flex items-center gap-2">
-                <span className="text-yellow-500">★</span> Suggested Teammates
-              </h3>
-              <div className="space-y-2">
-                {suggestions.map(char => (
-                  <div key={char.id} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between items-center group cursor-pointer hover:border-yellow-500/50 transition-colors" onClick={() => setViewCharacter(char)}>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 bg-gray-800 rounded flex items-center justify-center text-[10px] text-gray-500 overflow-hidden">
-                        <img
-                          src={assetPath(`images/characters/${char.id}.png`)}
-                          alt={char.name}
-                          onError={(e) => { e.target.style.display = 'none' }}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-bold text-sm text-gray-200 truncate">{char.name}</div>
-                        <div className="text-[10px] text-green-400">Synergy Score: {char.synergyScore}</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        addToTeam(char)
-                      }}
-                      className="text-blue-400 hover:text-blue-300 text-lg px-2"
-                      title="Add to Team"
-                    >
-                      +
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Saved Teams List */}
-          {savedTeams.length > 0 && (
-            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10 max-h-60 overflow-y-auto">
-              <h3 className="font-bold text-gray-300 mb-3 flex justify-between items-center">
-                Saved Teams
-                <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">{savedTeams.length}</span>
-              </h3>
-              <div className="space-y-2">
-                {savedTeams.map((team, idx) => (
-                  <div key={idx} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between items-center group">
-                    <div className="min-w-0 flex-1 mr-2">
-                      <div className="font-bold text-sm text-orange-400 truncate">{team.name}</div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {team.members.map(m => m.name).join(', ')}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => loadTeam(team)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-1 rounded"
-                        title="Load Team"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          addToTeam(char)
+                        }}
+                        className="text-blue-400 hover:text-blue-300 text-lg px-2"
+                        title="Add to Team"
                       >
-                        Load
-                      </button>
-                      <button
-                        onClick={() => deleteTeam(idx)}
-                        className="bg-red-600 hover:bg-red-500 text-white text-xs px-2 py-1 rounded"
-                        title="Delete Team"
-                      >
-                        &times;
+                        +
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Team Analysis */}
-          {selectedTeam.length > 0 && (
-            <div className="space-y-4">
-              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-slate-200">Energy Footprint</h3>
-                  <span className="text-xs uppercase tracking-widest text-slate-500">skill costs</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(teamAnalysis).map(([type, count]) => (
-                    count > 0 && (
-                      <div key={type} className={`flex justify-between items-center px-3 py-2 rounded-lg ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
-                        <span className="capitalize text-sm">{type}</span>
-                        <span className="font-bold text-white/90">{count}</span>
-                      </div>
-                    )
                   ))}
                 </div>
               </div>
+            )}
 
-              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-slate-400">Synergy</p>
-                    <p className="text-3xl font-extrabold text-orange-300">{fullTeamAnalysis.synergyScore}%</p>
+            {/* Saved Teams List */}
+            {savedTeams.length > 0 && (
+              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10 max-h-60 overflow-y-auto">
+                <h3 className="font-bold text-gray-300 mb-3 flex justify-between items-center">
+                  Saved Teams
+                  <span className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-400">{savedTeams.length}</span>
+                </h3>
+                <div className="space-y-2">
+                  {savedTeams.map((team, idx) => (
+                    <div key={idx} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between items-center group">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <div className="font-bold text-sm text-orange-400 truncate">{team.name}</div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {team.members.map(m => m.name).join(', ')}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => loadTeam(team)}
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-1 rounded"
+                          title="Load Team"
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => deleteTeam(idx)}
+                          className="bg-red-600 hover:bg-red-500 text-white text-xs px-2 py-1 rounded"
+                          title="Delete Team"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Team Analysis */}
+            {selectedTeam.length > 0 && (
+              <div className="space-y-4">
+                <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-slate-200">Energy Footprint</h3>
+                    <span className="text-xs uppercase tracking-widest text-slate-500">skill costs</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-400">Turn to Kill</p>
-                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Energy to Kill</p>
-                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Burst Damage</p>
-                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.burstDamage || 0}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Pressure</p>
-                      <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.pressureRating}%</p>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(teamAnalysis).map(([type, count]) => (
+                      count > 0 && (
+                        <div key={type} className={`flex justify-between items-center px-3 py-2 rounded-lg ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
+                          <span className="capitalize text-sm">{type}</span>
+                          <span className="font-bold text-white/90">{count}</span>
+                        </div>
+                      )
+                    ))}
                   </div>
                 </div>
 
-                {fullTeamAnalysis.synergyHighlights.length > 0 && (
-                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
-                    <p className="text-xs uppercase tracking-widest text-orange-200 mb-2">Synergy Reads</p>
-                    <ul className="space-y-2 text-sm text-slate-100">
-                      {fullTeamAnalysis.synergyHighlights.map((note, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <span className="text-orange-300">•</span>
-                          <span>{note}</span>
-                        </li>
+                <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-amber-500/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-slate-400">Synergy</p>
+                      <p className="text-3xl font-extrabold text-orange-300">{fullTeamAnalysis.synergyScore}%</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-slate-400">Turn to Kill</p>
+                        <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Energy to Kill</p>
+                        <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Burst Damage</p>
+                        <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.burstDamage || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Pressure</p>
+                        <p className="text-lg font-semibold text-white">{fullTeamAnalysis.tempo.pressureRating}%</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {fullTeamAnalysis.synergyHighlights.length > 0 && (
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-3">
+                      <p className="text-xs uppercase tracking-widest text-orange-200 mb-2">Synergy Reads</p>
+                      <ul className="space-y-2 text-sm text-slate-100">
+                        {fullTeamAnalysis.synergyHighlights.map((note, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-orange-300">•</span>
+                            <span>{note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Full Team Analysis - Strengths, Weaknesses, Strategies */}
+            {selectedTeam.length === 3 && (
+              <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
+                <h3 className="font-bold text-blue-200 mb-3 text-lg flex items-center gap-2">📊 Deep Dive</h3>
+
+                {/* Strengths */}
+                {fullTeamAnalysis.strengths.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
+                      <span>✓</span> Strengths
+                    </h4>
+                    <ul className="space-y-1">
+                      {fullTeamAnalysis.strengths.map((strength, idx) => (
+                        <li key={idx} className="text-sm text-gray-200 pl-4">• {strength}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Weaknesses */}
+                {fullTeamAnalysis.weaknesses.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
+                      <span>⚠</span> Weaknesses
+                    </h4>
+                    <ul className="space-y-1">
+                      {fullTeamAnalysis.weaknesses.map((weakness, idx) => (
+                        <li key={idx} className="text-sm text-gray-200 pl-4">• {weakness}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Strategies */}
+                {fullTeamAnalysis.strategies.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-purple-300 mb-2 flex items-center gap-2">
+                      <span>🎯</span> How to Play
+                    </h4>
+                    <ul className="space-y-1">
+                      {fullTeamAnalysis.strategies.map((strategy, idx) => (
+                        <li key={idx} className="text-sm text-gray-200 pl-4">• {strategy}</li>
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* Full Team Analysis - Strengths, Weaknesses, Strategies */}
-          {selectedTeam.length === 3 && (
-            <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-blue-500/10">
-              <h3 className="font-bold text-blue-200 mb-3 text-lg flex items-center gap-2">📊 Deep Dive</h3>
-
-              {/* Strengths */}
-              {fullTeamAnalysis.strengths.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-semibold text-green-300 mb-2 flex items-center gap-2">
-                    <span>✓</span> Strengths
-                  </h4>
-                  <ul className="space-y-1">
-                    {fullTeamAnalysis.strengths.map((strength, idx) => (
-                      <li key={idx} className="text-sm text-gray-200 pl-4">• {strength}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Weaknesses */}
-              {fullTeamAnalysis.weaknesses.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-semibold text-yellow-300 mb-2 flex items-center gap-2">
-                    <span>⚠</span> Weaknesses
-                  </h4>
-                  <ul className="space-y-1">
-                    {fullTeamAnalysis.weaknesses.map((weakness, idx) => (
-                      <li key={idx} className="text-sm text-gray-200 pl-4">• {weakness}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Strategies */}
-              {fullTeamAnalysis.strategies.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-2 flex items-center gap-2">
-                    <span>🎯</span> How to Play
-                  </h4>
-                  <ul className="space-y-1">
-                    {fullTeamAnalysis.strategies.map((strategy, idx) => (
-                      <li key={idx} className="text-sm text-gray-200 pl-4">• {strategy}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN: Character Selection */}
-        <div className="lg:col-span-3 space-y-6">
-
-          {/* Filters */}
-          <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/60 flex flex-wrap gap-4 items-center shadow-lg shadow-orange-500/10">
-            <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                placeholder="Search characters..."
-                className="w-full p-2 bg-gray-900 border border-gray-600 rounded text-white focus:border-orange-500 focus:outline-none"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <select
-              className="bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-orange-500 outline-none"
-              value={energyFilter}
-              onChange={(e) => setEnergyFilter(e.target.value)}
-            >
-              <option value="all">All Energy</option>
-              <option value="green">Green (Taijutsu)</option>
-              <option value="red">Red (Ninjutsu)</option>
-              <option value="blue">Blue (Chakra)</option>
-              <option value="white">White (Genjutsu)</option>
-            </select>
-
-            <select
-              className="bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-orange-500 outline-none"
-              value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
-            >
-              <option value="all">All Classes</option>
-              <option value="physical">Physical</option>
-              <option value="energy">Energy</option>
-              <option value="strategic">Strategic</option>
-              <option value="mental">Mental</option>
-              <option value="affliction">Affliction</option>
-              <option value="instant">Instant</option>
-              <option value="action">Action</option>
-              <option value="control">Control</option>
-            </select>
+            )}
           </div>
 
-          {/* Character Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredCharacters.slice(0, 60).map(char => (
-              <div
-                key={char.id}
-                className="bg-slate-900/80 rounded-2xl border border-slate-800/80 hover:border-orange-400/80 transition-all hover:shadow-orange-500/25 hover:shadow-xl overflow-hidden group cursor-pointer flex flex-col"
-                onClick={() => setViewCharacter(char)}
+          {/* RIGHT COLUMN: Character Selection */}
+          <div className="lg:col-span-3 space-y-6">
+
+            {/* Filters */}
+            <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/60 flex flex-wrap gap-4 items-center shadow-lg shadow-orange-500/10">
+              <div className="flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  placeholder="Search characters..."
+                  className="w-full p-2 bg-gray-900 border border-gray-600 rounded text-white focus:border-orange-500 focus:outline-none"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <select
+                className="bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-orange-500 outline-none"
+                value={energyFilter}
+                onChange={(e) => setEnergyFilter(e.target.value)}
               >
-                <div className="flex h-24">
-                  <img
-                    src={assetPath(`images/characters/${char.id}.png`)}
-                    alt={char.name}
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
-                    className="w-24 h-24 object-cover bg-gray-900"
-                  />
-                  <div className="p-3 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-lg leading-tight group-hover:text-orange-400 transition-colors">{char.name}</h3>
-                      <div className="text-xs text-gray-500 mt-1">ID: {char.id}</div>
+                <option value="all">All Energy</option>
+                <option value="green">Green (Taijutsu)</option>
+                <option value="red">Red (Ninjutsu)</option>
+                <option value="blue">Blue (Chakra)</option>
+                <option value="white">White (Genjutsu)</option>
+              </select>
+
+              <select
+                className="bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-orange-500 outline-none"
+                value={classFilter}
+                onChange={(e) => setClassFilter(e.target.value)}
+              >
+                <option value="all">All Classes</option>
+                <option value="physical">Physical</option>
+                <option value="energy">Energy</option>
+                <option value="strategic">Strategic</option>
+                <option value="mental">Mental</option>
+                <option value="affliction">Affliction</option>
+                <option value="instant">Instant</option>
+                <option value="action">Action</option>
+                <option value="control">Control</option>
+              </select>
+            </div>
+
+            {/* Character Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredCharacters.slice(0, 60).map(char => (
+                <div
+                  key={char.id}
+                  className="bg-slate-900/80 rounded-2xl border border-slate-800/80 hover:border-orange-400/80 transition-all hover:shadow-orange-500/25 hover:shadow-xl overflow-hidden group cursor-pointer flex flex-col"
+                  onClick={() => setViewCharacter(char)}
+                >
+                  <div className="flex h-24">
+                    <img
+                      src={assetPath(`images/characters/${char.id}.png`)}
+                      alt={char.name}
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
+                      className="w-24 h-24 object-cover bg-gray-900"
+                    />
+                    <div className="p-3 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-lg leading-tight group-hover:text-orange-400 transition-colors">{char.name}</h3>
+                        <div className="text-xs text-gray-500 mt-1">ID: {char.id}</div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          addToTeam(char)
+                        }}
+                        className="self-end bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded transition-colors"
+                      >
+                        Add to Team
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        addToTeam(char)
-                      }}
-                      className="self-end bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded transition-colors"
-                    >
-                      Add to Team
-                    </button>
+                  </div>
+
+                  {/* Skill Preview (Mini) */}
+                  <div className="bg-gray-900/50 p-2 flex gap-1 overflow-x-auto scrollbar-hide">
+                    {char.skills && char.skills.map((skill, idx) => (
+                      <div key={idx} className="flex-shrink-0 w-6 h-6 rounded bg-gray-800 border border-gray-700 flex items-center justify-center text-[10px]" title={skill.name}>
+                        {skill.energy && skill.energy[0] ? skill.energy[0][0].toUpperCase() : '?'}
+                      </div>
+                    ))}
                   </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Skill Preview (Mini) */}
-                <div className="bg-gray-900/50 p-2 flex gap-1 overflow-x-auto scrollbar-hide">
-                  {char.skills && char.skills.map((skill, idx) => (
-                    <div key={idx} className="flex-shrink-0 w-6 h-6 rounded bg-gray-800 border border-gray-700 flex items-center justify-center text-[10px]" title={skill.name}>
-                      {skill.energy && skill.energy[0] ? skill.energy[0][0].toUpperCase() : '?'}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {filteredCharacters.length === 0 && (
+              <div className="text-center text-gray-500 py-12">No characters found matching your filters.</div>
+            )}
           </div>
-
-          {filteredCharacters.length === 0 && (
-            <div className="text-center text-gray-500 py-12">No characters found matching your filters.</div>
-          )}
         </div>
-      </div>
+      )}
+
+      {/* Collection Tab */}
+      {activeTab === 'collection' && (
+        <div className="max-w-7xl mx-auto relative z-10">
+          <CollectionManager allCharacters={charactersData} />
+        </div>
+      )}
+
+      {/* Counter Builder Tab */}
+      {activeTab === 'counter' && (
+        <div className="max-w-7xl mx-auto relative z-10">
+          <CounterBuilder allCharacters={charactersData} />
+        </div>
+      )}
+
+      {/* Meta Teams Tab */}
+      {activeTab === 'meta' && (
+        <div className="max-w-7xl mx-auto relative z-10">
+          <MetaBuilder allCharacters={charactersData} />
+        </div>
+      )}
 
       {/* Character Detail Modal */}
       {viewCharacter && (
