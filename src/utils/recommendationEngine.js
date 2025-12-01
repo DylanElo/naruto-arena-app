@@ -5,7 +5,38 @@ const ROLE_KEYWORDS = {
     support: ['heal', 'remove harmful effects', 'energy', 'invulnerable to', 'defense'],
     control: ['stun', 'unable to reduce damage', 'remove energy', 'cooldowns increased', 'unable to be used'],
     dps: ['damage', 'piercing', 'affliction', 'critical', 'additional damage']
-};
+}
+
+const SUSTAIN_KEYWORDS = {
+    healing: ['heal', 'recover', 'restore health', 'regain', 'regenerat'],
+    mitigation: ['reduce damage', 'ignore', 'destructible defense', 'block', 'shield', 'invulnerable'],
+    cleanse: ['remove', 'cleanse', 'purge', 'cure', 'harmful effects'],
+    energy: ['gain', 'random energy', 'additional energy', 'extra energy']
+}
+
+const CONTROL_KEYWORDS = ['stun', 'cooldown', 'counter', 'interrupt', 'disable', 'unable to']
+
+const DEFAULT_ANALYSIS = {
+    roles: { tank: 0, support: 0, control: 0, dps: 0 },
+    energyDistribution: { green: 0, red: 0, blue: 0, white: 0, black: 0 },
+    maxDPE: 0,
+    avgDPE: 0,
+    strengths: [],
+    weaknesses: [],
+    strategies: [],
+    synergyHighlights: [],
+    tempo: {
+        burstDamage: 0,
+        burstEnergy: 0,
+        estimatedKillTurns: null,
+        costToKill: null,
+        pressureRating: 0
+    },
+    sustain: { healingTools: 0, mitigationTools: 0, cleanseTools: 0 },
+    synergyScore: 0
+}
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 // Analyze a character to determine their primary roles
 // Analyze a character to determine their primary roles
@@ -32,6 +63,92 @@ export const analyzeCharacter = (char) => {
 
     return roles;
 };
+
+const extractSkillDamage = (skill) => {
+    if (!skill) return 0
+
+    if (typeof skill.damage === 'number' && skill.damage > 0) {
+        return skill.damage
+    }
+
+    if (skill.description) {
+        const desc = skill.description.toLowerCase()
+        const match = desc.match(/(\d+)\s*(?:damage|dmg)/)
+        if (match && match[1]) {
+            return parseInt(match[1], 10)
+        }
+    }
+
+    return 0
+}
+
+const getEnergyCost = (skill) => {
+    if (!skill || !Array.isArray(skill.energy)) return 0
+    return skill.energy.filter(e => e !== 'none').length
+}
+
+const summarizeSustain = (skill) => {
+    const summary = { healing: 0, mitigation: 0, cleanse: 0, energy: 0 }
+    const desc = (skill.description || '').toLowerCase()
+
+    Object.entries(SUSTAIN_KEYWORDS).forEach(([type, keywords]) => {
+        if (keywords.some(k => desc.includes(k))) {
+            summary[type] = 1
+        }
+    })
+
+    if (typeof skill.heal === 'number' && skill.heal > 0) {
+        summary.healing = 1
+    }
+
+    return summary
+}
+
+const getBestDamageSkill = (char) => {
+    if (!char || !Array.isArray(char.skills)) return { damage: 0, energyCost: 0, control: 0 }
+
+    let best = { damage: 0, energyCost: 0, control: 0 }
+
+    char.skills.forEach(skill => {
+        const damage = extractSkillDamage(skill)
+        const energyCost = getEnergyCost(skill)
+        const control = CONTROL_KEYWORDS.some(k => (skill.description || '').toLowerCase().includes(k)) ? 1 : 0
+
+        if (damage > best.damage) {
+            best = { damage, energyCost: Math.max(1, energyCost), control }
+        }
+    })
+
+    return best
+}
+
+const estimateTempo = (team, maxDPE) => {
+    let burstDamage = 0
+    let burstEnergy = 0
+    let controlPieces = 0
+
+    team.forEach(member => {
+        const bestSkill = getBestDamageSkill(member)
+        burstDamage += bestSkill.damage
+        burstEnergy += bestSkill.energyCost
+        controlPieces += bestSkill.control
+    })
+
+    const baseHP = 100
+    const estimatedKillTurns = burstDamage > 0 ? Math.max(1, Math.ceil(baseHP / Math.max(1, burstDamage))) : null
+    const costToKill = burstDamage > 0 ? Math.max(1, Math.ceil((baseHP / Math.max(1, burstDamage)) * Math.max(burstEnergy, team.length))) : null
+
+    const controlBonus = clamp(controlPieces * 8, 0, 20)
+    const pressureRating = clamp(Math.round((burstDamage / 120) * 55 + (maxDPE / 45) * 25 + controlBonus), 0, 100)
+
+    return {
+        burstDamage,
+        burstEnergy,
+        estimatedKillTurns,
+        costToKill,
+        pressureRating
+    }
+}
 
 // Calculate a synergy score for a candidate character joining a team
 export const calculateSynergy = (team, candidate) => {
@@ -156,94 +273,115 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5) => {
 
 // Analyze a complete team to identify strengths, weaknesses, and strategies
 export const analyzeTeam = (team) => {
-    if (!team || team.length < 3) {
-        return {
-            roles: { tank: 0, support: 0, control: 0, dps: 0 },
-            energyDistribution: { green: 0, red: 0, blue: 0, white: 0, black: 0 },
-            maxDPE: 0,
-            avgDPE: 0,
-            strengths: [],
-            weaknesses: [],
-            strategies: []
-        };
+    if (!team || team.length === 0) {
+        return { ...DEFAULT_ANALYSIS }
     }
 
-    const roles = { tank: 0, support: 0, control: 0, dps: 0 };
-    const energyDistribution = { green: 0, red: 0, blue: 0, white: 0, black: 0 };
-    const dpeValues = [];
+    const roles = { tank: 0, support: 0, control: 0, dps: 0 }
+    const energyDistribution = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
+    const dpeValues = []
+    const sustain = { healingTools: 0, mitigationTools: 0, cleanseTools: 0 }
 
     // Analyze each team member
     team.forEach(member => {
-        const memberRoles = analyzeCharacter(member);
-        Object.keys(memberRoles).forEach(r => roles[r] += memberRoles[r]);
+        const memberRoles = analyzeCharacter(member)
+        Object.keys(memberRoles).forEach(r => roles[r] += memberRoles[r])
 
         if (member.skills) {
             member.skills.forEach(skill => {
                 if (skill.energy) {
                     skill.energy.forEach(e => {
-                        if (energyDistribution[e] !== undefined) energyDistribution[e]++;
-                    });
+                        if (energyDistribution[e] !== undefined) energyDistribution[e]++
+                    })
                 }
-                const dpe = damagePerEnergy(skill);
-                if (dpe > 0) dpeValues.push(dpe);
-            });
+                const dpe = damagePerEnergy(skill)
+                if (dpe > 0) dpeValues.push(dpe)
+
+                const sustainValues = summarizeSustain(skill)
+                sustain.healingTools += sustainValues.healing
+                sustain.mitigationTools += sustainValues.mitigation
+                sustain.cleanseTools += sustainValues.cleanse
+            })
         }
-    });
+    })
 
-    const maxDPE = dpeValues.length > 0 ? Math.max(...dpeValues) : 0;
-    const avgDPE = dpeValues.length > 0 ? dpeValues.reduce((a, b) => a + b, 0) / dpeValues.length : 0;
+    const maxDPE = dpeValues.length > 0 ? Math.max(...dpeValues) : 0
+    const avgDPE = dpeValues.length > 0 ? dpeValues.reduce((a, b) => a + b, 0) / dpeValues.length : 0
 
-    const strengths = [];
-    const weaknesses = [];
-    const strategies = [];
+    const strengths = []
+    const weaknesses = []
+    const strategies = []
 
     // Analyze strengths
-    if (avgDPE > 30) strengths.push("High damage output - can eliminate enemies quickly");
-    if (roles.control >= 3) strengths.push("Excellent crowd control - can disrupt enemy strategies");
-    if (roles.support >= 2) strengths.push("Strong defensive capabilities - good survivability");
+    if (avgDPE > 30) strengths.push('High damage output - can eliminate enemies quickly')
+    if (roles.control >= 3) strengths.push('Excellent crowd control - can disrupt enemy strategies')
+    if (roles.support >= 2 || sustain.healingTools >= 2) strengths.push('Strong defensive toolkit - good survivability')
 
-    const energyColors = Object.values(energyDistribution).filter(v => v > 0).length;
-    if (energyColors >= 3) strengths.push("Flexible energy options - less vulnerable to energy drought");
+    const energyColors = Object.values(energyDistribution).filter(v => v > 0).length
+    if (energyColors >= 3) strengths.push('Flexible energy options - less vulnerable to energy drought')
 
-    const lowEnergyCost = dpeValues.filter(dpe => dpe >= 20).length;
-    if (lowEnergyCost >= 3) strengths.push("Energy efficient - can apply pressure early");
+    const lowEnergyCost = dpeValues.filter(dpe => dpe >= 20).length
+    if (lowEnergyCost >= 3) strengths.push('Energy efficient - can apply pressure early')
+    if (sustain.cleanseTools >= 1) strengths.push('Can cleanse debuffs to keep tempo')
 
     // Analyze weaknesses
-    if (avgDPE < 15) weaknesses.push("Weak damage output - may struggle to finish enemies");
-    if (roles.control < 1) weaknesses.push("No crowd control - vulnerable to enemy combos");
-    if (roles.support < 1) weaknesses.push("Limited survivability - risky against aggressive teams");
+    if (avgDPE < 15) weaknesses.push('Weak damage output - may struggle to finish enemies')
+    if (roles.control < 1) weaknesses.push('Limited crowd control - vulnerable to enemy combos')
+    if (roles.support < 1 && sustain.healingTools === 0) weaknesses.push('Low survivability - risky against aggressive teams')
 
-    const totalEnergySkills = Object.values(energyDistribution).reduce((a, b) => a + b, 0);
-    const maxEnergyColor = Math.max(...Object.values(energyDistribution));
-    if (maxEnergyColor / totalEnergySkills > 0.6) {
-        const dominantColor = Object.keys(energyDistribution).find(k => energyDistribution[k] === maxEnergyColor);
-        weaknesses.push(`Energy bottleneck risk - heavily dependent on ${dominantColor} energy`);
+    const totalEnergySkills = Math.max(1, Object.values(energyDistribution).reduce((a, b) => a + b, 0))
+    const maxEnergyColor = Math.max(...Object.values(energyDistribution))
+    if (totalEnergySkills > 0 && maxEnergyColor / totalEnergySkills > 0.6) {
+        const dominantColor = Object.keys(energyDistribution).find(k => energyDistribution[k] === maxEnergyColor)
+        weaknesses.push(`Energy bottleneck risk - heavily dependent on ${dominantColor} energy`)
     }
 
     // Generate strategies
     if (avgDPE > 25 && roles.support < 2) {
-        strategies.push("Aggressive playstyle - focus on eliminating high-priority targets quickly before they can respond");
+        strategies.push('Aggressive playstyle - delete high-priority targets quickly before they can respond')
     }
-    if (roles.control >= 2 && roles.support >= 1) {
-        strategies.push("Defensive playstyle - use stuns to control the battlefield while sustaining your team");
+    if (roles.control >= 2 && (roles.support >= 1 || sustain.mitigationTools > 0)) {
+        strategies.push('Defensive playstyle - use control to slow fights while sustaining your front line')
     }
     if (roles.tank >= 1 && roles.dps >= 2 && roles.control >= 1) {
-        strategies.push("Balanced playstyle - adapt to your opponent's strategy and counter accordingly");
+        strategies.push('Balanced playstyle - pivot between peel and burst depending on matchups')
     }
     if (lowEnergyCost >= 3) {
-        strategies.push("Early pressure - spam low-cost skills in early turns to build momentum");
+        strategies.push('Early pressure - spam low-cost skills in early turns to build momentum')
     }
     if (maxDPE > 40) {
-        strategies.push("Save energy for finishers - use high-damage skills when enemies are weakened");
+        strategies.push('Save energy for finishers - use high-damage skills when enemies are weakened')
     }
     if (roles.control >= 3) {
-        strategies.push("Chain stuns - coordinate crowd control to keep dangerous enemies locked down");
+        strategies.push('Chain stuns - coordinate crowd control to keep dangerous enemies locked down')
     }
 
     // Default strategy if none matched
     if (strategies.length === 0) {
-        strategies.push("Standard playstyle - balance offense and defense based on team composition");
+        strategies.push('Standard playstyle - balance offense and defense based on team composition')
     }
+
+    const tempo = estimateTempo(team, maxDPE)
+
+    const synergyHighlights = []
+    const roleCoverage = ['tank', 'support', 'control', 'dps'].filter(role => roles[role] > 0).length
+
+    if (roleCoverage >= 3) synergyHighlights.push('Diverse role coverage supports adaptable strategies')
+    if (energyColors >= 3) synergyHighlights.push('Multi-color energy spread reduces dependency on draws')
+    if (tempo.estimatedKillTurns && tempo.estimatedKillTurns <= 2) synergyHighlights.push('Explosive burst potential - can secure early eliminations')
+    if (sustain.healingTools > 0 && sustain.mitigationTools > 0) synergyHighlights.push('Layered sustain lets carries stay active longer')
+    if (roles.control >= 2 && tempo.pressureRating > 50) synergyHighlights.push('Crowd control sets up kill turns reliably')
+
+    const synergyScore = clamp(
+        Math.round(
+            roleCoverage * 15 +
+            energyColors * 8 +
+            (tempo.pressureRating * 0.35) +
+            (sustain.healingTools + sustain.mitigationTools) * 5
+        ),
+        0,
+        100
+    )
 
     return {
         roles,
@@ -252,6 +390,10 @@ export const analyzeTeam = (team) => {
         avgDPE,
         strengths,
         weaknesses,
-        strategies
-    };
-};
+        strategies,
+        synergyHighlights,
+        tempo,
+        sustain,
+        synergyScore
+    }
+}
