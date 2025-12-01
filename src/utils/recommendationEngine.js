@@ -109,9 +109,42 @@ export const analyzeCharacter = (char) => {
         const classes = (skill.classes || '').toLowerCase();
         const skillName = skill.name;
 
+        // 1. Role Detection
+        if (ROLE_KEYWORDS.tank.some(k => desc.includes(k))) roles.tank++;
+        if (ROLE_KEYWORDS.support.some(k => desc.includes(k))) roles.support++;
+        if (ROLE_KEYWORDS.control.some(k => desc.includes(k))) roles.control++;
+        if (ROLE_KEYWORDS.dps.some(k => desc.includes(k))) roles.dps++;
+
+        // Class-based Role Boosts
+        if (classes.includes('mental') || classes.includes('control')) roles.control++;
+        if (classes.includes('affliction') || classes.includes('physical') || classes.includes('energy')) roles.dps++;
+        if (classes.includes('strategic')) roles.support++;
+
+        // 2. Advanced Mechanics Detection (Regex)
+        Object.entries(MECHANIC_PATTERNS).forEach(([key, regex]) => {
+            if (regex.test(desc)) {
+                mechanics[key]++;
+                mechanicDetails[key].push(skillName);
+            }
+        });
+
+        // Special Logic: Punisher Detection
         if (MECHANIC_PATTERNS.triggerOnAction.test(desc)) {
             mechanics.punisher++;
             mechanicDetails.punisher.push(skillName);
+        }
+
+        // Special Logic: Class-based overrides (with basic invulnerability filter)
+        if (classes.includes('instant') && classes.includes('strategic') && desc.includes('invulnerable')) {
+            // REFINEMENT: Ignore basic invulnerability skills (1 turn duration, 4 turn CD)
+            const isBasicInvuln = /invulnerable for 1 turn/i.test(desc) && (skill.cooldown === 4 || skill.cooldown === '4');
+
+            if (!isBasicInvuln) {
+                mechanics.immunity++;
+                mechanics.invulnerable++;
+                mechanicDetails.immunity.push(skillName);
+                mechanicDetails.invulnerable.push(skillName);
+            }
         }
     });
 
