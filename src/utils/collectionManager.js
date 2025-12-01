@@ -1,5 +1,5 @@
 // Collection Manager - Maps missions to characters
-import missionsData from '../../../naruto-arena-scraper/data/missions.json';
+import missionsData from '../data/missions.json';
 
 /**
  * Extract character name from mission rewards
@@ -91,8 +91,8 @@ export const toggleCharacter = (characterId) => {
 /**
  * Get collection stats
  */
-export const getCollectionStats = (allCharacters) => {
-    const owned = loadCollection();
+export const getCollectionStats = (allCharacters, ownedIds = null) => {
+    const owned = ownedIds !== null ? ownedIds : loadCollection();
     return {
         owned: owned.length,
         total: allCharacters.length,
