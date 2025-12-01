@@ -6,10 +6,10 @@ const sasuke = {
     id: 3,
     name: "Uchiha Sasuke",
     skills: [
-        { name: "Lion Combo", description: "Deals damage.", classes: "Physical" },
-        { name: "Chidori", description: "Deals piercing damage.", classes: "Energy" }, // Piercing
-        { name: "Sharingan", description: "Enemy unable to reduce damage.", classes: "Strategic" }, // Anti-Tank
-        { name: "Swift Block", description: "Invulnerable for 1 turn.", classes: "Strategic,Instant" } // Immunity
+        { name: "Lion Combo", description: "Deals damage.", classes: "Physical", cooldown: 0 },
+        { name: "Chidori", description: "Deals piercing damage.", classes: "Energy", cooldown: 1 }, // Piercing
+        { name: "Sharingan", description: "Enemy unable to reduce damage.", classes: "Strategic", cooldown: 4 }, // Anti-Tank
+        { name: "Swift Block", description: "Invulnerable for 1 turn.", classes: "Strategic,Instant", cooldown: 4 } // Immunity (Basic)
     ]
 };
 
@@ -17,10 +17,10 @@ const inoS = {
     id: 109,
     name: "Yamanaka Ino (S)",
     skills: [
-        { name: "Mind Destruction", description: "Deals damage.", classes: "Mental" },
-        { name: "Mind Body Switch", description: "Stuns enemy.", classes: "Strategic" }, // Stun
-        { name: "Chakra Hair Trap", description: "If enemy uses a new skill...", classes: "Strategic" }, // Punisher
-        { name: "Ino Block", description: "Invulnerable for 1 turn.", classes: "Strategic,Instant" } // Immunity
+        { name: "Mind Destruction", description: "Deals damage.", classes: "Mental", cooldown: 0 },
+        { name: "Mind Body Switch", description: "Stuns enemy.", classes: "Strategic", cooldown: 4 }, // Stun
+        { name: "Chakra Hair Trap", description: "If enemy uses a new skill...", classes: "Strategic", cooldown: 1 }, // Punisher
+        { name: "Ino Block", description: "Invulnerable for 1 turn.", classes: "Strategic,Instant", cooldown: 4 } // Immunity (Basic)
     ]
 };
 
