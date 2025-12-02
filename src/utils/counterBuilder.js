@@ -1,135 +1,146 @@
-import { analyzeTeam, analyzeCharacter } from './recommendationEngine';
+/**
+ * COUNTER BUILDER V2 - Powered by Simulation Engine
+ * Uses actual damage calculations instead of heuristics
+ */
+
+import { GameState, Character } from '../engine/models.js';
+import { calculateOutcome } from '../engine/resolution.js';
+import { analyzeGameState } from '../engine/analyzer.js';
 
 /**
- * Calculate counter score for a character against an enemy team
- * Higher score = better counter
+ * Calculate counter score using SIMULATION ENGINE
+ * This replaces the old heuristic-based scoring
  */
-export const calculateCounterScore = (character, enemyAnalysis) => {
+export const calculateCounterScore = (candidate, enemyTeam, currentTeam = []) => {
+    // Create a temporary game state
+    const gameState = new GameState();
+
+    // Setup potential team (current + candidate)
+    const potentialTeam = [...currentTeam, new Character(candidate)].map(c =>
+        c instanceof Character ? c : new Character(c)
+    );
+
+    // Setup enemy team
+    const enemies = enemyTeam.map(e => new Character(e));
+
+    gameState.teams[0] = potentialTeam.slice(0, 3);
+    gameState.teams[1] = enemies.slice(0, 3);
+
+    // Analyze game state
+    const analysis = analyzeGameState(gameState, 0);
+
+    // Score is based on:
+    // 1. Can we kill enemies? (Kill Threat)
+    // 2. HP advantage (HP Delta) 
+    // 3. Energy efficiency
+    // 4. Cooldown pressure
+
     let score = 0;
-    const charAnalysis = analyzeCharacter(character);
 
-    // EXPLOIT ENEMY WEAKNESSES (30 pts each)
+    // Kill Threat (most important for counter picks)
+    score += analysis.killThreat * 2;
 
-    // Enemy has no immunity → Our stun is valuable
-    if (enemyAnalysis.mechanics.immunity === 0 && charAnalysis.mechanics.stun > 0) {
-        score += 30;
-    }
+    // HP Delta (normalized to 0-100 range)
+    score += Math.min(50, analysis.hpDelta / 6);
 
-    // Enemy has no anti-tank/piercing → Our invulnerability/tank is safe
-    if (enemyAnalysis.mechanics.antiTank === 0 && enemyAnalysis.mechanics.piercing === 0) {
-        if (charAnalysis.mechanics.invulnerable > 0) score += 25;
-    }
+    // Energy Efficiency
+    score += Math.min(30, analysis.energyEfficiency / 10);
 
-    // Enemy has low control → Our setup skills can safely activate
-    if (enemyAnalysis.roles.control < 1 && charAnalysis.mechanics.setup > 0) {
-        score += 20;
-    }
+    // Cooldown Pressure
+    score += Math.min(20, analysis.cooldownPressure * 2);
 
-    // NEGATE ENEMY STRENGTHS (25 pts each)
-
-    // Enemy has high stun → Our immunity negates it
-    if (enemyAnalysis.mechanics.stun >= 3 && charAnalysis.mechanics.immunity > 0) {
-        score += 25;
-    }
-
-    // Enemy has high piercing → Our cleanse helps
-    if (enemyAnalysis.mechanics.piercing >= 2 && charAnalysis.mechanics.cleanse > 0) {
-        score += 15;
-    }
-
-    // ENERGY ADVANTAGE (20 pts)  
-    const enemyAvgCost = 2.5; // Simplified for now
-    const charAvgCost = 2; // Simplified for now
-
-    if (enemyAvgCost > 3 && charAvgCost <= 1.5) {
-        score += 20;
-    }
-
-    // TEMPO ADVANTAGE (15 pts)
-    if (enemyAnalysis.tempo && enemyAnalysis.tempo.estimatedKillTurns > 5) {
-        const charBurst = estimateCharacterBurst(character);
-        if (charBurst > 60) score += 15;
-    }
-
-    return Math.round(score);
+    return Math.round(Math.max(0, score));
 };
 
 /**
- * Helper: Estimate character burst damage
+ * Get counter reason using ACTUAL MECHANICS
  */
-const estimateCharacterBurst = (character) => {
-    if (!character.skills) return 0;
+export const getCounterReason = (candidate, enemyTeam) => {
+    const reasons = [];
+    const candidateChar = new Character(candidate);
+    const enemies = enemyTeam.map(e => new Character(e));
 
-    let burst = 0;
-    character.skills.forEach(skill => {
-        const desc = skill.description || '';
-        const damageMatch = desc.match(/(\d+)\s*damage/i);
-        if (damageMatch) {
-            burst += parseInt(damageMatch[1]);
-        }
+    // Simulate damage against each enemy
+    let maxDamage = 0;
+    let vulnerableEnemies = 0;
+    let canKill = false;
+
+    enemies.forEach(enemy => {
+        candidateChar.skills.forEach(skill => {
+            if (skill.damage > 0) {
+                // Simulate the outcome
+                const outcome = calculateOutcome(candidateChar, enemy, skill);
+
+                if (outcome.damageDealt > maxDamage) {
+                    maxDamage = outcome.damageDealt;
+                }
+
+                if (outcome.killed) {
+                    canKill = true;
+                }
+
+                // Check if skill ignores their defenses
+                if (skill.damageType === 'affliction' && enemy.statusEffects.damageReduction > 0) {
+                    vulnerableEnemies++;
+                }
+
+                if (skill.damageType === 'piercing') {
+                    vulnerableEnemies++;
+                }
+            }
+        });
     });
 
-    return burst;
+    // Build reasons based on actual calculations
+    if (canKill) {
+        reasons.push('✓ Can potentially one-shot enemies');
+    } else if (maxDamage >= 40) {
+        reasons.push(`✓ High burst damage (${maxDamage} per skill)`);
+    }
+
+    if (vulnerableEnemies > 0) {
+        reasons.push('✓ Bypasses enemy defenses');
+    }
+
+    // Check for stun
+    const hasStun = candidateChar.skills.some(s => /stun/i.test(s.description));
+    if (hasStun) {
+        reasons.push('✓ Provides crowd control');
+    }
+
+    // Check for invulnerability
+    const hasInvuln = candidateChar.skills.some(s => s.classes.includes('Strategic') && /invulnerable/i.test(s.description));
+    if (hasInvuln) {
+        reasons.push('✓ Survivability tools');
+    }
+
+    return reasons.length > 0 ? reasons.join(' | ') : 'General matchup advantage';
 };
 
 /**
- * Get counter reason explanation
- */
-export const getCounterReason = (character, enemyAnalysis) => {
-    const reasons = [];
-    const charAnalysis = analyzeCharacter(character);
-
-    if (enemyAnalysis.mechanics.immunity === 0 && charAnalysis.mechanics.stun > 0) {
-        reasons.push('✓ Stuns counter their lack of immunity');
-    }
-
-    if (enemyAnalysis.mechanics.stun >= 3 && charAnalysis.mechanics.immunity > 0) {
-        reasons.push('✓ Immunity negates their stun pressure');
-    }
-
-    if (enemyAnalysis.roles.control < 1 && charAnalysis.mechanics.setup > 0) {
-        reasons.push('✓ Can safely setup without control');
-    }
-
-    if (enemyAnalysis.mechanics.piercing >= 2 && charAnalysis.mechanics.cleanse > 0) {
-        reasons.push('✓ Cleanse helps vs piercing');
-    }
-
-    return reasons.length > 0 ? reasons.join(' | ') : 'General synergy';
-};
-
-/**
- * Build counter team suggestions
- * @param {Array} enemyTeam - Enemy team (3 characters)
- * @param {Array} allCharacters - Full character pool
- * @param {Array} ownedCharacterIds - IDs of owned characters
- * @param {Array} currentTeam - Currently selected team
- * @returns {Array} Top counter picks with scores and reasons
+ * Build counter team using SIMULATION ENGINE
  */
 export const buildCounterTeam = (enemyTeam, allCharacters, ownedCharacterIds = [], currentTeam = []) => {
     if (!enemyTeam || enemyTeam.length === 0) {
         return [];
     }
 
-    // Analyze enemy team
-    const enemyAnalysis = analyzeTeam(enemyTeam);
-
-    // Filter to owned characters not already in current team
+    // Filter to owned characters not in current team
     const availableChars = allCharacters.filter(c => {
         const isOwned = ownedCharacterIds.length === 0 || ownedCharacterIds.includes(c.id);
         const notInTeam = !currentTeam.find(t => t.id === c.id);
         return isOwned && notInTeam;
     });
 
-    // Score and rank
+    // Score each character using SIMULATION ENGINE
     const scoredChars = availableChars.map(char => ({
         ...char,
-        counterScore: calculateCounterScore(char, enemyAnalysis),
-        counterReason: getCounterReason(char, enemyAnalysis)
+        counterScore: calculateCounterScore(char, enemyTeam, currentTeam),
+        counterReason: getCounterReason(char, enemyTeam)
     }));
 
-    // Sort by counter score descending
+    // Sort by counter score
     return scoredChars
         .sort((a, b) => b.counterScore - a.counterScore)
-        .slice(0, 10); // Top 10  
+        .slice(0, 10);
 };

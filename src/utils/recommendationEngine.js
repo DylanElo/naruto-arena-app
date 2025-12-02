@@ -1,4 +1,6 @@
 import { getCharacterKnowledge } from './knowledgeEngine'
+import { GameState, Character } from '../engine/models.js';
+import { analyzeGameState as analyzeGameStateSimulation } from '../engine/analyzer.js';
 
 // --- CONSTANTS & DICTIONARIES ---
 
@@ -671,5 +673,64 @@ export const analyzeTeam = (team) => {
         tempo,
         sustain,
         synergyScore
+    }
+}
+
+/**
+ * ENHANCED: Analyze team using SIMULATION ENGINE
+ * Provides actual damage calculations and kill threat analysis
+ */
+export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
+    // Get base analysis
+    const baseAnalysis = analyzeTeam(team);
+
+    // If no enemy team provided, return base analysis
+    if (!enemyTeam || enemyTeam.length === 0) {
+        return { ...baseAnalysis, simulation: null };
+    }
+
+    try {
+        // Create game state
+        const gameState = new GameState();
+        gameState.teams[0] = team.map(c => new Character(c));
+        gameState.teams[1] = enemyTeam.map(c => new Character(c));
+
+        // Run simulation analysis
+        const simAnalysis = analyzeGameStateSimulation(gameState, 0);
+
+        // Add simulation insights to base analysis
+        const enhancedStrengths = [...baseAnalysis.strengths];
+        const enhancedWeaknesses = [...baseAnalysis.weaknesses];
+
+        // Add simulation-based insights
+        if (simAnalysis.killThreat > 50) {
+            enhancedStrengths.push('🎯 High kill threat detected (can eliminate enemies)');
+        }
+
+        if (simAnalysis.hpDelta > 50) {
+            enhancedStrengths.push('💪 Strong HP advantage');
+        } else if (simAnalysis.hpDelta < -50) {
+            enhancedWeaknesses.push('⚠️ Significant HP disadvantage');
+        }
+
+        if (simAnalysis.energyEfficiency > 150) {
+            enhancedStrengths.push('⚡ Excellent energy generation');
+        }
+
+        return {
+            ...baseAnalysis,
+            strengths: enhancedStrengths,
+            weaknesses: enhancedWeaknesses,
+            simulation: {
+                hpDelta: simAnalysis.hpDelta,
+                killThreat: simAnalysis.killThreat,
+                energyEfficiency: simAnalysis.energyEfficiency,
+                cooldownPressure: simAnalysis.cooldownPressure,
+                overallScore: simAnalysis.overallScore
+            }
+        };
+    } catch (error) {
+        console.warn('Simulation engine failed, using base analysis:', error);
+        return { ...baseAnalysis, simulation: null };
     }
 }
