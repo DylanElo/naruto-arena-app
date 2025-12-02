@@ -475,8 +475,19 @@ export const analyzeTeam = (team) => {
     if (mechanics.setup > 0) strengths.push(`Setup Archetype${getEvidence('setup')}`)
     if (mechanics.achievement > 0) strengths.push(`Achievement Potential${getEvidence('achievement')}`)
 
-    if (avgCost > 3) warnings.push('⚠️ High Energy Requirements (avg > 3)')
-    if (colorSpread <= 2) warnings.push('⚠️ Energy Bottleneck (only 1-2 colors)')
+    const totalEnergyTokens = Object.values(energyDistribution).reduce((a, b) => a + b, 0)
+    const dominantEnergyCount = Math.max(...Object.values(energyDistribution))
+    const dominantEnergyRatio = totalEnergyTokens > 0 ? dominantEnergyCount / totalEnergyTokens : 0
+
+    if (avgCost >= 2.2) warnings.push(`⚠️ High Energy Requirements (avg ${avgCost.toFixed(1)})`)
+    if (colorSpread <= 2 || dominantEnergyRatio >= 0.55) {
+        const dominantLabel = Object.entries(energyDistribution)
+            .sort((a, b) => b[1] - a[1])
+            .filter(([type, count]) => count > 0)
+            .map(([type]) => type)[0]
+        const reason = colorSpread <= 2 ? 'only 1-2 colors' : `${Math.round(dominantEnergyRatio * 100)}% ${dominantLabel}`
+        warnings.push(`⚠️ Energy Bottleneck (${reason})`)
+    }
 
     const tempo = estimateTempo(team, maxDPE)
 
@@ -490,8 +501,8 @@ export const analyzeTeam = (team) => {
     if (avgCost <= 1.5) energyFlexibilityBonus += 10
     if (lowCostSkillCount >= 6) energyFlexibilityBonus += 10
     if (mechanics.setup > 0) energyFlexibilityBonus += 5
-    if (avgCost > 3) energyFlexibilityBonus -= 15
-    if (colorSpread <= 2) energyFlexibilityBonus -= 10
+    if (avgCost >= 2.2) energyFlexibilityBonus -= clamp(Math.round((avgCost - 2) * 10), 10, 20)
+    if (colorSpread <= 2 || dominantEnergyRatio >= 0.55) energyFlexibilityBonus -= 10
 
     const synergyScore = clamp(
         Math.round(

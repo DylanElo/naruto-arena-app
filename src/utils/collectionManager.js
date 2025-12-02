@@ -1,5 +1,5 @@
 // Collection Manager - Maps missions to characters
-import missionsData from '../../../naruto-arena-scraper/data/missions.json';
+import missionsData from '../data/missions.json'
 
 /**
  * Extract character name from mission rewards
