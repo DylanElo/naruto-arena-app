@@ -734,3 +734,171 @@ export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
         return { ...baseAnalysis, simulation: null };
     }
 }
+
+// --- BUILD AROUND A CHARACTER --------------------------------------
+
+/**
+ * Get a normalized primary / secondary role for a character
+ */
+const getPrimaryRoles = (char) => {
+    const { roles } = analyzeCharacter(char)
+    const entries = Object.entries(roles || {})
+        .filter(([_, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+
+    if (entries.length === 0) return { primary: null, secondary: null }
+    const [primary] = entries
+    const secondary = entries[1] || null
+
+    return {
+        primary: primary[0],
+        secondary: secondary ? secondary[0] : null
+    }
+}
+
+/**
+ * Score how well candidate covers what the main character lacks.
+ * This is *purely* role & mechanics based, using the manual-grounded tags from knowledgeEngine.
+ */
+const scorePartnerFit = (mainChar, candidate) => {
+    const mainProfile = analyzeCharacter(mainChar)
+    const candProfile = analyzeCharacter(candidate)
+
+    const mainRoles = getPrimaryRoles(mainChar)
+    const candRoles = getPrimaryRoles(candidate)
+
+    let score = 0
+    const notes = []
+
+    // 1) Basic role complementarity
+    if (mainRoles.primary === 'dps') {
+        if (candRoles.primary === 'support') { score += 25; notes.push('brings sustain and utility to a carry') }
+        if (candRoles.primary === 'tank') { score += 20; notes.push('frontline / protection for a glass cannon') }
+        if (candRoles.primary === 'control') { score += 15; notes.push('adds control so your DPS can hit safely') }
+    } else if (mainRoles.primary === 'support') {
+        if (candRoles.primary === 'dps') { score += 25; notes.push('gives you a clear damage win condition') }
+        if (candRoles.primary === 'control') { score += 20; notes.push('locks enemies while you sustain') }
+    } else if (mainRoles.primary === 'control') {
+        if (candRoles.primary === 'dps') { score += 25; notes.push('control + damage pairing') }
+        if (candRoles.primary === 'tank') { score += 15; notes.push('frontline control style') }
+    } else if (mainRoles.primary === 'tank') {
+        if (candRoles.primary === 'dps') { score += 20; notes.push('tank + carry core') }
+        if (candRoles.primary === 'support') { score += 15; notes.push('very grindy, sustain-heavy core') }
+    }
+
+    // 2) Manual-based mechanics synergy (using knowledgeEngine mechanics)
+    const mMech = mainProfile.mechanics
+    const cMech = candProfile.mechanics
+
+    // a) Stun + setup: control protects setup / DoT
+    if (mMech.stun > 0 && cMech.setup > 0) {
+        score += 15
+        notes.push('your stuns give them safe setup turns')
+    }
+    if (mMech.setup > 0 && cMech.stun > 0) {
+        score += 15
+        notes.push('their stuns give your setup time to stack')
+    }
+
+    // b) Affliction / stacking + control: they sit and burn
+    if (mMech.stacking > 0 && cMech.stun > 0) {
+        score += 10
+        notes.push('control keeps enemies under your DoTs/affliction')
+    }
+    if (cMech.stacking > 0 && mMech.stun > 0) {
+        score += 10
+        notes.push('your control keeps enemies under their DoTs/affliction')
+    }
+
+    // c) Anti-tank tools + DoT / affliction
+    if (mMech.antiTank > 0 && cMech.stacking > 0) {
+        score += 10
+        notes.push('anti-tank tools plus DoTs to break defensive teams')
+    }
+    if (cMech.antiTank > 0 && mMech.stacking > 0) {
+        score += 10
+        notes.push('DoTs plus anti-tank tools to punish DR/DD')
+    }
+
+    // d) Energy synergies: battery + high-cost carry
+    const mKnowledge = mainProfile.knowledge
+    const cKnowledge = candProfile.knowledge
+    const mainHasHighCost = mKnowledge?.skillProfiles?.some(sk =>
+        sk.tags.includes('highCost') || sk.tags.includes('finisher')
+    )
+    const candHasEnergySupport = cKnowledge?.hooks?.energySupport?.length > 0
+
+    if (mainHasHighCost && candHasEnergySupport) {
+        score += 20
+        notes.push('they act as an energy battery for your expensive skills')
+    }
+
+    // e) Protect-the-carry: invul / shields / heals around a DPS
+    const mainIsCarry = mainHasHighCost || (mainRoles.primary === 'dps' && mMech.piercing + mMech.stacking > 0)
+    const candHasProtection =
+        cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0
+
+    if (mainIsCarry && candHasProtection) {
+        score += 20
+        notes.push('they can keep your main threat alive (invul / DR / cleanse)')
+    }
+
+    // 3) Energy color complementarity (avoid identical heavy-color spam)
+    const mainEnergy = { green: 0, red: 0, blue: 0, white: 0 }
+    const candEnergy = { green: 0, red: 0, blue: 0, white: 0 }
+
+    const countColors = (char, bucket) => {
+        (char.skills || []).forEach(skill => {
+            (skill.energy || []).forEach(e => {
+                if (e && e !== 'black' && e !== 'none' && bucket[e] !== undefined) {
+                    bucket[e]++
+                }
+            })
+        })
+    }
+    countColors(mainChar, mainEnergy)
+    countColors(candidate, candEnergy)
+
+    let energyPenalty = 0
+    Object.keys(mainEnergy).forEach(color => {
+        if (mainEnergy[color] >= 4 && candEnergy[color] >= 3) {
+            energyPenalty += 10
+        }
+    })
+    score -= energyPenalty
+    if (energyPenalty > 0) {
+        notes.push('shares a very heavy energy color load with the main')
+    }
+
+    return { score, notes }
+}
+
+/**
+ * Build-around helper:
+ *  - mainChar: the character you want to build around (object with id, name, skills)
+ *  - allCharacters: full roster (characters.json)
+ *  - ownedIds: optional Set or array of ids you actually own (for Collection mode)
+ */
+export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = null, maxResults = 15) => {
+    if (!mainChar) return []
+
+    const ownedSet = ownedIds
+        ? new Set(Array.isArray(ownedIds) ? ownedIds : Array.from(ownedIds))
+        : null
+
+    const candidates = allCharacters.filter(c => c.id !== mainChar.id)
+        .filter(c => !ownedSet || ownedSet.has(c.id))
+
+    const scored = candidates.map(c => {
+        const { score, notes } = scorePartnerFit(mainChar, c)
+        return {
+            ...c,
+            buildAroundScore: score,
+            buildAroundNotes: notes
+        }
+    })
+
+    return scored
+        .sort((a, b) => b.buildAroundScore - a.buildAroundScore)
+        .slice(0, maxResults)
+}
