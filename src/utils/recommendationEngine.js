@@ -1,3 +1,5 @@
+import { getCharacterKnowledge } from './knowledgeEngine'
+
 // --- CONSTANTS & DICTIONARIES ---
 
 // Basic Roles
@@ -33,6 +35,18 @@ const MECHANIC_PATTERNS = {
     // V4: Advanced Mechanics
     achievement: /^Achievement:|Achievement,/i,
     setup: /For \d+ turns?,.*will/i
+}
+
+const MECHANIC_ALIAS = {
+    cleanse: 'cleanse',
+    energyGain: 'energyGen',
+    invulnerable: 'invulnerable',
+    counter: 'counter',
+    stun: 'stun',
+    aoe: 'aoe',
+    dot: 'stacking',
+    detonate: 'stacking',
+    execute: 'antiTank'
 }
 
 // Synergy Matrix: Defines how Mechanic A (Row) interacts with Mechanic B (Column)
@@ -99,9 +113,72 @@ const DEFAULT_ANALYSIS = {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
+const buildTeamHookProfile = (members = []) => {
+    const hooks = { setups: 0, payoffs: 0, sustain: 0, energySupport: 0, highCostThreats: 0 }
+    const hookNames = { setups: new Set(), payoffs: new Set(), sustain: new Set(), energySupport: new Set(), highCostThreats: new Set() }
+
+    members.forEach(member => {
+        const knowledge = member?.id ? getCharacterKnowledge(member.id) : null
+        if (!knowledge) return
+
+        const hasHighCost = knowledge.skillProfiles.some(skill => skill.tags.includes('highCost') || skill.tags.includes('finisher'))
+        if (hasHighCost) {
+            hooks.highCostThreats += 1
+            hookNames.highCostThreats.add(knowledge.name)
+        }
+
+        if (knowledge.hooks) {
+            if (knowledge.hooks.setups?.length) {
+                hooks.setups += knowledge.hooks.setups.length
+                hookNames.setups.add(knowledge.name)
+            }
+            if (knowledge.hooks.payoffs?.length) {
+                hooks.payoffs += knowledge.hooks.payoffs.length
+                hookNames.payoffs.add(knowledge.name)
+            }
+            if (knowledge.hooks.sustain?.length) {
+                hooks.sustain += knowledge.hooks.sustain.length
+                hookNames.sustain.add(knowledge.name)
+            }
+            if (knowledge.hooks.energySupport?.length) {
+                hooks.energySupport += knowledge.hooks.energySupport.length
+                hookNames.energySupport.add(knowledge.name)
+            }
+        }
+    })
+
+    return { hooks, hookNames }
+}
+
+const evaluateHookSynergy = (teamProfile, candidateKnowledge) => {
+    if (!candidateKnowledge) return { hookScore: 0, notes: [] }
+    const notes = []
+    let hookScore = 0
+
+    if (candidateKnowledge.hooks.setups?.length && teamProfile.hooks.payoffs > 0) {
+        hookScore += candidateKnowledge.hooks.setups.length * 6
+        notes.push('Setup pieces found payoffs already on the board')
+    }
+    if (candidateKnowledge.hooks.payoffs?.length && teamProfile.hooks.setups > 0) {
+        hookScore += candidateKnowledge.hooks.payoffs.length * 6
+        notes.push('Finisher skills can cash in existing marks/DoTs')
+    }
+    if (candidateKnowledge.hooks.energySupport?.length && teamProfile.hooks.highCostThreats > 0) {
+        hookScore += candidateKnowledge.hooks.energySupport.length * 4
+        notes.push('Battery tools feeding expensive carries')
+    }
+    if (candidateKnowledge.hooks.sustain?.length && teamProfile.hooks.highCostThreats > 0) {
+        hookScore += candidateKnowledge.hooks.sustain.length * 3
+        notes.push('Protection/cleanse to keep finishers alive')
+    }
+
+    return { hookScore, notes }
+}
+
 // --- ANALYSIS LOGIC ---
 
 export const analyzeCharacter = (char) => {
+    const knowledge = char?.id ? getCharacterKnowledge(char.id) : null
     const roles = { tank: 0, support: 0, control: 0, dps: 0 };
     const mechanics = {
         counter: 0, invisible: 0, immunity: 0, piercing: 0, punisher: 0, antiTank: 0, cleanse: 0,
@@ -115,7 +192,21 @@ export const analyzeCharacter = (char) => {
         triggerOnAction: [], triggerOnHit: [], achievement: [], setup: []
     };
 
-    if (!char.skills) return { roles, mechanics, mechanicDetails };
+    if (knowledge) {
+        Object.keys(roles).forEach(r => roles[r] += knowledge.roles?.[r] || 0)
+        Object.keys(mechanics).forEach(m => mechanics[m] += knowledge.mechanics?.[m] || 0)
+
+        knowledge.skillProfiles.forEach(skill => {
+            skill.tags.forEach(tag => {
+                const mapped = MECHANIC_ALIAS[tag]
+                if (mapped && mechanicDetails[mapped] !== undefined) {
+                    mechanicDetails[mapped].push(`${skill.name} (${tag})`)
+                }
+            })
+        })
+    }
+
+    if (!char.skills) return { roles, mechanics, mechanicDetails, knowledge };
 
     char.skills.forEach(skill => {
         const desc = (skill.description || '').toLowerCase();
@@ -161,13 +252,15 @@ export const analyzeCharacter = (char) => {
         }
     });
 
-    return { roles, mechanics, mechanicDetails };
+    return { roles, mechanics, mechanicDetails, knowledge };
 };
 
 // --- SYNERGY CALCULATION ---
 
 export const calculateSynergy = (team, candidate) => {
     let score = 0;
+    const teamHookProfile = buildTeamHookProfile(team)
+    const candidateKnowledge = candidate?.id ? getCharacterKnowledge(candidate.id) : null
     const teamProfile = {
         roles: { tank: 0, support: 0, control: 0, dps: 0 },
         mechanics: {
@@ -261,7 +354,12 @@ export const calculateSynergy = (team, candidate) => {
         if (teamProfile.energy[e] === 0) score += 5;
     });
 
-    return score;
+    const hookResult = evaluateHookSynergy(teamHookProfile, candidateKnowledge)
+    score += hookResult.hookScore
+
+    const normalizedScore = Math.round(score / Math.max(team.length + 1, 2))
+
+    return normalizedScore;
 };
 
 // --- HELPERS ---
@@ -372,6 +470,7 @@ export const analyzeTeam = (team) => {
     const dpeValues = []
     const sustain = { healingTools: 0, mitigationTools: 0, cleanseTools: 0 }
     const warnings = []
+    const { hooks: hookCounts, hookNames } = buildTeamHookProfile(team)
 
     // V4: Energy Flexibility Tracking
     let lowCostSkillCount = 0
@@ -492,9 +591,21 @@ export const analyzeTeam = (team) => {
     const tempo = estimateTempo(team, maxDPE)
 
     // Synergy Score Calculation
+    const comboHighlights = []
+    if (hookCounts.setups > 0 && hookCounts.payoffs > 0) {
+        comboHighlights.push(`Setup → Payoff chain (${Array.from(hookNames.setups).join(', ')} into ${Array.from(hookNames.payoffs).join(', ')})`)
+    }
+    if (hookCounts.energySupport > 0 && hookCounts.highCostThreats > 0) {
+        comboHighlights.push(`Energy battery online (${Array.from(hookNames.energySupport).join(', ')} feeding ${Array.from(hookNames.highCostThreats).join(', ')})`)
+    }
+    if (hookCounts.sustain > 0 && hookCounts.highCostThreats > 0) {
+        comboHighlights.push(`Protect-the-carry tools (${Array.from(hookNames.sustain).join(', ')} covering ${Array.from(hookNames.highCostThreats).join(', ')})`)
+    }
+
     const synergyHighlights = []
     if (mechanics.immunity > 0 && roles.dps >= 2) synergyHighlights.push('Immunity protects Carries')
     if (mechanics.stun > 0 && mechanics.setup > 0) synergyHighlights.push('Stun allows safe setup')
+    synergyHighlights.push(...comboHighlights)
 
     // V4: Energy Flexibility Modifiers
     let energyFlexibilityBonus = 0
@@ -504,13 +615,23 @@ export const analyzeTeam = (team) => {
     if (avgCost >= 2.2) energyFlexibilityBonus -= clamp(Math.round((avgCost - 2) * 10), 10, 20)
     if (colorSpread <= 2 || dominantEnergyRatio >= 0.55) energyFlexibilityBonus -= 10
 
+    const totalRoles = Object.values(roles).reduce((a, b) => a + b, 0)
+    const totalMechanics = Object.values(mechanics).reduce((a, b) => a + b, 0)
+    const slotBaseline = Math.max(team.length, 1)
+    const roleDensity = totalRoles / (slotBaseline * 2)
+    const mechanicDensity = totalMechanics / (slotBaseline * 3)
+    const comboScore = Math.min(hookCounts.setups, hookCounts.payoffs) * 6
+        + Math.min(hookCounts.energySupport, hookCounts.highCostThreats) * 4
+        + Math.min(hookCounts.sustain, hookCounts.highCostThreats) * 3
+
     const synergyScore = clamp(
         Math.round(
-            (Object.values(roles).reduce((a, b) => a + b, 0) * 5) +
-            (Object.values(mechanics).reduce((a, b) => a + b, 0) * 2) +
-            (tempo.pressureRating * 0.3) +
-            energyFlexibilityBonus -
-            (warnings.length * 15) // Penalize warnings
+            (roleDensity * 30) +
+            (mechanicDensity * 20) +
+            (tempo.pressureRating * 0.25) +
+            energyFlexibilityBonus +
+            Math.min(comboScore, 25) -
+            (warnings.length * 12)
         ),
         0,
         100
