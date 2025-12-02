@@ -430,9 +430,11 @@ const estimateTempo = (team, maxDPE) => {
         burstEnergy += bestSkill.energyCost
         controlPieces += bestSkill.control
     })
-    const baseHP = 100
-    const estimatedKillTurns = burstDamage > 0 ? Math.max(1, Math.ceil(baseHP / Math.max(1, burstDamage))) : null
-    const costToKill = burstDamage > 0 ? Math.max(1, Math.ceil((baseHP / Math.max(1, burstDamage)) * Math.max(burstEnergy, team.length))) : null
+    const enemyHP = 100 // HP per enemy
+    const enemyCount = 3 // Standard team size
+    const totalEnemyHP = enemyHP * enemyCount // 300 total HP to clear
+    const estimatedKillTurns = burstDamage > 0 ? Math.max(1, Math.ceil(totalEnemyHP / Math.max(1, burstDamage))) : null
+    const costToKill = burstDamage > 0 ? Math.max(1, Math.ceil((totalEnemyHP / Math.max(1, burstDamage)) * Math.max(burstEnergy, team.length))) : null
     const controlBonus = clamp(controlPieces * 8, 0, 20)
     const pressureRating = clamp(Math.round((burstDamage / 120) * 55 + (maxDPE / 45) * 25 + controlBonus), 0, 100)
     return { burstDamage, burstEnergy, estimatedKillTurns, costToKill, pressureRating }
