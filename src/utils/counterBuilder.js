@@ -1,16 +1,26 @@
 /**
- * COUNTER BUILDER V3 - Manual-Based Logic
- * No simulation, just feature extraction + matchup rules from game manual
+ * COUNTER BUILDER - Manual-Based Logic
+ * Uses tag-based counter logic from recommendationEngine
  */
 
-import { buildCounterTeamManual } from './matchupLogic.js';
+import { recommendCounterCandidatesByTags } from './recommendationEngine.js';
 
 /**
- * Main counter builder - delegates to manual-based logic
+ * Main counter builder - uses manual-based tag logic
  */
 export const buildCounterTeam = (enemyTeam, allCharacters, ownedCharacterIds = [], currentTeam = []) => {
-    return buildCounterTeamManual(enemyTeam, allCharacters, ownedCharacterIds, currentTeam);
-};
+    const results = recommendCounterCandidatesByTags(
+        enemyTeam,
+        allCharacters,
+        ownedCharacterIds,
+        currentTeam,
+        10
+    );
 
-// Export for backwards compatibility
-export { buildCounterTeamManual };
+    // Map to expected format (counterScore, counterReason)
+    return results.map(char => ({
+        ...char,
+        counterScore: char.counterScoreByTags,
+        counterReason: char.counterReasonByTags
+    }));
+};

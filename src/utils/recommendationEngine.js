@@ -902,3 +902,217 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
         .sort((a, b) => b.buildAroundScore - a.buildAroundScore)
         .slice(0, maxResults)
 }
+
+// --- COUNTER LOGIC (MANUAL-DRIVEN / TAG-BASED) -------------------------
+
+/**
+ * Derive what kind of tools we NEED against an enemy team,
+ * based on their mechanics coming from analyzeTeam(enemyTeam).
+ *
+ * Manual mapping:
+ * - immunity  ≈ damage reduction / destructible defense / unpierceable DR
+ * - invulnerable ≈ invulnerability tools (targeting denial)
+ * - stacking ≈ affliction / DoT / health-steal style attrition
+ * - antiTank ≈ piercing / finishers that ignore or break DR/DD
+ * - stun / counter ≈ hard control
+ * - cleanse ≈ heal / cleanse / sustain vs affliction & DoTs
+ * - energyGen ≈ extra energy generation / ramp tools
+ */
+const deriveCounterNeeds = (enemyMechanics) => {
+    const needs = {
+        antiTank: 0,
+        stacking: 0,
+        cleanse: 0,
+        stun: 0,
+        immunity: 0,
+        counter: 0,
+        energyGen: 0
+    };
+
+    // Baseline: some control, some anti-tank, some sustain is always good
+    needs.stun += 1;
+    needs.antiTank += 1;
+    needs.cleanse += 1;
+
+    // Tanky / DR-heavy / invul spam: we want affliction & anti-tank
+    if ((enemyMechanics.immunity || 0) >= 2 || (enemyMechanics.invulnerable || 0) >= 2) {
+        needs.antiTank += 3;   // piercing / finishers
+        needs.stacking += 2;   // affliction / DoT
+    }
+
+    // Heavy affliction / DoT pressure: we want cleanse + some control
+    if ((enemyMechanics.stacking || 0) >= 3) {
+        needs.cleanse += 3;
+        needs.stun += 1;
+    }
+
+    // Stun / hard control spam: we want immunity / invul / counters
+    if ((enemyMechanics.stun || 0) >= 3 || (enemyMechanics.counter || 0) >= 2) {
+        needs.immunity += 3;   // DR / invul / ignore harmful
+        needs.counter += 2;    // reflect / counter back
+        needs.cleanse += 1;    // to clear harmful chains
+    }
+
+    // Big AoE damage: we want sustain + some mitigation
+    if ((enemyMechanics.aoe || 0) >= 3) {
+        needs.cleanse += 2;
+        needs.immunity += 1;
+    }
+
+    // High energy generation: we want pressure + some way to keep up
+    if ((enemyMechanics.energyGen || 0) >= 2) {
+        needs.stun += 2;       // slow their ramp
+        needs.counter += 1;
+        needs.energyGen += 1;  // or keep up with them
+    }
+
+    return needs;
+};
+
+/**
+ * Score how well a single candidate's mechanics match our "needs".
+ * This works at the CHARACTER level (not full team),
+ * which is how the CounterBuilder UI currently suggests picks.
+ */
+const scoreCounterCandidateVsNeeds = (candidateMechanics, needs) => {
+    let score = 0;
+    const contributions = {};
+
+    const contribute = (key, weight = 1) => {
+        const have = candidateMechanics[key] || 0;
+        const need = needs[key] || 0;
+        if (have <= 0 || need <= 0) return;
+        const contrib = Math.min(have, need) * weight;
+        score += contrib;
+        contributions[key] = contrib;
+    };
+
+    // Heavier weights for the most important counter mechanics
+    contribute('antiTank', 4);   // vs DR/DD/invul walls
+    contribute('stacking', 3);   // affliction / DoT vs tanks
+    contribute('cleanse', 3);    // vs affliction & AoE pressure
+    contribute('stun', 3);       // generic control / tempo
+    contribute('immunity', 2);   // survive stuns / DoT
+    contribute('counter', 2);    // reflect key skills
+    contribute('energyGen', 2);  // keep up in long games
+
+    return { score, contributions };
+};
+
+/**
+ * Tag-based counter score for a single candidate vs an enemy team.
+ * Optionally considers currentTeam synergy.
+ */
+export const scoreCounterCandidateByTags = (candidate, enemyTeam, currentTeam = []) => {
+    if (!candidate || !enemyTeam || enemyTeam.length === 0) return 0;
+
+    // 1) What is the enemy actually doing?
+    const enemyAnalysis = analyzeTeam(enemyTeam);
+    const enemyMechanics = enemyAnalysis.mechanics || {};
+    const needs = deriveCounterNeeds(enemyMechanics);
+
+    // 2) What does this candidate bring?
+    const candidateProfile = analyzeCharacter(candidate);
+    const { score: counterFitScore } = scoreCounterCandidateVsNeeds(candidateProfile.mechanics, needs);
+
+    // 3) Optional: how well do they fit with the current team?
+    let synergyBonus = 0;
+    if (currentTeam && currentTeam.length > 0) {
+        const teamAnalysis = analyzeTeam([...currentTeam, candidate]);
+        const synergyScore = teamAnalysis.synergyScore || 0;
+        // We downscale synergy so it doesn't overshadow the counter fit
+        synergyBonus = synergyScore * 0.25;
+    }
+
+    const finalScore = Math.round((counterFitScore * 10) + synergyBonus);
+    return Math.max(0, finalScore);
+};
+
+/**
+ * Human-readable explanation for WHY a candidate is a good counter
+ * using manual-based tags (affliction vs DR, cleanse vs DoT, etc.).
+ */
+export const explainCounterFitByTags = (candidate, enemyTeam) => {
+    if (!candidate || !enemyTeam || enemyTeam.length === 0) {
+        return 'No enemy team to counter.';
+    }
+
+    const enemyAnalysis = analyzeTeam(enemyTeam);
+    const enemyMechanics = enemyAnalysis.mechanics || {};
+    const needs = deriveCounterNeeds(enemyMechanics);
+    const profile = analyzeCharacter(candidate);
+    const m = profile.mechanics || {};
+
+    const reasons = [];
+
+    if ((needs.antiTank || 0) > 0 && (m.antiTank || m.piercing || 0) > 0) {
+        reasons.push('✓ Anti-tank tools vs their DR / defenses');
+    }
+    if ((needs.stacking || 0) > 0 && (m.stacking || 0) > 0) {
+        reasons.push('✓ Affliction / DoT pressure vs defensive teams');
+    }
+    if ((needs.cleanse || 0) > 0 && (m.cleanse || 0) > 0) {
+        reasons.push('✓ Cleanse / sustain vs their affliction / DoT');
+    }
+    if ((needs.stun || 0) > 0 && (m.stun || 0) > 0) {
+        reasons.push('✓ Crowd control to slow their combo');
+    }
+    if ((needs.immunity || 0) > 0 && ((m.immunity || 0) > 0 || (m.invulnerable || 0) > 0)) {
+        reasons.push('✓ Damage reduction / invulnerability vs their control');
+    }
+    if ((needs.counter || 0) > 0 && (m.counter || 0) > 0) {
+        reasons.push('✓ Counters / reflection vs key enemy skills');
+    }
+    if ((needs.energyGen || 0) > 0 && (m.energyGen || 0) > 0) {
+        reasons.push('✓ Extra energy to keep up in longer matches');
+    }
+
+    if (!reasons.length) {
+        reasons.push('General good mechanics and stats vs this team');
+    }
+
+    return reasons.join(' | ');
+};
+
+/**
+ * High-level helper:
+ * Recommend individual counter PICKS (characters) against an enemy team,
+ * using manual-tag-based logic instead of the simulation engine.
+ *
+ * - enemyTeam: array of 1–3 enemy character objects
+ * - allCharacters: full roster (characters.json)
+ * - ownedIds: optional array/Set of character IDs you actually own
+ */
+export const recommendCounterCandidatesByTags = (
+    enemyTeam,
+    allCharacters,
+    ownedIds = null,
+    currentTeam = [],
+    maxResults = 15
+) => {
+    if (!enemyTeam || enemyTeam.length === 0) return [];
+
+    const ownedSet = ownedIds
+        ? new Set(Array.isArray(ownedIds) ? ownedIds : Array.from(ownedIds))
+        : null;
+
+    const availableChars = allCharacters.filter(c =>
+        (!ownedSet || ownedSet.has(c.id)) &&
+        !enemyTeam.find(e => e.id === c.id) &&
+        !currentTeam.find(t => t.id === c.id)
+    );
+
+    const scored = availableChars.map(char => {
+        const score = scoreCounterCandidateByTags(char, enemyTeam, currentTeam);
+        const reason = explainCounterFitByTags(char, enemyTeam);
+        return {
+            ...char,
+            counterScoreByTags: score,
+            counterReasonByTags: reason
+        };
+    });
+
+    return scored
+        .sort((a, b) => b.counterScoreByTags - a.counterScoreByTags)
+        .slice(0, maxResults);
+};
