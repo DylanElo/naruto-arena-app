@@ -18,7 +18,7 @@ const MECHANIC_PATTERNS = {
 
     // Effects
     skillSteal: /skill will be replaced|copy/i,
-    stacking: /this skill stacks|damage increases/i,
+    stacking: /(this skill stacks|damage increases|affliction damage|damage (?:each|per) turn|damage for \d+ turns)/i,
     aoe: /damage to all|all enemies/i,
     energyGen: /gain \d+ .* energy|additional energy/i,
 
@@ -369,6 +369,24 @@ const extractSkillDamage = (skill) => {
     if (typeof skill.damage === 'number' && skill.damage > 0) return skill.damage
     if (skill.description) {
         const desc = skill.description.toLowerCase()
+
+        // Capture periodic/affliction damage with duration (e.g., 15 affliction damage for 3 turns)
+        const dotMatch = desc.match(/(\d+)\s+(?:affliction )?damage[^.]*?for\s+(\d+)\s+turns?/)
+        if (dotMatch && dotMatch[1] && dotMatch[2]) {
+            const perTick = parseInt(dotMatch[1], 10)
+            const turns = parseInt(dotMatch[2], 10)
+            if (!Number.isNaN(perTick) && !Number.isNaN(turns)) {
+                return perTick * Math.max(1, turns)
+            }
+        }
+
+        // Permanent or "each turn" afflictions without explicit end: assume 3-turn expectation
+        const permanentDotMatch = desc.match(/(\d+)\s+(?:affliction )?damage[^.]*each turn.*permanent/)
+        if (permanentDotMatch && permanentDotMatch[1]) {
+            const perTick = parseInt(permanentDotMatch[1], 10)
+            if (!Number.isNaN(perTick)) return perTick * 3
+        }
+
         const match = desc.match(/(\d+)\s*(?:damage|dmg)/)
         if (match && match[1]) return parseInt(match[1], 10)
     }
