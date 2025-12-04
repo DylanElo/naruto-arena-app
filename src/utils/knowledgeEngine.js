@@ -1,67 +1,28 @@
 import characters from '../data/characters.json'
 
-// EFFECT_PATTERNS is where we translate raw skill text into high-level tags.
-// The patterns below are grounded in the Naruto-Arena terminology:
-//
-// - Damage / Piercing Damage / Affliction Damage / Health Steal
-// - Damage Reduction / Unpierceable Damage Reduction / Destructible Defense
-// - Invulnerable / Stun / Counter / Reflect / Energy removal / Energy gain
-// - Mark / Seal / Tag + follow-up effects (detonate / execute)
-// - Multi-turn setups and damage-over-time
-//
+// EFFECT_PATTERNS is where we translate raw skill text into high-level tags
+// grounded in the Naruto-Arena manual terminology.
 const EFFECT_PATTERNS = {
-  // --- CORE CONTROL / DISRUPTION ---
-
-  // Stun: "This character is stunned", "stuns their skills", "unable to use skills"
-  stun: /\bstun(?:ned|s)?\b|unable to use (?:any )?skills?|cannot use (?:any )?skills?/i,
-
-  // Healing in the manual sense: "heals X health", "recovers X health"
+  // Core control / disruption
+  stun: /\bstun(?:ned)?\b|unable to use (?:any )?skills?|cannot use (?:any )?skills?/i,
   heal: /\bheal(?:s|ed)?\b|recovers? \d+ health|restore[s]? \d+ health/i,
-
-  // Cleanse: explicitly removing harmful effects or skills
-  cleanse: /remove[s]? (?:all )?harmful (?:effects|skills)|remove[s]? all harmful affliction/i,
-
-  // Shields / mitigation: DR + unpierceable DR + destructible defense
-  shield: /damage reduction|unpierceable damage reduction|destructible defense|gains? \d+ points? of damage reduction/i,
-
-  // Invulnerability: cannot be targeted by new harmful skills
+  cleanse: /remove[s]? (?:all )?harmful (?:effects|skills)|cure[s]? all harmful/i,
+  shield: /damage reduction|unpierceable damage reduction|destructible defense|gains? \d+ (?:points? of )?damage reduction/i,
   invulnerable: /\binvulnerable\b/i,
-
-  // Counter / reflect: negate or bounce an incoming skill
   counter: /\bcounter(?:s|ed)?\b|will counter\b|reflect(?:s|ed)?\b/i,
-
-  // Area-of-effect: affects multiple characters
   aoe: /all enemies|all allies|all characters|enemy team|entire enemy team/i,
-
-  // Energy gain (random or specific)
   energyGain: /gain(?:s)? \d+ (?:random )?energy\b|will gain \d+ (?:random )?energy\b/i,
-
-  // Energy denial (remove, lose, steal, drain)
   energyDeny: /remove[s]? \d+ (?:random )?energy|lose[s]? \d+ (?:random )?energy|will lose \d+ (?:random )?energy|steal[s]? \d+ (?:random )?energy|drain[s]? \d+ (?:random )?energy/i,
-
-  // Cooldown increase
   cooldownIncrease: /cooldown(?:s)? (?:of .* )?(?:is|are) increased|cooldown will be increased|will have their cooldown increased/i,
-
-  // Mark / tag / seal
   mark: /\bmark(?:s|ed)?\b|\btag(?:s|ged)?\b|\bseal(?:s|ed)?\b/i,
-
-  // Detonate / conditional extra damage based on a prior effect or mark
   detonate: /deal[s]? (?:\d+ )?additional damage|will deal \d+ additional damage|if (?:the )?target is (?:stunned|marked|affected)|if used on an enemy affected by/i,
-
-  // Damage over time & Affliction: multi-turn damage or explicit affliction
   dot: /affliction damage|damage to (?:one|all) enem(?:y|ies) for \d+ turns?|take[s]? \d+ damage for \d+ turns?|damage for \d+ turns?/i,
-
-  // Multi-turn setups, buffs that prepare future effects
   setup: /for \d+ turns?, .* will|after \d+ turns?, .* will|during this time, .* will|for the rest of the game, .* will/i,
-
-  // Execute / anti-tank: conditional big finisher (often vs stunned / affected targets)
   execute: /if the target is stunned|if the target is affected by|instantly kill[s]?|if this skill is used on an enemy below \d+ health/i,
-
-  // Sustain helpers: lifelink and health steal
-  sustain: /lifelink|health is stolen|steals? \d+ health/i
+  sustain: /health is stolen|steals? \d+ health|health steal|lifelink/i
 }
 
-// Map tags -> coarse roles (soft priors; main logic is in recommendationEngine)
+// Map basic tags to coarse roles
 const ROLE_FROM_TAG = {
   heal: 'support',
   cleanse: 'support',
@@ -82,12 +43,12 @@ const ROLE_FROM_TAG = {
   execute: 'dps'
 }
 
-// Map tags -> mechanics buckets used by the analyzer
+// Map tags to mechanics buckets used by the analyzer
 const MECHANIC_FROM_TAG = {
   // Defensive / sustain
-  heal: 'cleanse',          // "cleanse" bucket doubles as sustain tools in the analyzer
+  heal: 'cleanse',
   cleanse: 'cleanse',
-  shield: 'immunity',       // general mitigation / tankiness
+  shield: 'immunity',
   invulnerable: 'invulnerable',
   sustain: 'cleanse',
 
@@ -114,7 +75,7 @@ const MECHANIC_FROM_TAG = {
 }
 
 // Detect per-skill tags using the manual vocabulary
-function detectSkillTags(skill = {}) {
+function detectSkillTags (skill = {}) {
   const descRaw = skill.description || ''
   const desc = descRaw.toLowerCase()
   const classes = (skill.classes || '').toLowerCase()
@@ -127,7 +88,7 @@ function detectSkillTags(skill = {}) {
 
   // 2) Manual-driven extra logic
 
-  // Generic damage presence
+  // Any direct damage mention
   if (desc.includes(' damage')) {
     tags.add('damage')
   }
@@ -138,7 +99,7 @@ function detectSkillTags(skill = {}) {
     tags.add('affliction')
   }
 
-  // Explicit multi-turn damage that might not say "affliction"
+  // Explicit multi-turn damage (even if it didn't trigger dot regex)
   if (
     /damage to (?:one|all) enem(?:y|ies) for \d+ turns?/.test(desc) ||
     /take[s]? \d+ damage for \d+ turns?/.test(desc) ||
@@ -152,18 +113,18 @@ function detectSkillTags(skill = {}) {
     desc.includes('piercing damage') ||
     /ignores? damage reduction|unable to reduce damage/i.test(desc)
   ) {
-    tags.add('execute')    // treated as anti-tank
+    tags.add('execute')
     tags.add('piercing')
   }
 
-  // Health steal / lifelink are both sustain and slow-kill tools
+  // Health steal / lifelink
   if (/health is stolen|steals? \d+ health|health steal|lifelink/i.test(desc)) {
     tags.add('sustain')
     tags.add('healthSteal')
-    tags.add('dot') // usually works over time / through DR
+    tags.add('dot') // often behaves like attrition
   }
 
-  // Strategic energy manipulation not already caught
+  // Strategic energy manipulation (fallback if EFFECT_PATTERNS missed)
   if (classes.includes('strategic') && desc.includes('energy')) {
     if (/gain[s]? \d+/.test(desc)) tags.add('energyGain')
     if (/remove[s]? \d+|lose[s]? \d+|steal[s]? \d+|drain[s]? \d+/.test(desc)) tags.add('energyDeny')
@@ -175,14 +136,13 @@ function detectSkillTags(skill = {}) {
     tags.add('setup')
   }
 
-  // Class-based hints:
-  // Affliction class reinforces dot/stacking
+  // Affliction class reinforces stacking
   if (classes.includes('affliction')) {
     tags.add('dot')
     tags.add('affliction')
   }
 
-  // Strategic skills that purely buff / prep things are usually setups
+  // Purely strategic multi-turn buffs are setups
   if (
     classes.includes('strategic') &&
     !desc.includes('damage') &&
@@ -191,18 +151,17 @@ function detectSkillTags(skill = {}) {
     tags.add('setup')
   }
 
-  // Energy skills that cost a lot are marked as highCost threats (for synergy matrix)
+  // Energy cost based tags
   const energyCost = (skill.energy || []).filter(e => e && e.toLowerCase() !== 'none').length
   if (energyCost >= 2) tags.add('highCost')
   if (energyCost === 0) tags.add('free')
 
-  // Big one-shot finishers: any single hit ≥ 40 damage
+  // Large one-shot finisher
   const damageMatch = desc.match(/(\d+)\s+damage/)
   if (damageMatch) {
     const amount = Number(damageMatch[1])
-    if (amount >= 40) {
+    if (!Number.isNaN(amount) && amount >= 40) {
       tags.add('finisher')
-      // Most big hits are also good at breaking through tanks
       tags.add('execute')
     }
   }
@@ -211,13 +170,13 @@ function detectSkillTags(skill = {}) {
 }
 
 // Aggregate tags -> per-character coarse roles
-function aggregateRoles(tags) {
+function aggregateRoles (tags) {
   return tags.reduce(
     (acc, tag) => {
       const role = ROLE_FROM_TAG[tag]
       if (role) acc[role] = (acc[role] || 0) + 1
 
-      // Any generic damage / finisher also pushes towards DPS
+      // Any generic damage / finisher pushes DPS
       if (tag === 'damage' || tag === 'finisher') acc.dps = (acc.dps || 0) + 1
       return acc
     },
@@ -225,8 +184,8 @@ function aggregateRoles(tags) {
   )
 }
 
-// Aggregate tags -> mechanics buckets used by the analyzer
-function aggregateMechanics(tags) {
+// Aggregate tags -> mechanics buckets
+function aggregateMechanics (tags) {
   const base = {
     counter: 0,
     invisible: 0,
@@ -249,11 +208,11 @@ function aggregateMechanics(tags) {
 
   tags.forEach(tag => {
     const mechanic = MECHANIC_FROM_TAG[tag]
-    if (mechanic && base[mechanic] !== undefined) {
+    if (mechanic && Object.prototype.hasOwnProperty.call(base, mechanic)) {
       base[mechanic] += 1
     }
 
-    // Redundant safeguard: any dot effect should always count as stacking
+    // Redundant safeguard: any dot effect always counts as stacking
     if (tag === 'dot') {
       base.stacking += 1
     }
@@ -262,7 +221,8 @@ function aggregateMechanics(tags) {
   return base
 }
 
-export function buildKnowledgeBase(charList = characters) {
+// Build knowledge base from characters.json
+export function buildKnowledgeBase (charList = characters) {
   const knowledge = {}
 
   charList.forEach(char => {
@@ -281,8 +241,8 @@ export function buildKnowledgeBase(charList = characters) {
     const mechanics = aggregateMechanics(combinedTags)
 
     const hooks = {
-      setups: combinedTags.filter(tag => ['setup', 'mark', 'dot'].includes(tag)),
-      payoffs: combinedTags.filter(tag => ['detonate', 'execute', 'finisher'].includes(tag)),
+      setups: combinedTags.filter(tag => ['setup', 'mark', 'dot', 'affliction'].includes(tag)),
+      payoffs: combinedTags.filter(tag => ['detonate', 'execute', 'finisher', 'piercing'].includes(tag)),
       sustain: combinedTags.filter(tag => ['heal', 'cleanse', 'shield', 'invulnerable', 'sustain'].includes(tag)),
       energySupport: combinedTags.filter(tag => tag === 'energyGain')
     }
@@ -303,6 +263,6 @@ export function buildKnowledgeBase(charList = characters) {
 
 export const CHARACTER_KNOWLEDGE = buildKnowledgeBase()
 
-export function getCharacterKnowledge(charId) {
+export function getCharacterKnowledge (charId) {
   return CHARACTER_KNOWLEDGE[charId]
 }
