@@ -14,7 +14,7 @@ const EFFECT_PATTERNS = {
   energyGain: /gain(?:s)? \d+ (?:random )?energy\b|will gain \d+ (?:random )?energy\b/i,
   energyDeny: /remove[s]? \d+ (?:random )?energy|lose[s]? \d+ (?:random )?energy|will lose \d+ (?:random )?energy|steal[s]? \d+ (?:random )?energy|drain[s]? \d+ (?:random )?energy/i,
   cooldownIncrease: /cooldown(?:s)? (?:of .* )?(?:is|are) increased|cooldown will be increased|will have their cooldown increased/i,
-  statusShield: /ignore[s]? all harmful effects(?: except (?:damage and )?energy cost changes?)?/i,
+  statusShield: /ignore[s]? all harmful effects(?: except (?:damage and )?(?:chakra|energy) cost changes?)?/i,
   antiAffliction: /ignore[s]? harmful non-conditional affliction damage/i,
   mark: /\bmark(?:s|ed)?\b|\btag(?:s|ged)?\b|\bseal(?:s|ed)?\b/i,
   detonate: /deal[s]? (?:\d+ )?additional damage|will deal \d+ additional damage|if (?:the )?target is (?:stunned|marked|affected)|if used on an enemy affected by/i,

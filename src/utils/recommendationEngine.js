@@ -723,6 +723,32 @@ export const recommendCounterCandidatesByTags = (
     .slice(0, maxResults)
 }
 
+// Dev-only sanity helper to verify new mechanics tagging
+export const logMechanicSanityChecks = (allCharacters = []) => {
+  const sampleNames = [
+    'Yamanaka Ino (S)',
+    'Mitarashi Anko (B)',
+    'Kankuro (S)'
+  ]
+
+  const findCharByName = (name) => allCharacters.find(c => c.name === name)
+
+  sampleNames.forEach(name => {
+    const char = findCharByName(name)
+    if (!char) {
+      console.log(`[sanity] ${name}: character not found in provided roster`)
+      return
+    }
+
+    const profile = analyzeCharacter(char)
+    const mech = profile.mechanics || {}
+
+    console.log(
+      `[sanity] ${name}: statusShield=${mech.statusShield || 0}, antiAffliction=${mech.antiAffliction || 0}`
+    )
+  })
+}
+
 // --- OPTIONAL: WRAP BASE ANALYSIS WITH SIMULATION ENGINE --------------------
 
 export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
