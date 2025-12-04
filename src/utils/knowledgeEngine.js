@@ -51,6 +51,7 @@ const MECHANIC_FROM_TAG = {
   shield: 'immunity',
   invulnerable: 'invulnerable',
   sustain: 'cleanse',
+  statusShield: 'statusShield',
 
   // Resource
   energyGain: 'energyGen',
@@ -200,6 +201,7 @@ function aggregateMechanics (tags) {
     skillSteal: 0,
     stun: 0,
     invulnerable: 0,
+    statusShield: 0,
     triggerOnAction: 0,
     triggerOnHit: 0,
     achievement: 0,
