@@ -20,6 +20,8 @@ const DEFAULT_ANALYSIS = {
     skillSteal: 0,
     stun: 0,
     invulnerable: 0,
+    statusShield: 0,
+    antiAffliction: 0,
     triggerOnAction: 0,
     triggerOnHit: 0,
     achievement: 0,
@@ -64,6 +66,8 @@ export const analyzeCharacter = (char) => {
         skillSteal: 0,
         stun: 0,
         invulnerable: 0,
+        statusShield: 0,
+        antiAffliction: 0,
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
@@ -91,6 +95,8 @@ export const analyzeCharacter = (char) => {
         skillSteal: 0,
         stun: 0,
         invulnerable: 0,
+        statusShield: 0,
+        antiAffliction: 0,
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
@@ -266,9 +272,11 @@ export const analyzeTeam = (team) => {
   let mechanicScore = 0
   if (mechanics.stun > 0) mechanicScore += 18
   if (mechanics.cleanse > 0) mechanicScore += 16
+  if (mechanics.statusShield > 0) mechanicScore += 16
   if (mechanics.stacking > 0) mechanicScore += 12
   if (mechanics.antiTank > 0 || mechanics.piercing > 0) mechanicScore += 12
   if (mechanics.immunity > 0 || mechanics.invulnerable > 0) mechanicScore += 10
+  if (mechanics.antiAffliction > 0) mechanicScore += 14
   if (mechanics.energyGen > 0) mechanicScore += 8
   if (mechanics.counter > 0) mechanicScore += 6
 
@@ -549,7 +557,9 @@ const deriveCounterNeeds = (enemyMechanics) => {
     stun: 0,
     immunity: 0,
     counter: 0,
-    energyGen: 0
+    energyGen: 0,
+    statusShield: 0,
+    antiAffliction: 0
   }
 
   // Baseline: some control, some anti-tank, some sustain is always useful
@@ -565,13 +575,15 @@ const deriveCounterNeeds = (enemyMechanics) => {
 
   // Heavy affliction / DoT pressure
   if ((enemyMechanics.stacking || 0) >= 3) {
-    needs.cleanse += 3
+    needs.antiAffliction += 3
+    needs.cleanse += 2
     needs.stun += 1
   }
 
   // Stun / hard control spam
   if ((enemyMechanics.stun || 0) >= 3 || (enemyMechanics.counter || 0) >= 2) {
-    needs.immunity += 3
+    needs.statusShield += 3
+    needs.immunity += 1
     needs.counter += 2
     needs.cleanse += 1
   }
@@ -609,6 +621,8 @@ const scoreCounterCandidateVsNeeds = (candidateMechanics, needs) => {
   apply('immunity', 2)
   apply('counter', 2)
   apply('energyGen', 2)
+  apply('statusShield', 4)
+  apply('antiAffliction', 4)
 
   return score
 }
@@ -656,11 +670,17 @@ export const explainCounterFitByTags = (candidate, enemyTeam) => {
   if ((needs.stun || 0) > 0 && m.stun) {
     reasons.push('✓ Crowd control to slow their combo')
   }
+  if ((needs.statusShield || 0) > 0 && m.statusShield) {
+    reasons.push('✓ Status shield to ignore harmful effects')
+  }
   if ((needs.immunity || 0) > 0 && (m.immunity || m.invulnerable)) {
     reasons.push('✓ DR / invulnerability vs their control')
   }
   if ((needs.counter || 0) > 0 && m.counter) {
     reasons.push('✓ Counters / reflection vs key enemy skills')
+  }
+  if ((needs.antiAffliction || 0) > 0 && m.antiAffliction) {
+    reasons.push('✓ Ignores harmful non-conditional affliction damage')
   }
   if ((needs.energyGen || 0) > 0 && m.energyGen) {
     reasons.push('✓ Extra energy to keep up in longer matches')
