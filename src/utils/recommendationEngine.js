@@ -20,7 +20,6 @@ const DEFAULT_ANALYSIS = {
     skillSteal: 0,
     stun: 0,
     invulnerable: 0,
-    statusShield: 0,
     triggerOnAction: 0,
     triggerOnHit: 0,
     achievement: 0,
@@ -65,7 +64,6 @@ export const analyzeCharacter = (char) => {
         skillSteal: 0,
         stun: 0,
         invulnerable: 0,
-        statusShield: 0,
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
@@ -93,7 +91,6 @@ export const analyzeCharacter = (char) => {
         skillSteal: 0,
         stun: 0,
         invulnerable: 0,
-        statusShield: 0,
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
@@ -269,7 +266,6 @@ export const analyzeTeam = (team) => {
   let mechanicScore = 0
   if (mechanics.stun > 0) mechanicScore += 18
   if (mechanics.cleanse > 0) mechanicScore += 16
-  if (mechanics.statusShield > 0) mechanicScore += 16
   if (mechanics.stacking > 0) mechanicScore += 12
   if (mechanics.antiTank > 0 || mechanics.piercing > 0) mechanicScore += 12
   if (mechanics.immunity > 0 || mechanics.invulnerable > 0) mechanicScore += 10
@@ -316,14 +312,13 @@ export const analyzeTeam = (team) => {
     synergyHighlights.push('Energy battery for high-cost skills')
   }
 
-  if (mechanics.immunity > 0 || mechanics.invulnerable > 0 || mechanics.cleanse > 0 || mechanics.statusShield > 0) {
+  if (mechanics.immunity > 0 || mechanics.invulnerable > 0 || mechanics.cleanse > 0) {
     synergyHighlights.push('Defensive tools to protect carries')
   }
 
   if (mechanics.stun > 0) strengths.push('Crowd control: stuns / disables')
   if (mechanics.stacking > 0) strengths.push('Attrition plan: damage-over-time / affliction')
   if (mechanics.cleanse > 0) strengths.push('Access to healing / cleanse vs DoT & debuffs')
-  if (mechanics.statusShield > 0) strengths.push('Status shields to ignore harmful effects (stuns, debuffs)')
   if (mechanics.antiTank > 0 || mechanics.piercing > 0) strengths.push('Can punch through DR / defensive teams')
   if (mechanics.energyGen > 0) strengths.push('Extra energy generation for long games')
   if (mechanics.immunity > 0 || mechanics.invulnerable > 0) strengths.push('Damage reduction / invulnerability available')
@@ -554,8 +549,7 @@ const deriveCounterNeeds = (enemyMechanics) => {
     stun: 0,
     immunity: 0,
     counter: 0,
-    energyGen: 0,
-    statusShield: 0
+    energyGen: 0
   }
 
   // Baseline: some control, some anti-tank, some sustain is always useful
@@ -577,8 +571,7 @@ const deriveCounterNeeds = (enemyMechanics) => {
 
   // Stun / hard control spam
   if ((enemyMechanics.stun || 0) >= 3 || (enemyMechanics.counter || 0) >= 2) {
-    needs.statusShield += 3
-    needs.immunity += 1
+    needs.immunity += 3
     needs.counter += 2
     needs.cleanse += 1
   }
@@ -616,7 +609,6 @@ const scoreCounterCandidateVsNeeds = (candidateMechanics, needs) => {
   apply('immunity', 2)
   apply('counter', 2)
   apply('energyGen', 2)
-  apply('statusShield', 4)
 
   return score
 }
@@ -663,9 +655,6 @@ export const explainCounterFitByTags = (candidate, enemyTeam) => {
   }
   if ((needs.stun || 0) > 0 && m.stun) {
     reasons.push('✓ Crowd control to slow their combo')
-  }
-  if ((needs.stun || 0) > 0 && (m.statusShield || 0) > 0) {
-    reasons.push('✓ Status shield: allies ignore harmful non-damage effects (e.g. stuns, debuffs)')
   }
   if ((needs.immunity || 0) > 0 && (m.immunity || m.invulnerable)) {
     reasons.push('✓ DR / invulnerability vs their control')

@@ -19,8 +19,6 @@ const EFFECT_PATTERNS = {
   dot: /affliction damage|damage to (?:one|all) enem(?:y|ies) for \d+ turns?|take[s]? \d+ damage for \d+ turns?|damage for \d+ turns?/i,
   setup: /for \d+ turns?, .* will|after \d+ turns?, .* will|during this time, .* will|for the rest of the game, .* will/i,
   execute: /if the target is stunned|if the target is affected by|instantly kill[s]?|if this skill is used on an enemy below \d+ health/i,
-  // Mind Clone Switch / Inner Sakura style: ignore harmful effects except damage and chakra cost changes
-  statusShield: /ignore[s]? all harmful effects except damage and chakra cost(?: changes?)?/i,
   sustain: /health is stolen|steals? \d+ health|health steal|lifelink/i
 }
 
