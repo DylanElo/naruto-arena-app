@@ -115,7 +115,7 @@ export const analyzeCharacter = (char) => {
 
 // --- DAMAGE / TEMPO APPROXIMATION -------------------------------------------
 
-function extractSkillDamage (skill = {}) {
+function extractSkillDamage(skill = {}) {
   const desc = (skill.description || '').toLowerCase()
   const damageMatches = [...desc.matchAll(/(\d+)\s+damage/gi)]
   if (!damageMatches.length) return 0
@@ -124,13 +124,13 @@ function extractSkillDamage (skill = {}) {
   return nums.length ? Math.max(...nums) : 0
 }
 
-function energyCost (skill = {}) {
+function energyCost(skill = {}) {
   const energies = skill.energy || []
   const filtered = energies.filter(e => e && e.toLowerCase() !== 'none')
   return filtered.length || 1 // treat 0 as 1 for DPE
 }
 
-function buildDamageProfile (team = []) {
+function buildDamageProfile(team = []) {
   const perChar = []
 
   team.forEach(char => {
@@ -138,19 +138,19 @@ function buildDamageProfile (team = []) {
     let bestDPE = 0
     let bestCost = 0
 
-    ;(char.skills || []).forEach(skill => {
-      const dmg = extractSkillDamage(skill)
-      if (!dmg) return
-      const cost = energyCost(skill)
-      const dpe = dmg / cost
-      if (dmg > bestBurst) {
-        bestBurst = dmg
-        bestCost = cost
-      }
-      if (dpe > bestDPE) {
-        bestDPE = dpe
-      }
-    })
+      ; (char.skills || []).forEach(skill => {
+        const dmg = extractSkillDamage(skill)
+        if (!dmg) return
+        const cost = energyCost(skill)
+        const dpe = dmg / cost
+        if (dmg > bestBurst) {
+          bestBurst = dmg
+          bestCost = cost
+        }
+        if (dpe > bestDPE) {
+          bestDPE = dpe
+        }
+      })
 
     perChar.push({
       charId: char.id,
@@ -215,15 +215,15 @@ export const analyzeTeam = (team) => {
       mechanics[m] += memberMech[m] || 0
     })
 
-    // Energy distribution
-    ;(member.skills || []).forEach(skill => {
-      ;(skill.energy || []).forEach(e => {
-        const key = e && e.toLowerCase()
-        if (energyDistribution[key] !== undefined) {
-          energyDistribution[key] += 1
-        }
+      // Energy distribution
+      ; (member.skills || []).forEach(skill => {
+        ; (skill.energy || []).forEach(e => {
+          const key = e && e.toLowerCase()
+          if (energyDistribution[key] !== undefined) {
+            energyDistribution[key] += 1
+          }
+        })
       })
-    })
 
     // Hooks from knowledge
     if (knowledge) {
@@ -287,13 +287,14 @@ export const analyzeTeam = (team) => {
     Math.min(hookCounts.sustain, hookCounts.highCostThreats) * 4
 
   // Synergy score: roles + mechanics + combos + a bit of tempo
-  let synergyScore =
+  const synergyScoreRaw =
     roleScore +
     mechanicScore +
     Math.min(comboScore, 30) +
     pressureRating * 0.3
 
-  synergyScore = clamp(Math.round(synergyScore), 0, 100)
+  // Keep clamped version for backward compatibility and display
+  const synergyScore = clamp(Math.round(synergyScoreRaw), 0, 100)
 
   // Strengths / weaknesses / strategies text
   const strengths = []
@@ -377,7 +378,8 @@ export const analyzeTeam = (team) => {
       burstDamage: dmgProfile.burstDamage,
       pressureRating
     },
-    synergyScore
+    synergyScore,
+    synergyScoreRaw
   }
 }
 
@@ -393,12 +395,37 @@ export const calculateSynergy = (team, candidate) => {
 
 export const getSuggestions = (allCharacters, currentTeam, count = 5) => {
   if (currentTeam.length === 3) return []
+
+  // For single-character builds, use the more sophisticated build-around logic
+  if (currentTeam.length === 1) {
+    return recommendPartnersForMain(currentTeam[0], allCharacters, null, count)
+  }
+
+  // For 2-character teams, use synergy scoring with normalization
   const candidates = allCharacters.filter(c => !currentTeam.find(m => m.id === c.id))
-  const scored = candidates.map(char => ({
-    ...char,
-    synergyScore: calculateSynergy(currentTeam, char)
+  const scored = candidates.map(char => {
+    const newTeam = [...currentTeam, char].slice(0, 3)
+    const analysis = analyzeTeam(newTeam)
+    return {
+      ...char,
+      synergyScoreRaw: analysis.synergyScoreRaw
+    }
+  })
+
+  // Normalize scores to 0-100 range for display after ranking
+  const scores = scored.map(s => s.synergyScoreRaw)
+  const minScore = Math.min(...scores)
+  const maxScore = Math.max(...scores)
+  const scoreRange = maxScore - minScore || 1 // Avoid division by zero
+
+  const normalizedScored = scored.map(s => ({
+    ...s,
+    synergyScore: Math.round(((s.synergyScoreRaw - minScore) / scoreRange) * 100)
   }))
-  return scored.sort((a, b) => b.synergyScore - a.synergyScore).slice(0, count)
+
+  return normalizedScored
+    .sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
+    .slice(0, count)
 }
 
 // --- BUILD-AROUND MAIN CHARACTER -------------------------------------------
@@ -494,8 +521,8 @@ const scorePartnerFit = (mainChar, candidate) => {
   const candEnergy = { green: 0, red: 0, blue: 0, white: 0 }
 
   const countColors = (char, bucket) => {
-    ;(char.skills || []).forEach(skill => {
-      ;(skill.energy || []).forEach(e => {
+    ; (char.skills || []).forEach(skill => {
+      ; (skill.energy || []).forEach(e => {
         if (!e) return
         const key = e.toLowerCase()
         if (bucket[key] !== undefined) {
@@ -538,7 +565,8 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
     return {
       ...c,
       buildAroundScore: score,
-      buildAroundNotes: notes
+      buildAroundNotes: notes,
+      synergyScore: score // For UI compatibility
     }
   })
 

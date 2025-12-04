@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import charactersData from './data/characters.json'
-import { getSuggestions, analyzeTeam } from './utils/recommendationEngine'
+import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
@@ -303,13 +303,13 @@ function App() {
                     )}
                   </div>
                 </div>
-                </div>
               </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[380px,1fr] gap-6">
-              {/* LEFT COLUMN: Team & Analysis */}
-              <div className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-[380px,1fr] gap-6">
+            {/* LEFT COLUMN: Team & Analysis */}
+            <div className="space-y-6">
               {/* Selected Team and save/load */}
               <div className="bg-slate-900/80 rounded-2xl border border-slate-700/60 p-4 shadow-lg shadow-orange-500/10 backdrop-blur">
                 <div className="flex items-center justify-between mb-4">
