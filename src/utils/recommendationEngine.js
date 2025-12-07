@@ -192,10 +192,44 @@ function buildDamageProfile(team = []) {
  * These represent common archetypes teams will face
  */
 function createBenchmarkTeams(allCharacters) {
-  // These are examples - in production you'd pick actual characters from allCharacters
-  // For now, return empty array to indicate no benchmarks available
-  // Real implementation would select characters that represent each archetype
-  return []
+  // Define benchmark archetypes using well-known starter characters
+  // These represent common team strategies in the game
+
+  const benchmarks = [
+    {
+      name: 'Rush/Aggro',
+      teamIds: [10, 3, 4], // Rock Lee, Uchiha Sasuke, Inuzuka Kiba
+      description: 'High burst damage, fast kills'
+    },
+    {
+      name: 'Control',
+      teamIds: [7, 9, 5], // Nara Shikamaru, Yamanaka Ino, Aburame Shino
+      description: 'Stuns, DoTs, disruption'
+    },
+    {
+      name: 'Tank/Sustain',
+      teamIds: [13, 2, 12], // Gaara, Haruno Sakura, Hyuuga Neji
+      description: 'Defense, healing, outlast'
+    },
+    {
+      name: 'Balanced',
+      teamIds: [1, 6, 8], // Uzumaki Naruto, Hyuuga Hinata, Akimichi Chouji
+      description: 'Mixed strategy, adaptable'
+    }
+  ]
+
+  // Convert IDs to actual character objects
+  return benchmarks.map(benchmark => {
+    const team = benchmark.teamIds
+      .map(id => allCharacters.find(c => c.id === id))
+      .filter(c => c) // Remove nulls if character not found
+
+    return {
+      name: benchmark.name,
+      description: benchmark.description,
+      team
+    }
+  }).filter(b => b.team.length === 3) // Only include complete teams
 }
 
 /**
