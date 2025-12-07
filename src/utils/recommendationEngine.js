@@ -623,79 +623,54 @@ export const calculateSynergy = (team, candidate) => {
 
 // --- SUGGESTIONS FOR BUILDING AROUND CURRENT TEAM ---------------------------
 
-export const getSuggestions = (allCharacters, currentTeam, count = 5) => {
+export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds = null) => {
   if (currentTeam.length === 3) return []
 
   // For single-character builds, use the more sophisticated build-around logic
   if (currentTeam.length === 1) {
-    return recommendPartnersForMain(currentTeam[0], allCharacters, null, count)
+    return recommendPartnersForMain(currentTeam[0], allCharacters, ownedIds, count)
   }
 
-  // For 2-character teams, use HYBRID approach:
-  // 1. Fast heuristic scoring to get top ~30 candidates
-  // 2. Simulation scoring on those top candidates for refinement
+  // For 2-character teams: Build around first (main), but consider full team synergy
+  if (currentTeam.length === 2) {
+    const [main, secondary] = currentTeam
 
-  const candidates = allCharacters.filter(c => !currentTeam.find(m => m.id === c.id))
+    let candidates = allCharacters.filter(c =>
+      !currentTeam.find(m => m.id === c.id)
+    )
 
-  // Phase 1: Heuristic scoring (fast)
-  const scored = candidates.map(char => {
-    const newTeam = [...currentTeam, char].slice(0, 3)
-    const analysis = analyzeTeam(newTeam)
-    const flexibility = calculateTeamFlexibility(newTeam)
-
-    return {
-      ...char,
-      synergyScoreRaw: analysis.synergyScoreRaw,
-      flexibilityScore: flexibility,
-      analysis // store for later use
+    // Filter by ownership if specified
+    if (ownedIds) {
+      candidates = candidates.filter(c => ownedIds.has(c.id))
     }
-  })
 
-  // Sort by heuristic score and take top candidates for simulation
-  const topCandidateCount = Math.min(30, candidates.length)
-  const topCandidates = scored
-    .sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
-    .slice(0, topCandidateCount)
+    // Score each candidate
+    const scored = candidates.map(candidate => {
+      // Partner fit with main (primary weight)
+      const mainFit = scorePartnerFit(main, candidate)
 
-  // Phase 2: Simulation scoring for top candidates (slower but more accurate)
-  // Only simulate if we have more than 10 candidates to choose from
-  if (topCandidates.length > 10 && allCharacters.length > 50) {
-    topCandidates.forEach(candidate => {
-      const newTeam = [...currentTeam, candidate].slice(0, 3)
-      const simPerf = simulateCandidatePerformance(newTeam, allCharacters)
+      // Full team synergy (secondary weight)
+      const teamAnalysis = analyzeTeam([...currentTeam, candidate])
 
-      // Blend heuristic score with simulation results
-      // If simulation has low confidence, rely more on heuristics
-      const simWeight = simPerf.confidence * 0.4 // up to 40% weight from simulation
-      const heuristicWeight = 1 - simWeight
+      // Blend: 60% build-around main, 40% full team
+      const blendedScore = (mainFit.score * 0.6) + (teamAnalysis.synergyScoreRaw * 0.4)
 
-      // Simulation bonus/penalty based on win probability
-      const simBonus = (simPerf.avgWinProbability - 0.5) * 100 // -50 to +50 range
-
-      candidate.synergyScoreRaw =
-        (candidate.synergyScoreRaw * heuristicWeight) +
-        (simBonus * simWeight) +
-        (candidate.flexibilityScore * 0.15) // small flexibility bonus
-
-      candidate.simulationData = simPerf
+      return {
+        ...candidate,
+        buildAroundScore: mainFit.score,
+        teamSynergyScore: teamAnalysis.synergyScore,
+        synergyScore: Math.round(blendedScore),
+        buildAroundNotes: mainFit.notes
+      }
     })
+
+    return scored
+      .sort((a, b) => b.synergyScore - a.synergyScore)
+      .slice(0, count)
   }
 
-  // Re-sort after simulation adjustments
-  const finalScored = topCandidates.sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
-
-  // Normalize scores to 0-100 range for display
-  const scores = finalScored.map(s => s.synergyScoreRaw)
-  const minScore = Math.min(...scores)
-  const maxScore = Math.max(...scores)
-  const scoreRange = maxScore - minScore || 1 // Avoid division by zero
-
-  const normalizedScored = finalScored.map(s => ({
-    ...s,
-    synergyScore: Math.round(((s.synergyScoreRaw - minScore) / scoreRange) * 100)
-  }))
-
-  return normalizedScored.slice(0, count)
+  // For 0 or 3+ character teams: shouldn't happen, but return empty
+  return []
 }
 
 // --- BUILD-AROUND MAIN CHARACTER -------------------------------------------

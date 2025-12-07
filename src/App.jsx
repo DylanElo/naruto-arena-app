@@ -45,6 +45,12 @@ function App() {
   })
   const [teamName, setTeamName] = useState('')
 
+  // Collection/Ownership State
+  const [ownedCharacters, setOwnedCharacters] = useState(() => {
+    const saved = localStorage.getItem('narutoArena_ownedCharacters')
+    return saved ? new Set(JSON.parse(saved)) : new Set()
+  })
+
   // Persist Saved Teams
   useMemo(() => {
     localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams))
@@ -140,14 +146,17 @@ function App() {
   const suggestions = useMemo(() => {
     if (selectedTeam.length === 0) return []
 
+    // Use owned filter if collection is set, otherwise show all
+    const ownedIds = ownedCharacters.size > 0 ? ownedCharacters : null
+
     // When building around a single main (e.g. Lee, Ino(B) etc.)
     if (selectedTeam.length === 1) {
-      return recommendPartnersForMain(selectedTeam[0], charactersData, null, 5)
+      return recommendPartnersForMain(selectedTeam[0], charactersData, ownedIds, 5)
     }
 
     // With 2+ members already chosen, fall back to full-team synergy
-    return getSuggestions(charactersData, selectedTeam)
-  }, [selectedTeam])
+    return getSuggestions(charactersData, selectedTeam, 5, ownedIds)
+  }, [selectedTeam, ownedCharacters])
 
   // Full Team Analysis (strengths, weaknesses, strategies)
   const fullTeamAnalysis = useMemo(() => {

@@ -76,27 +76,28 @@ export class GameState {
     }
 
     /**
-     * Generate random energy (25% per energy-generating character)
+     * Generate random energy based on alive characters
+     * Each alive character contributes 1 random energy (25% each color)
      */
     generateEnergy(teamIndex) {
         const team = this.teams[teamIndex];
         const pool = this.energyPools[teamIndex];
 
-        team.forEach(char => {
-            if (!char.isAlive()) return;
+        // Count alive characters
+        const aliveCount = team.filter(char => char.isAlive()).length;
 
-            // Each character contributes energy types from their skills
-            char.skills.forEach(skill => {
-                skill.energyCost.forEach(energyType => {
-                    if (energyType === EnergyType.RANDOM) return;
+        // Each alive character contributes 1 random energy
+        const energyColors = [
+            EnergyType.TAIJUTSU,   // green
+            EnergyType.BLOODLINE,  // red
+            EnergyType.NINJUTSU,   // blue
+            EnergyType.GENJUTSU    // white
+        ];
 
-                    // 25% chance to generate this energy type
-                    if (Math.random() < 0.25) {
-                        pool[energyType]++;
-                    }
-                });
-            });
-        });
+        for (let i = 0; i < aliveCount; i++) {
+            const randomColor = energyColors[Math.floor(Math.random() * energyColors.length)];
+            pool[randomColor]++;
+        }
     }
 }
 
