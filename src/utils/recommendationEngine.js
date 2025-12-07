@@ -185,6 +185,136 @@ function buildDamageProfile(team = []) {
   }
 }
 
+// --- SIMULATION HELPERS (FOR HYBRID APPROACH) --------------------------------
+
+/**
+ * Create standardized benchmark teams for testing candidate performance
+ * These represent common archetypes teams will face
+ */
+function createBenchmarkTeams(allCharacters) {
+  // These are examples - in production you'd pick actual characters from allCharacters
+  // For now, return empty array to indicate no benchmarks available
+  // Real implementation would select characters that represent each archetype
+  return []
+}
+
+/**
+ * Simulate a candidate team against benchmark teams
+ * Returns average performance metrics
+ */
+function simulateCandidatePerformance(candidateTeam, allCharacters) {
+  if (!candidateTeam || candidateTeam.length < 3) {
+    return {
+      avgWinProbability: 0.5,
+      avgHpDelta: 0,
+      avgPressure: 0,
+      confidence: 0 // low confidence if can't simulate
+    }
+  }
+
+  const benchmarks = createBenchmarkTeams(allCharacters)
+
+  if (benchmarks.length === 0) {
+    // No benchmarks available, return neutral scores
+    return {
+      avgWinProbability: 0.5,
+      avgHpDelta: 0,
+      avgPressure: 0,
+      confidence: 0
+    }
+  }
+
+  try {
+    let totalWinProb = 0
+    let totalHpDelta = 0
+    let totalPressure = 0
+    let simCount = 0
+
+    benchmarks.forEach(enemyTeam => {
+      try {
+        const gameState = new GameState()
+        gameState.teams[0] = candidateTeam.map(c => new Character(c))
+        gameState.teams[1] = enemyTeam.map(c => new Character(c))
+
+        const analysis = analyzeGameStateSimulation(gameState, 0)
+        totalHpDelta += analysis.hpDelta || 0
+        totalPressure += analysis.overallScore || 0
+
+        // Simple win probability heuristic based on overall score
+        const winProb = 1 / (1 + Math.exp(-(analysis.overallScore || 0) / 50))
+        totalWinProb += winProb
+        simCount++
+      } catch (err) {
+        // Skip this benchmark if simulation fails
+        console.warn('Benchmark simulation failed:', err)
+      }
+    })
+
+    if (simCount === 0) {
+      return {
+        avgWinProbability: 0.5,
+        avgHpDelta: 0,
+        avgPressure: 0,
+        confidence: 0
+      }
+    }
+
+    return {
+      avgWinProbability: totalWinProb / simCount,
+      avgHpDelta: totalHpDelta / simCount,
+      avgPressure: totalPressure / simCount,
+      confidence: Math.min(simCount / 3, 1) // confidence scales with benchmark count
+    }
+  } catch (error) {
+    console.warn('Simulation performance check failed:', error)
+    return {
+      avgWinProbability: 0.5,
+      avgHpDelta: 0,
+      avgPressure: 0,
+      confidence: 0
+    }
+  }
+}
+
+/**
+ * Calculate team flexibility score
+ * Higher score = team can adapt to different matchups
+ */
+function calculateTeamFlexibility(team) {
+  const analysis = analyzeTeam(team)
+  let flexScore = 0
+
+  // Diverse role distribution is more flexible
+  const roleCount = Object.values(analysis.roles).filter(v => v > 0).length
+  flexScore += roleCount * 8
+
+  // Having multiple damage types is flexible
+  const hasBurst = analysis.tempo.burstDamage > 100
+  const hasDoT = (analysis.mechanics.stacking || 0) > 0
+  const hasPiercing = (analysis.mechanics.piercing || 0) > 0
+  if (hasBurst) flexScore += 10
+  if (hasDoT) flexScore += 10
+  if (hasPiercing) flexScore += 10
+
+  // Multiple defensive options
+  const defensiveCount = [
+    analysis.mechanics.immunity || 0,
+    analysis.mechanics.invulnerable || 0,
+    analysis.mechanics.cleanse || 0,
+    analysis.mechanics.statusShield || 0
+  ].filter(v => v > 0).length
+  flexScore += defensiveCount * 5
+
+  // Energy diversity (not overly reliant on one color)
+  const energyValues = Object.values(analysis.energyDistribution)
+  const maxEnergy = Math.max(...energyValues, 1)
+  const energyBalance = 1 - (maxEnergy / energyValues.reduce((a, b) => a + b, 1))
+  flexScore += energyBalance * 15
+
+  return clamp(flexScore, 0, 100)
+}
+
+
 // --- TEAM ANALYSIS ----------------------------------------------------------
 
 export const analyzeTeam = (team) => {
@@ -333,15 +463,51 @@ export const analyzeTeam = (team) => {
   if (mechanics.immunity > 0 || mechanics.invulnerable > 0) strengths.push('Damage reduction / invulnerability available')
   if (pressureRating >= 70) strengths.push('High pressure: strong burst or sustained damage output')
 
-  // Weaknesses
+  // Weaknesses & Warnings (anti-synergy detection)
+  const warnings = []
+
+  // Basic coverage gaps
   if (mechanics.cleanse === 0) weaknesses.push('No cleanse / healing vs affliction or DoT')
   if (mechanics.stun + mechanics.counter === 0) weaknesses.push('Very little control (no stuns or counters)')
   if (mechanics.antiTank === 0 && mechanics.piercing === 0) weaknesses.push('No direct tools vs DR / defensive walls')
   if (mechanics.immunity === 0 && mechanics.invulnerable === 0 && mechanics.cleanse === 0) {
     weaknesses.push('Low sustain: fragile in grindy matches')
   }
+
+  // Energy problems
   if (hookCounts.highCostThreats > 1 && mechanics.energyGen === 0) {
     weaknesses.push('Energy hungry: many high-cost skills but no energy generation')
+    warnings.push('⚠️ High energy requirements without support')
+  }
+
+  // Energy color bottleneck
+  const totalEnergy = Object.values(energyDistribution).reduce((a, b) => a + b, 0)
+  const energyEntries = Object.entries(energyDistribution)
+  const dominantEnergy = energyEntries.find(([color, count]) => count >= totalEnergy * 0.6)
+  if (dominantEnergy && totalEnergy >= 6) {
+    warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
+  }
+
+  // Too setup-heavy (no payoff)
+  if (hookCounts.setups >= 2 && hookCounts.payoffs < 1) {
+    warnings.push('⚠️ Multiple setup characters but weak payoff. Add a finisher or burst damage.')
+  }
+
+  // All defensive, no win condition
+  if (roles.dps < 1 && dmgProfile.burstDamage < 80) {
+    warnings.push('⚠️ Unclear win condition: very low damage output')
+  }
+
+  // Too fragile for an aggressive team
+  if (dmgProfile.burstDamage >= 120 && mechanics.immunity === 0 && mechanics.invulnerable === 0) {
+    weaknesses.push('High damage but fragile: no invulnerability or DR')
+  }
+
+  // Role imbalance: all same role
+  const roleEntries = Object.entries(roles).filter(([, v]) => v > 0)
+  if (roleEntries.length === 1 && team.length >= 2) {
+    const [roleName] = roleEntries[0]
+    warnings.push(`⚠️ All characters are ${roleName}s - consider role diversity`)
   }
 
   // Strategies / gameplans
@@ -371,7 +537,7 @@ export const analyzeTeam = (team) => {
     weaknesses,
     strategies,
     synergyHighlights,
-    warnings: [],
+    warnings,
     tempo: {
       estimatedKillTurns: dmgProfile.estimatedKillTurns,
       costToKill: dmgProfile.costToKill,
@@ -401,31 +567,71 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5) => {
     return recommendPartnersForMain(currentTeam[0], allCharacters, null, count)
   }
 
-  // For 2-character teams, use synergy scoring with normalization
+  // For 2-character teams, use HYBRID approach:
+  // 1. Fast heuristic scoring to get top ~30 candidates
+  // 2. Simulation scoring on those top candidates for refinement
+
   const candidates = allCharacters.filter(c => !currentTeam.find(m => m.id === c.id))
+
+  // Phase 1: Heuristic scoring (fast)
   const scored = candidates.map(char => {
     const newTeam = [...currentTeam, char].slice(0, 3)
     const analysis = analyzeTeam(newTeam)
+    const flexibility = calculateTeamFlexibility(newTeam)
+
     return {
       ...char,
-      synergyScoreRaw: analysis.synergyScoreRaw
+      synergyScoreRaw: analysis.synergyScoreRaw,
+      flexibilityScore: flexibility,
+      analysis // store for later use
     }
   })
 
-  // Normalize scores to 0-100 range for display after ranking
-  const scores = scored.map(s => s.synergyScoreRaw)
+  // Sort by heuristic score and take top candidates for simulation
+  const topCandidateCount = Math.min(30, candidates.length)
+  const topCandidates = scored
+    .sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
+    .slice(0, topCandidateCount)
+
+  // Phase 2: Simulation scoring for top candidates (slower but more accurate)
+  // Only simulate if we have more than 10 candidates to choose from
+  if (topCandidates.length > 10 && allCharacters.length > 50) {
+    topCandidates.forEach(candidate => {
+      const newTeam = [...currentTeam, candidate].slice(0, 3)
+      const simPerf = simulateCandidatePerformance(newTeam, allCharacters)
+
+      // Blend heuristic score with simulation results
+      // If simulation has low confidence, rely more on heuristics
+      const simWeight = simPerf.confidence * 0.4 // up to 40% weight from simulation
+      const heuristicWeight = 1 - simWeight
+
+      // Simulation bonus/penalty based on win probability
+      const simBonus = (simPerf.avgWinProbability - 0.5) * 100 // -50 to +50 range
+
+      candidate.synergyScoreRaw =
+        (candidate.synergyScoreRaw * heuristicWeight) +
+        (simBonus * simWeight) +
+        (candidate.flexibilityScore * 0.15) // small flexibility bonus
+
+      candidate.simulationData = simPerf
+    })
+  }
+
+  // Re-sort after simulation adjustments
+  const finalScored = topCandidates.sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
+
+  // Normalize scores to 0-100 range for display
+  const scores = finalScored.map(s => s.synergyScoreRaw)
   const minScore = Math.min(...scores)
   const maxScore = Math.max(...scores)
   const scoreRange = maxScore - minScore || 1 // Avoid division by zero
 
-  const normalizedScored = scored.map(s => ({
+  const normalizedScored = finalScored.map(s => ({
     ...s,
     synergyScore: Math.round(((s.synergyScoreRaw - minScore) / scoreRange) * 100)
   }))
 
-  return normalizedScored
-    .sort((a, b) => b.synergyScoreRaw - a.synergyScoreRaw)
-    .slice(0, count)
+  return normalizedScored.slice(0, count)
 }
 
 // --- BUILD-AROUND MAIN CHARACTER -------------------------------------------
@@ -459,23 +665,66 @@ const scorePartnerFit = (mainChar, candidate) => {
   const mMech = mainProfile.mechanics
   const cMech = candProfile.mechanics
 
-  // Role complementarity
+  // Enhanced Role complementarity (more nuanced)
   if (mainRoles.primary === 'dps') {
-    if (candRoles.primary === 'support') { score += 25; notes.push('brings sustain/utility to a carry') }
-    if (candRoles.primary === 'tank') { score += 20; notes.push('frontline / protection for a glass cannon') }
-    if (candRoles.primary === 'control') { score += 15; notes.push('adds control so your DPS can hit safely') }
+    if (candRoles.primary === 'support') {
+      score += 25;
+      notes.push('brings sustain/utility to a carry')
+    }
+    if (candRoles.primary === 'tank') {
+      score += 20;
+      notes.push('frontline / protection for a glass cannon')
+    }
+    if (candRoles.primary === 'control') {
+      score += 15;
+      notes.push('adds control so your DPS can hit safely')
+    }
+    // Avoid double DPS without good reason
+    if (candRoles.primary === 'dps' && !cMech.setup && !mMech.setup) {
+      score -= 5
+    }
   } else if (mainRoles.primary === 'support') {
-    if (candRoles.primary === 'dps') { score += 25; notes.push('gives you a clear damage win condition') }
-    if (candRoles.primary === 'control') { score += 20; notes.push('locks enemies while you sustain') }
+    if (candRoles.primary === 'dps') {
+      score += 25;
+      notes.push('gives you a clear damage win condition')
+    }
+    if (candRoles.primary === 'control') {
+      score += 20;
+      notes.push('locks enemies while you sustain')
+    }
+    if (candRoles.primary === 'tank') {
+      score += 15;
+      notes.push('creates ultra-defensive sustain shell')
+    }
   } else if (mainRoles.primary === 'control') {
-    if (candRoles.primary === 'dps') { score += 25; notes.push('control + damage core') }
-    if (candRoles.primary === 'tank') { score += 15; notes.push('frontline control style') }
+    if (candRoles.primary === 'dps') {
+      score += 25;
+      notes.push('control + damage core')
+    }
+    if (candRoles.primary === 'tank') {
+      score += 15;
+      notes.push('frontline control style')
+    }
+    if (candRoles.primary === 'support') {
+      score += 12;
+      notes.push('sustainable control strategy')
+    }
   } else if (mainRoles.primary === 'tank') {
-    if (candRoles.primary === 'dps') { score += 20; notes.push('tank + carry core') }
-    if (candRoles.primary === 'support') { score += 15; notes.push('very grindy, sustain-heavy core') }
+    if (candRoles.primary === 'dps') {
+      score += 20;
+      notes.push('tank + carry core')
+    }
+    if (candRoles.primary === 'support') {
+      score += 15;
+      notes.push('very grindy, sustain-heavy core')
+    }
+    if (candRoles.primary === 'control') {
+      score += 12;
+      notes.push('defensive control shell')
+    }
   }
 
-  // Mechanics synergy (manual-based)
+  // Enhanced Mechanics synergy (manual-based)
   if (mMech.stun > 0 && cMech.setup > 0) {
     score += 15; notes.push('your stuns give them safe setup turns')
   }
@@ -495,30 +744,68 @@ const scorePartnerFit = (mainChar, candidate) => {
     score += 10; notes.push('DoTs plus anti-tank to punish DR/DD')
   }
 
+  // Counter synergy - both have counters = more defensive flexibility
+  if (mMech.counter > 0 && cMech.counter > 0) {
+    score += 8; notes.push('multiple counters for defensive versatility')
+  }
+
+  // Achievement synergy - achievements need supporting play
+  if (mMech.achievement > 0 && (cMech.stun > 0 || cMech.immunity > 0)) {
+    score += 12; notes.push('protection/control to enable achievement conditions')
+  }
+  if (cMech.achievement > 0 && (mMech.stun > 0 || mMech.immunity > 0)) {
+    score += 12; notes.push('your control/defense enables their achievement potential')
+  }
+
+  // AOE synergy - multiple AOE sources can dominate grouped teams
+  if (mMech.aoe > 0 && cMech.aoe > 0) {
+    score += 10; notes.push('dual AOE pressure overwhelming vs grouped enemies')
+  }
+
+  // Piercing + DoT combo (both ignore DR)
+  if ((mMech.piercing > 0 || cMech.piercing > 0) && (mMech.stacking > 0 || cMech.stacking > 0)) {
+    score += 8; notes.push('piercing + affliction bypasses all defensive layers')
+  }
+
   // Energy battery
   const mainHasHighCost = mainProfile.knowledge?.skillProfiles?.some(sk =>
     (sk.tags || []).includes('highCost') || (sk.tags || []).includes('finisher')
   )
   const candHasEnergySupport = !!candProfile.knowledge?.hooks?.energySupport?.length
+  const candHasHighCost = candProfile.knowledge?.skillProfiles?.some(sk =>
+    (sk.tags || []).includes('highCost') || (sk.tags || []).includes('finisher')
+  )
+  const mainHasEnergySupport = !!mainProfile.knowledge?.hooks?.energySupport?.length
 
   if (mainHasHighCost && candHasEnergySupport) {
     score += 20; notes.push('acts as energy battery for your expensive skills')
   }
+  if (candHasHighCost && mainHasEnergySupport) {
+    score += 20; notes.push('your energy support enables their high-cost threats')
+  }
 
-  // Protect-the-carry
+  // Protect-the-carry (improved)
   const mainIsCarry =
     mainHasHighCost ||
     (mainRoles.primary === 'dps' && (mMech.piercing + mMech.stacking) > 0)
+  const candIsCarry =
+    candHasHighCost ||
+    (candRoles.primary === 'dps' && (cMech.piercing + cMech.stacking) > 0)
   const candHasProtection =
-    cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0
+    cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0 || cMech.statusShield > 0
+  const mainHasProtection =
+    mMech.immunity > 0 || mMech.invulnerable > 0 || mMech.cleanse > 0 || mMech.statusShield > 0
 
   if (mainIsCarry && candHasProtection) {
-    score += 20; notes.push('can keep your main threat alive (invul / DR / cleanse)')
+    score += 20; notes.push('can keep your main threat alive (invul / DR / cleanse / status shield)')
+  }
+  if (candIsCarry && mainHasProtection) {
+    score += 15; notes.push('your protection keeps their threat alive')
   }
 
-  // Energy color overlap penalty
-  const mainEnergy = { green: 0, red: 0, blue: 0, white: 0 }
-  const candEnergy = { green: 0, red: 0, blue: 0, white: 0 }
+  // Enhanced Energy color distribution analysis
+  const mainEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
+  const candEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
 
   const countColors = (char, bucket) => {
     ; (char.skills || []).forEach(skill => {
@@ -535,15 +822,28 @@ const scorePartnerFit = (mainChar, candidate) => {
   countColors(mainChar, mainEnergy)
   countColors(candidate, candEnergy)
 
+  // Heavy overlap penalty (both use 3+ of same color)
   let energyPenalty = 0
+  let heavyOverlapCount = 0
   Object.keys(mainEnergy).forEach(color => {
     if (mainEnergy[color] >= 4 && candEnergy[color] >= 3) {
       energyPenalty += 10
+      heavyOverlapCount++
     }
   })
+
+  // Complementary energy bonus (they fill gaps in your energy curve)
+  const mainDominant = Object.entries(mainEnergy).filter(([, v]) => v >= 3).map(([k]) => k)
+  const candDominant = Object.entries(candEnergy).filter(([, v]) => v >= 3).map(([k]) => k)
+  const overlapCount = mainDominant.filter(c => candDominant.includes(c)).length
+
+  if (overlapCount === 0 && mainDominant.length > 0 && candDominant.length > 0) {
+    score += 8; notes.push('complementary energy distribution - no color conflicts')
+  }
+
   score -= energyPenalty
   if (energyPenalty > 0) {
-    notes.push('shares a very heavy energy color load with the main')
+    notes.push(`shares heavy energy color load (${heavyOverlapCount} color${heavyOverlapCount > 1 ? 's' : ''})`)
   }
 
   return { score, notes }
@@ -587,7 +887,8 @@ const deriveCounterNeeds = (enemyMechanics) => {
     counter: 0,
     energyGen: 0,
     statusShield: 0,
-    antiAffliction: 0
+    antiAffliction: 0,
+    aoe: 0
   }
 
   // Baseline: some control, some anti-tank, some sustain is always useful
@@ -595,38 +896,62 @@ const deriveCounterNeeds = (enemyMechanics) => {
   needs.antiTank += 1
   needs.cleanse += 1
 
-  // Tanky / DR-heavy / invul spam
+  // Tanky / DR-heavy / invul spam - need piercing and attrition
   if ((enemyMechanics.immunity || 0) >= 2 || (enemyMechanics.invulnerable || 0) >= 2) {
-    needs.antiTank += 3
-    needs.stacking += 2
+    needs.antiTank += 4  // Increased priority
+    needs.stacking += 3  // DoTs wear them down
+    needs.energyGen += 1 // Long game preparation
   }
 
-  // Heavy affliction / DoT pressure
+  // Heavy affliction / DoT pressure - CRITICAL to counter
   if ((enemyMechanics.stacking || 0) >= 3) {
-    needs.antiAffliction += 3
-    needs.cleanse += 2
-    needs.stun += 1
+    needs.antiAffliction += 4  // Increased weight
+    needs.cleanse += 3
+    needs.stun += 2  // Interrupt their setup
+    needs.statusShield += 2  // Prevent debuff application
   }
 
-  // Stun / hard control spam
+  // Stun / hard control spam - need immunity and status protection
   if ((enemyMechanics.stun || 0) >= 3 || (enemyMechanics.counter || 0) >= 2) {
-    needs.statusShield += 3
-    needs.immunity += 1
-    needs.counter += 2
+    needs.statusShield += 4  // CRITICAL - can't play without this
+    needs.immunity += 2
+    needs.counter += 2  // Counter their counters
     needs.cleanse += 1
   }
 
-  // Big AoE damage
+  // Big AoE damage - need sustain and spread defense
   if ((enemyMechanics.aoe || 0) >= 3) {
-    needs.cleanse += 2
-    needs.immunity += 1
+    needs.cleanse += 3  // Heal through the damage
+    needs.immunity += 2  // Reduce or block
+    needs.aoe += 1  // Trade AOE for AOE
   }
 
-  // High energy generation
+  // High energy generation - deny their advantage
   if ((enemyMechanics.energyGen || 0) >= 2) {
-    needs.stun += 2
-    needs.counter += 1
-    needs.energyGen += 1
+    needs.stun += 3  // Lock down energy generators
+    needs.counter += 2  // Punish their spam
+    needs.energyGen += 2  // Keep pace
+  }
+
+  // Counter-heavy team - need status shields or invulnerability
+  if ((enemyMechanics.counter || 0) >= 3) {
+    needs.statusShield += 3
+    needs.immunity += 2
+    needs.stun += 1  // Prevent counter usage
+  }
+
+  // Setup-heavy (achievement/mark spam) - disrupt early
+  if ((enemyMechanics.setup || 0) >= 2 || (enemyMechanics.achievement || 0) >= 1) {
+    needs.stun += 3  // Interrupt setup
+    needs.cleanse += 2  // Remove marks
+    needs.antiTank += 1  // Ignore their buffs
+  }
+
+  // Piercing damage specialists - need raw HP and sustain
+  if ((enemyMechanics.piercing || 0) >= 2) {
+    needs.cleanse += 3  // Can't reduce, must heal
+    needs.immunity += 1  // Some invulnerability helps
+    needs.aoe += 1  // Kill before they kill you
   }
 
   return needs
@@ -642,15 +967,23 @@ const scoreCounterCandidateVsNeeds = (candidateMechanics, needs) => {
     score += Math.min(have, need) * weight
   }
 
-  apply('antiTank', 4)
-  apply('stacking', 3)
-  apply('cleanse', 3)
-  apply('stun', 3)
-  apply('immunity', 2)
-  apply('counter', 2)
-  apply('energyGen', 2)
-  apply('statusShield', 4)
-  apply('antiAffliction', 4)
+  // Critical mechanics (highest priority)
+  apply('statusShield', 5)     // Essential vs stun spam
+  apply('antiAffliction', 5)    // Essential vs DoT teams
+
+  // High priority mechanics
+  apply('antiTank', 4)          // Key vs defensive teams
+  apply('cleanse', 4)           // Versatile sustain/counter
+
+  // Medium priority mechanics
+  apply('stun', 3)              // Good general control
+  apply('stacking', 3)          // Attrition strategy
+
+  // Support mechanics
+  apply('immunity', 2)          // Defensive tool
+  apply('counter', 2)           // Punish aggression
+  apply('energyGen', 2)         // Long game prep
+  apply('aoe', 2)               // Trade damage
 
   return score
 }
