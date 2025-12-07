@@ -138,6 +138,14 @@ function App() {
 
   // Suggestions Logic
   const suggestions = useMemo(() => {
+    if (selectedTeam.length === 0) return []
+
+    // When building around a single main (e.g. Lee, Ino(B) etc.)
+    if (selectedTeam.length === 1) {
+      return recommendPartnersForMain(selectedTeam[0], charactersData, null, 5)
+    }
+
+    // With 2+ members already chosen, fall back to full-team synergy
     return getSuggestions(charactersData, selectedTeam)
   }, [selectedTeam])
 

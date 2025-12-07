@@ -450,12 +450,37 @@ export const analyzeTeam = (team) => {
     Math.min(hookCounts.energySupport, hookCounts.highCostThreats) * 6 +
     Math.min(hookCounts.sustain, hookCounts.highCostThreats) * 4
 
-  // Synergy score: roles + mechanics + combos + a bit of tempo
+  // --- Team-wide energy concentration penalty ---
+  const coloredTotal =
+    (energyDistribution.green || 0) +
+    (energyDistribution.red || 0) +
+    (energyDistribution.blue || 0) +
+    (energyDistribution.white || 0)
+
+  const maxColorCount = Math.max(
+    energyDistribution.green || 0,
+    energyDistribution.red || 0,
+    energyDistribution.blue || 0,
+    energyDistribution.white || 0,
+    1
+  )
+
+  const dominantRatio = coloredTotal > 0 ? maxColorCount / coloredTotal : 0
+
+  let energyTeamPenalty = 0
+  if (dominantRatio >= 0.6) {
+    // If 60%+ of your colored costs are the same color, start penalizing
+    // e.g. triple heavy green team will get a noticeable hit
+    energyTeamPenalty = (dominantRatio - 0.5) * 60  // max ~18 pts penalty if 80%+
+  }
+
+  // Synergy score: roles + mechanics + combos + a bit of tempo - energy concentration
   const synergyScoreRaw =
     roleScore +
     mechanicScore +
     Math.min(comboScore, 30) +
-    pressureRating * 0.3
+    pressureRating * 0.3 -
+    energyTeamPenalty
 
   // Keep clamped version for backward compatibility and display
   const synergyScore = clamp(Math.round(synergyScoreRaw), 0, 100)
@@ -520,6 +545,11 @@ export const analyzeTeam = (team) => {
   const dominantEnergy = energyEntries.find(([color, count]) => count >= totalEnergy * 0.6)
   if (dominantEnergy && totalEnergy >= 6) {
     warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
+  }
+
+  // Energy concentration warning
+  if (energyTeamPenalty > 0) {
+    weaknesses.push('Very concentrated chakra colors – team is prone to bad rolls')
   }
 
   // Too setup-heavy (no payoff)
@@ -856,15 +886,29 @@ const scorePartnerFit = (mainChar, candidate) => {
   countColors(mainChar, mainEnergy)
   countColors(candidate, candEnergy)
 
-  // Heavy overlap penalty (both use 3+ of same color)
+  // Heavy overlap penalty (both use the same color a lot)
   let energyPenalty = 0
   let heavyOverlapCount = 0
   Object.keys(mainEnergy).forEach(color => {
-    if (mainEnergy[color] >= 4 && candEnergy[color] >= 3) {
-      energyPenalty += 10
+    const mainHeavy = mainEnergy[color] >= 3   // main uses this color a lot
+    const candHeavy = candEnergy[color] >= 2   // candidate also leans on it
+
+    if (mainHeavy && candHeavy) {
+      // Taijutsu/green triple-stacks are especially brick-prone
+      const basePenalty = (color === 'green') ? 12 : 8
+      energyPenalty += basePenalty
       heavyOverlapCount++
     }
   })
+
+  // Extra penalty if BOTH chars are high-cost threats on the same color
+  const shareAnyVeryHeavyColor = Object.keys(mainEnergy).some(
+    color => mainEnergy[color] >= 3 && candEnergy[color] >= 3
+  )
+  if (shareAnyVeryHeavyColor && mainProfile.isEnergyHungry && candProfile.isEnergyHungry) {
+    energyPenalty += 10
+    heavyOverlapCount++
+  }
 
   // Complementary energy bonus (they fill gaps in your energy curve)
   const mainDominant = Object.entries(mainEnergy).filter(([, v]) => v >= 3).map(([k]) => k)
