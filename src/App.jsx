@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
+import { assetPath } from './utils/assetPath'
 
 // Energy Colors Mapping
 const ENERGY_COLORS = {
@@ -22,11 +23,6 @@ const ENERGY_BG_COLORS = {
   white: 'bg-slate-100 border-slate-200 text-slate-700',
   black: 'bg-slate-200 border-slate-300 text-slate-700',
   none: 'bg-slate-100 border-slate-200 text-slate-600'
-}
-
-const assetPath = (relativePath) => {
-  const trimmedPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath
-  return `${import.meta.env.BASE_URL}${trimmedPath}`
 }
 
 function App() {
@@ -71,7 +67,7 @@ function App() {
   }
 
   // Persist Saved Teams
-  useMemo(() => {
+  useEffect(() => {
     localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams))
   }, [savedTeams])
 
@@ -333,7 +329,7 @@ function App() {
                                   </div>
                                 </div>
                                 <div className="flex gap-1 mt-3">
-                                  {char.skills[0].energy.map((e, i) => (
+                                  {(char.skills?.[0]?.energy ?? []).map((e, i) => (
                                     <span key={i} className={`w-7 h-7 rounded-md border flex items-center justify-center text-[10px] font-bold ${ENERGY_BG_COLORS[e] || 'bg-slate-100 border-slate-200 text-slate-600'}`}>
                                       {e === 'none' ? '-' : e[0].toUpperCase()}
                                     </span>
@@ -413,13 +409,13 @@ function App() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm truncate text-white">{char.name}</div>
                                   <div className="text-[11px] text-slate-400 truncate">{char.skills.map(s => s.name).slice(0, 2).join(' • ')}</div>
-                                  <div className="flex gap-1 mt-2">
-                                    {char.skills[0].energy.map((e, i) => (
-                                      <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-gray-700'}`}>
-                                        {e === 'none' ? '-' : e[0].toUpperCase()}
-                                      </span>
-                                    ))}
-                                  </div>
+                                    <div className="flex gap-1 mt-2">
+                                      {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                        <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-gray-700'}`}>
+                                          {e === 'none' ? '-' : e[0].toUpperCase()}
+                                        </span>
+                                      ))}
+                                    </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <button onClick={() => setViewCharacter(char)} className="text-xs text-blue-300 hover:text-blue-200">Open card</button>
