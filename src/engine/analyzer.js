@@ -120,13 +120,16 @@ function calculateKillThreat(myTeam, enemyTeam) {
     let maxThreat = 0;
 
     // For each enemy character
+    // We assume enemy has infinite/unknown energy for threat calculation to be safe, 
+    // OR we can pass a dummy pool if we want to be realistic. 
+    // For now, let's assuming they might have energy is safer (worst-case analysis).
     enemyTeam.forEach(enemy => {
         if (!enemy.isAlive()) return;
 
         // Check if enemy has counter skill available
         const hasCounter = enemy.skills.some((skill, index) => {
             const isCounter = /counter|reflect/i.test(skill.description);
-            const isAvailable = enemy.canUseSkill(index);
+            const isAvailable = enemy.canUseSkill(index, gameState.energyPools[1 - teamIndex]); // Approximation for enemy energy
             return isCounter && isAvailable;
         });
 
@@ -141,7 +144,7 @@ function calculateKillThreat(myTeam, enemyTeam) {
             if (!char.isAlive()) return;
 
             char.skills.forEach((skill, index) => {
-                if (!char.canUseSkill(index)) return;
+                if (!char.canUseSkill(index, gameState.energyPools[teamIndex])) return;
 
                 // Only count instant skills
                 if (skill.classes.includes('Instant')) {
@@ -187,7 +190,7 @@ export function findBestMove(gameState, teamIndex) {
         if (!char.isAlive()) return;
 
         char.skills.forEach((skill, skillIndex) => {
-            if (!char.canUseSkill(skillIndex)) return;
+            if (!char.canUseSkill(skillIndex, gameState.energyPools[teamIndex])) return;
 
             // For each potential target
             enemyTeam.forEach((target, targetIndex) => {

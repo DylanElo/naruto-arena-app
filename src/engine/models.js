@@ -145,10 +145,42 @@ export class Character {
     /**
      * Check if character can use a skill
      */
-    canUseSkill(skillIndex) {
+    /**
+     * Check if character can use a skill
+     * @param {number} skillIndex
+     * @param {Object} [energyPool=null] - Optional team energy pool to check costs
+     */
+    canUseSkill(skillIndex, energyPool = null) {
         if (!this.isAlive()) return false;
         if (this.statusEffects.stunned) return false;
         if (this.cooldowns[skillIndex] > 0) return false;
+
+        // Energy Check
+        if (energyPool) {
+            const skill = this.skills[skillIndex];
+            if (!skill) return false;
+
+            // Simplified pool check (doesn't handle 'random' cost well yet, but sufficient for strict colors)
+            // Clone pool to simulate cost deduction without modifying it
+            const tempPool = { ...energyPool };
+
+            for (const requiredEnergy of skill.energyCost) {
+                const type = requiredEnergy.toLowerCase();
+
+                if (type === 'random' || type === 'any') {
+                    // Logic for random energy is complex (can use any), skipping strict check for now
+                    // or assume we always have "random" energy available if pool > 0, 
+                    // but for now let's just checking strict colors.
+                    continue;
+                }
+
+                if (!tempPool[type] || tempPool[type] <= 0) {
+                    return false;
+                }
+                tempPool[type]--;
+            }
+        }
+
         return true;
     }
 }

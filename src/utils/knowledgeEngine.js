@@ -48,11 +48,11 @@ const ROLE_FROM_TAG = {
 // Map tags to mechanics buckets used by the analyzer
 const MECHANIC_FROM_TAG = {
   // Defensive / sustain
-  heal: 'cleanse',
+  heal: 'sustain',
   cleanse: 'cleanse',
-  shield: 'immunity',
-  invulnerable: 'invulnerable',
-  sustain: 'cleanse',
+  shield: 'defense',
+  invulnerable: 'defense',
+  sustain: 'sustain',
   statusShield: 'statusShield',
   antiAffliction: 'antiAffliction',
 
@@ -79,7 +79,7 @@ const MECHANIC_FROM_TAG = {
 }
 
 // Detect per-skill tags using the manual vocabulary
-function detectSkillTags (skill = {}) {
+function detectSkillTags(skill = {}) {
   const descRaw = skill.description || ''
   const desc = descRaw.toLowerCase()
   const classes = (skill.classes || '').toLowerCase()
@@ -174,7 +174,7 @@ function detectSkillTags (skill = {}) {
 }
 
 // Aggregate tags -> per-character coarse roles
-function aggregateRoles (tags) {
+function aggregateRoles(tags) {
   return tags.reduce(
     (acc, tag) => {
       const role = ROLE_FROM_TAG[tag]
@@ -189,7 +189,7 @@ function aggregateRoles (tags) {
 }
 
 // Aggregate tags -> mechanics buckets
-function aggregateMechanics (tags) {
+function aggregateMechanics(tags) {
   const base = {
     counter: 0,
     invisible: 0,
@@ -209,7 +209,9 @@ function aggregateMechanics (tags) {
     triggerOnAction: 0,
     triggerOnHit: 0,
     achievement: 0,
-    setup: 0
+    setup: 0,
+    sustain: 0,
+    defense: 0
   }
 
   tags.forEach(tag => {
@@ -228,7 +230,7 @@ function aggregateMechanics (tags) {
 }
 
 // Build knowledge base from characters.json
-export function buildKnowledgeBase (charList = characters) {
+export function buildKnowledgeBase(charList = characters) {
   const knowledge = {}
 
   charList.forEach(char => {
@@ -269,6 +271,6 @@ export function buildKnowledgeBase (charList = characters) {
 
 export const CHARACTER_KNOWLEDGE = buildKnowledgeBase()
 
-export function getCharacterKnowledge (charId) {
+export function getCharacterKnowledge(charId) {
   return CHARACTER_KNOWLEDGE[charId]
 }

@@ -25,7 +25,9 @@ const DEFAULT_ANALYSIS = {
     triggerOnAction: 0,
     triggerOnHit: 0,
     achievement: 0,
-    setup: 0
+    setup: 0,
+    sustain: 0,
+    defense: 0
   },
   energyDistribution: { green: 0, red: 0, blue: 0, white: 0, black: 0 },
   maxDPE: 0,
@@ -71,7 +73,9 @@ export const analyzeCharacter = (char) => {
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
-        setup: 0
+        setup: 0,
+        sustain: 0,
+        defense: 0
       },
       knowledge: null
     }
@@ -100,7 +104,9 @@ export const analyzeCharacter = (char) => {
         triggerOnAction: 0,
         triggerOnHit: 0,
         achievement: 0,
-        setup: 0
+        setup: 0,
+        sustain: 0,
+        defense: 0
       },
       knowledge: null
     }
@@ -646,21 +652,26 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds =
 
     // Score each candidate
     const scored = candidates.map(candidate => {
-      // Partner fit with main (primary weight)
+      // Partner fit with main (primary weight - 50%)
       const mainFit = scorePartnerFit(main, candidate)
 
-      // Full team synergy (secondary weight)
+      // Partner fit with secondary (secondary weight - 30%)
+      const secondaryFit = scorePartnerFit(secondary, candidate)
+
+      // Full team synergy (tertiary weight - 20%)
       const teamAnalysis = analyzeTeam([...currentTeam, candidate])
 
-      // Blend: 60% build-around main, 40% full team
-      const blendedScore = (mainFit.score * 0.6) + (teamAnalysis.synergyScoreRaw * 0.4)
+      // Blend: 50% Main Fit, 30% Secondary Fit, 20% Team Balance
+      // This ensures the 3rd pick creates strong 1-on-1 pairs rather than just filling a stat sheet.
+      const blendedScore = (mainFit.score * 0.5) + (secondaryFit.score * 0.3) + (teamAnalysis.synergyScoreRaw * 0.2)
 
       return {
         ...candidate,
         buildAroundScore: mainFit.score,
+        secondaryFitScore: secondaryFit.score,
         teamSynergyScore: teamAnalysis.synergyScore,
         synergyScore: Math.round(blendedScore),
-        buildAroundNotes: mainFit.notes
+        buildAroundNotes: [...mainFit.notes, ...secondaryFit.notes]
       }
     })
 
@@ -997,7 +1008,19 @@ const deriveCounterNeeds = (enemyMechanics) => {
   if ((enemyMechanics.setup || 0) >= 2 || (enemyMechanics.achievement || 0) >= 1) {
     needs.stun += 3  // Interrupt setup
     needs.cleanse += 2  // Remove marks
-    needs.antiTank += 1  // Ignore their buffs
+  }
+
+  // Pure Healing/Sustain - need to out-damage or stun
+  if ((enemyMechanics.sustain || 0) >= 2) {
+    needs.stun += 2      // Stop the healer
+    needs.stacking += 2  // Overwhelm with DoTs
+    needs.aoe += 2       // Spread damage faster than they heal single target
+  }
+
+  // Hard Defense (Invuln/DR) - need bypass
+  if ((enemyMechanics.defense || 0) >= 2) {
+    needs.antiTank += 5  // CRITICAL: Piercing/Execute
+    needs.stacking += 3  // DoTs ignore defense
   }
 
   // Piercing damage specialists - need raw HP and sustain
