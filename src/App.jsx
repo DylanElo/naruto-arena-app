@@ -189,16 +189,30 @@ function App() {
 
   // Suggestions Logic
   const suggestions = useMemo(() => {
-    if (selectedTeam.length === 0) return []
+    if (selectedTeam.length === 0) return [];
 
-    const ownedIds = ownedCharacters.size > 0 ? ownedCharacters : null
+    const ownedIds = ownedCharacters.size > 0 ? ownedCharacters : null;
 
     if (selectedTeam.length === 1) {
-      return recommendPartnersForMain(selectedTeam[0], charactersData, ownedIds, 5)
+      const recommendations = recommendPartnersForMain(selectedTeam[0], charactersData, ownedIds, 5);
+      return recommendations.map(char => {
+        const teamAnalysis = analyzeTeam([...selectedTeam, char]);
+        return {
+          ...char,
+          synergyBreakdown: teamAnalysis.synergyBreakdown,
+        };
+      });
     }
 
-    return getSuggestions(charactersData, selectedTeam, 5, ownedIds)
-  }, [selectedTeam, ownedCharacters])
+    const suggestions = getSuggestions(charactersData, selectedTeam, 5, ownedIds);
+    return suggestions.map(char => {
+      const teamAnalysis = analyzeTeam([...selectedTeam, char]);
+      return {
+        ...char,
+        synergyBreakdown: teamAnalysis.synergyBreakdown,
+      };
+    });
+  }, [selectedTeam, ownedCharacters]);
 
   // Full Team Analysis (strengths, weaknesses, strategies)
   const fullTeamAnalysis = useMemo(() => {
@@ -459,31 +473,41 @@ function App() {
                     </div>
                     <div className="space-y-2 overflow-y-auto max-h-72 pr-1">
                       {suggestions.map(char => (
-                        <div key={char.id} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex justify-between items-center group cursor-pointer hover:border-yellow-500/50 transition-colors" onClick={() => setViewCharacter(char)}>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-[10px] text-gray-500 overflow-hidden border border-gray-700">
-                              <img
-                                src={assetPath(`images/characters/${char.id}.png`)}
-                                alt={char.name}
-                                onError={(e) => { e.target.style.display = 'none' }}
-                                className="w-full h-full object-cover"
-                              />
+                        <div key={char.id} className="bg-gray-900/50 p-2 rounded border border-gray-700 flex flex-col group cursor-pointer hover:border-yellow-500/50 transition-colors" onClick={() => setViewCharacter(char)}>
+                          <div className="flex justify-between items-center w-full">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-10 h-10 bg-gray-800 rounded flex items-center justify-center text-[10px] text-gray-500 overflow-hidden border border-gray-700">
+                                <img
+                                  src={assetPath(`images/characters/${char.id}.png`)}
+                                  alt={char.name}
+                                  onError={(e) => { e.target.style.display = 'none' }}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-gray-200 truncate">{char.name}</div>
+                                <div className="text-[10px] text-green-400">Synergy Score: {char.synergyScore}</div>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <div className="font-bold text-sm text-gray-200 truncate">{char.name}</div>
-                              <div className="text-[10px] text-green-400">Synergy Score: {char.synergyScore}</div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                addToTeam(char)
+                              }}
+                              className="text-blue-400 hover:text-blue-300 text-lg px-2"
+                              title="Add to Team"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-800/50 rounded w-full">
+                            <div className="grid grid-cols-2 gap-2 text-center">
+                              <div title="Role Score">Roles: {char.synergyBreakdown?.roleScore || 0}</div>
+                              <div title="Mechanic Score">Mechs: {char.synergyBreakdown?.mechanicScore || 0}</div>
+                              <div title="Combo Score">Combo: {char.synergyBreakdown?.comboScore || 0}</div>
+                              <div title="Pressure Rating">Pressure: {char.synergyBreakdown?.pressureRating || 0}</div>
                             </div>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              addToTeam(char)
-                            }}
-                            className="text-blue-400 hover:text-blue-300 text-lg px-2"
-                            title="Add to Team"
-                          >
-                            +
-                          </button>
                         </div>
                       ))}
                       {suggestions.length === 0 && (

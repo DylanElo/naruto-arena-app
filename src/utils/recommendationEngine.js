@@ -486,10 +486,18 @@ export const analyzeTeam = (team) => {
     mechanicScore +
     Math.min(comboScore, 30) +
     pressureRating * 0.3 -
-    energyTeamPenalty
+    energyTeamPenalty;
+
+  const synergyBreakdown = {
+    roleScore,
+    mechanicScore,
+    comboScore,
+    pressureRating,
+    energyTeamPenalty,
+  };
 
   // Keep clamped version for backward compatibility and display
-  const synergyScore = clamp(Math.round(synergyScoreRaw), 0, 100)
+  const synergyScore = clamp(Math.round(synergyScoreRaw), 0, 100);
 
   // Strengths / weaknesses / strategies text
   const strengths = []
@@ -615,7 +623,8 @@ export const analyzeTeam = (team) => {
       pressureRating
     },
     synergyScore,
-    synergyScoreRaw
+    synergyScoreRaw,
+    synergyBreakdown,
   }
 }
 
@@ -703,267 +712,160 @@ const getPrimaryRoles = (char) => {
 }
 
 const scorePartnerFit = (mainChar, candidate) => {
-  const mainProfile = analyzeCharacter(mainChar)
-  const candProfile = analyzeCharacter(candidate)
+  const mainProfile = analyzeCharacter(mainChar);
+  const candProfile = analyzeCharacter(candidate);
 
-  const mainRoles = getPrimaryRoles(mainChar)
-  const candRoles = getPrimaryRoles(candidate)
+  const mainRoles = getPrimaryRoles(mainChar);
+  const candRoles = getPrimaryRoles(candidate);
 
-  let score = 0
-  const notes = []
+  let score = 0;
+  const notes = [];
 
-  const mMech = mainProfile.mechanics
-  const cMech = candProfile.mechanics
+  const mMech = mainProfile.mechanics;
+  const cMech = candProfile.mechanics;
 
-  // Enhanced Role complementarity (more nuanced)
+  // Role complementarity
   if (mainRoles.primary === 'dps') {
     if (candRoles.primary === 'support') {
+      score += 30;
+      notes.push('Provides support to a primary damage dealer');
+    } else if (candRoles.primary === 'tank') {
       score += 25;
-      notes.push('brings sustain/utility to a carry')
-    }
-    if (candRoles.primary === 'tank') {
+      notes.push('Provides protection for a damage dealer');
+    } else if (candRoles.primary === 'control') {
       score += 20;
-      notes.push('frontline / protection for a glass cannon')
-    }
-    if (candRoles.primary === 'control') {
-      score += 15;
-      notes.push('adds control so your DPS can hit safely')
-    }
-    // Avoid double DPS without good reason
-    if (candRoles.primary === 'dps' && !cMech.setup && !mMech.setup) {
-      score -= 5
+      notes.push('Controls enemies, allowing the DPS to act safely');
     }
   } else if (mainRoles.primary === 'support') {
     if (candRoles.primary === 'dps') {
-      score += 25;
-      notes.push('gives you a clear damage win condition')
-    }
-    if (candRoles.primary === 'control') {
+      score += 30;
+      notes.push('Provides a clear win condition for a support character');
+    } else if (candRoles.primary === 'control') {
       score += 20;
-      notes.push('locks enemies while you sustain')
-    }
-    if (candRoles.primary === 'tank') {
+      notes.push('Locks down enemies while you sustain');
+    } else if (candRoles.primary === 'tank') {
       score += 15;
-      notes.push('creates ultra-defensive sustain shell')
+      notes.push('Creates a highly defensive team');
     }
   } else if (mainRoles.primary === 'control') {
     if (candRoles.primary === 'dps') {
-      score += 25;
-      notes.push('control + damage core')
-    }
-    if (candRoles.primary === 'tank') {
+      score += 30;
+      notes.push('A classic control + damage combination');
+    } else if (candRoles.primary === 'tank') {
       score += 15;
-      notes.push('frontline control style')
-    }
-    if (candRoles.primary === 'support') {
-      score += 12;
-      notes.push('sustainable control strategy')
+      notes.push('A defensive control style');
+    } else if (candRoles.primary === 'support') {
+      score += 15;
+      notes.push('A sustainable control strategy');
     }
   } else if (mainRoles.primary === 'tank') {
     if (candRoles.primary === 'dps') {
+      score += 30;
+      notes.push('A classic tank + carry combination');
+    } else if (candRoles.primary === 'support') {
       score += 20;
-      notes.push('tank + carry core')
-    }
-    if (candRoles.primary === 'support') {
+      notes.push('A sustain-heavy team that can outlast opponents');
+    } else if (candRoles.primary === 'control') {
       score += 15;
-      notes.push('very grindy, sustain-heavy core')
-    }
-    if (candRoles.primary === 'control') {
-      score += 12;
-      notes.push('defensive control shell')
+      notes.push('A defensive control shell');
     }
   }
 
-  // --- V2 MECHANICS CHECKS (Granular) ---
-  const mMechV2 = mainProfile.knowledge?.profile?.mechanics || {}
-  const cMechV2 = candProfile.knowledge?.profile?.mechanics || {}
-
-  // Affliction Synergy (Better than generic "stacking")
-  if (mMechV2.affliction > 0 && cMechV2.invulnerable > 0) {
-    score += 15; notes.push('invulnerability buys time for affliction to kill')
-  }
-  if (cMechV2.affliction > 0 && mMechV2.invulnerable > 0) {
-    score += 15; notes.push('invulnerability buys time for affliction to kill')
-  }
-
-  // Piercing Synergy (True Anti-Tank)
-  if (mMechV2.piercing > 0 && cMechV2.piercing > 0) {
-    score += 12; notes.push('double piercing ignores all defenses')
-  }
-
-  // Destruction + Piercing
-  if ((mMechV2.destructibleDefense > 0 && cMechV2.piercing > 0) || (cMechV2.destructibleDefense > 0 && mMechV2.piercing > 0)) {
-    score += 10; notes.push('piercing ignores DD while you stack your own defense')
-  }
-
-  // --- TARGETING SYNERGY ---
-  const mTarget = mainProfile.knowledge?.profile?.targeting || {}
-  const cTarget = candProfile.knowledge?.profile?.targeting || {}
-
-  // Ally Buff + Single Target DPS = Great Synergy
-  if ((cTarget.ally > 0 || cTarget.allAllies > 0) && mTarget.enemy > 0) {
-    score += 15; notes.push('can buff your single-target damage dealer')
-  }
-  if ((mTarget.ally > 0 || mTarget.allAllies > 0) && cTarget.enemy > 0) {
-    score += 15; notes.push('can buff their single-target damage dealer')
-  }
-
-  // AoE + AoE = Board Control
-  if (mTarget.allEnemies > 0 && cTarget.allEnemies > 0) {
-    score += 12; notes.push('dual AoE for board-wide pressure')
-  }
-
-  // Self-only skills are less team-friendly (slight penalty if both are selfish)
-  if (mTarget.self > 2 && cTarget.self > 2) {
-    score -= 10; notes.push('both characters are self-focused, limited team utility')
-  }
-
-  // Team Protector (ally invul/heal) + DPS Carry = Classic Combo
-  if ((cTarget.ally > 0 && cMech.invulnerable > 0) && mainRoles.primary === 'dps') {
-    score += 18; notes.push('can protect your carry with ally invulnerability')
-  }
-  if ((mTarget.ally > 0 && mMech.invulnerable > 0) && candRoles.primary === 'dps') {
-    score += 18; notes.push('can protect their carry with ally invulnerability')
-  }
-
-  // --- LEGACY MECHANICS CHECKS (Broad Buckets) ---
+  // Mechanic synergies
   if (mMech.stun > 0 && cMech.setup > 0) {
-    score += 15; notes.push('your stuns give them safe setup turns')
+    score += 20;
+    notes.push('Stuns provide safe setup turns');
   }
   if (mMech.setup > 0 && cMech.stun > 0) {
-    score += 15; notes.push('their stuns give your setup time to stack')
+    score += 20;
+    notes.push('Stuns provide safe setup turns');
   }
   if (mMech.stacking > 0 && cMech.stun > 0) {
-    score += 10; notes.push('control keeps enemies under your DoTs/affliction')
+    score += 15;
+    notes.push('Control keeps enemies under DoTs/affliction');
   }
   if (cMech.stacking > 0 && mMech.stun > 0) {
-    score += 10; notes.push('your control keeps enemies under their DoTs/affliction')
+    score += 15;
+    notes.push('Control keeps enemies under DoTs/affliction');
   }
   if (mMech.antiTank > 0 && cMech.stacking > 0) {
-    score += 10; notes.push('anti-tank tools plus DoTs to break defensive teams')
+    score += 15;
+    notes.push('Anti-tank tools plus DoTs to break defensive teams');
   }
   if (cMech.antiTank > 0 && mMech.stacking > 0) {
-    score += 10; notes.push('DoTs plus anti-tank to punish DR/DD')
+    score += 15;
+    notes.push('DoTs plus anti-tank to punish DR/DD');
   }
-
-  // Counter synergy - both have counters = more defensive flexibility
   if (mMech.counter > 0 && cMech.counter > 0) {
-    score += 8; notes.push('multiple counters for defensive versatility')
+    score += 10;
+    notes.push('Multiple counters for defensive versatility');
   }
-
-  // Achievement synergy - achievements need supporting play
-  if (mMech.achievement > 0 && (cMech.stun > 0 || cMech.immunity > 0)) {
-    score += 12; notes.push('protection/control to enable achievement conditions')
-  }
-  if (cMech.achievement > 0 && (mMech.stun > 0 || mMech.immunity > 0)) {
-    score += 12; notes.push('your control/defense enables their achievement potential')
-  }
-
-  // AOE synergy - multiple AOE sources can dominate grouped teams
   if (mMech.aoe > 0 && cMech.aoe > 0) {
-    score += 10; notes.push('dual AOE pressure overwhelming vs grouped enemies')
-  }
-
-  // Piercing + DoT combo (both ignore DR)
-  if ((mMech.piercing > 0 || cMech.piercing > 0) && (mMech.stacking > 0 || cMech.stacking > 0)) {
-    score += 8; notes.push('piercing + affliction bypasses all defensive layers')
+    score += 10;
+    notes.push('Dual AOE pressure can overwhelm grouped enemies');
   }
 
   // Energy battery
-  const mainHasHighCost = mainProfile.knowledge?.skillProfiles?.some(sk =>
-    (sk.tags || []).includes('highCost') || (sk.tags || []).includes('finisher')
-  )
-  const candHasEnergySupport = !!candProfile.knowledge?.hooks?.energySupport?.length
-  const candHasHighCost = candProfile.knowledge?.skillProfiles?.some(sk =>
-    (sk.tags || []).includes('highCost') || (sk.tags || []).includes('finisher')
-  )
-  const mainHasEnergySupport = !!mainProfile.knowledge?.hooks?.energySupport?.length
-
+  const mainHasHighCost = mainProfile.knowledge?.skillProfiles?.some(sk => (sk.tags || []).includes('highCost'));
+  const candHasEnergySupport = candProfile.knowledge?.hooks?.energySupport?.length > 0;
   if (mainHasHighCost && candHasEnergySupport) {
-    score += 20; notes.push('acts as energy battery for your expensive skills')
+    score += 25;
+    notes.push('Acts as an energy battery for expensive skills');
   }
+
+  const candHasHighCost = candProfile.knowledge?.skillProfiles?.some(sk => (sk.tags || []).includes('highCost'));
+  const mainHasEnergySupport = mainProfile.knowledge?.hooks?.energySupport?.length > 0;
   if (candHasHighCost && mainHasEnergySupport) {
-    score += 20; notes.push('your energy support enables their high-cost threats')
+    score += 25;
+    notes.push('Acts as an energy battery for expensive skills');
   }
 
-  // Protect-the-carry (improved)
-  const mainIsCarry =
-    mainHasHighCost ||
-    (mainRoles.primary === 'dps' && (mMech.piercing + mMech.stacking) > 0)
-  const candIsCarry =
-    candHasHighCost ||
-    (candRoles.primary === 'dps' && (cMech.piercing + cMech.stacking) > 0)
-  const candHasProtection =
-    cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0 || cMech.statusShield > 0
-  const mainHasProtection =
-    mMech.immunity > 0 || mMech.invulnerable > 0 || mMech.cleanse > 0 || mMech.statusShield > 0
-
+  // Protect-the-carry
+  const mainIsCarry = mainHasHighCost || (mainRoles.primary === 'dps' && (mMech.piercing > 0 || mMech.stacking > 0));
+  const candHasProtection = cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0 || cMech.statusShield > 0;
   if (mainIsCarry && candHasProtection) {
-    score += 20; notes.push('can keep your main threat alive (invul / DR / cleanse / status shield)')
-  }
-  if (candIsCarry && mainHasProtection) {
-    score += 15; notes.push('your protection keeps their threat alive')
+    score += 25;
+    notes.push('Can keep the main threat alive');
   }
 
-  // Enhanced Energy color distribution analysis
-  const mainEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
-  const candEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 }
+  const candIsCarry = candHasHighCost || (candRoles.primary === 'dps' && (cMech.piercing > 0 || cMech.stacking > 0));
+  const mainHasProtection = mMech.immunity > 0 || mMech.invulnerable > 0 || mMech.cleanse > 0 || mMech.statusShield > 0;
+  if (candIsCarry && mainHasProtection) {
+    score += 25;
+    notes.push('Can keep the main threat alive');
+  }
+
+  // Energy distribution analysis
+  const mainEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 };
+  const candEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 };
 
   const countColors = (char, bucket) => {
-    ; (char.skills || []).forEach(skill => {
-      ; (skill.energy || []).forEach(e => {
-        if (!e) return
-        const key = e.toLowerCase()
-        if (bucket[key] !== undefined) {
-          bucket[key] += 1
+    (char.skills || []).forEach(skill => {
+      (skill.energy || []).forEach(e => {
+        if (e && bucket[e.toLowerCase()] !== undefined) {
+          bucket[e.toLowerCase()]++;
         }
-      })
-    })
-  }
+      });
+    });
+  };
 
-  countColors(mainChar, mainEnergy)
-  countColors(candidate, candEnergy)
+  countColors(mainChar, mainEnergy);
+  countColors(candidate, candEnergy);
 
-  // Heavy overlap penalty (both use the same color a lot)
-  let energyPenalty = 0
-  let heavyOverlapCount = 0
+  // Penalize heavy overlap in energy colors
+  let energyPenalty = 0;
   Object.keys(mainEnergy).forEach(color => {
-    const mainHeavy = mainEnergy[color] >= 3   // main uses this color a lot
-    const candHeavy = candEnergy[color] >= 2   // candidate also leans on it
-
-    if (mainHeavy && candHeavy) {
-      // Taijutsu/green triple-stacks are especially brick-prone
-      const basePenalty = (color === 'green') ? 12 : 8
-      energyPenalty += basePenalty
-      heavyOverlapCount++
+    if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
+      energyPenalty += 10;
     }
-  })
-
-  // Extra penalty if BOTH chars are high-cost threats on the same color
-  const shareAnyVeryHeavyColor = Object.keys(mainEnergy).some(
-    color => mainEnergy[color] >= 3 && candEnergy[color] >= 3
-  )
-  if (shareAnyVeryHeavyColor && mainProfile.isEnergyHungry && candProfile.isEnergyHungry) {
-    energyPenalty += 10
-    heavyOverlapCount++
-  }
-
-  // Complementary energy bonus (they fill gaps in your energy curve)
-  const mainDominant = Object.entries(mainEnergy).filter(([, v]) => v >= 3).map(([k]) => k)
-  const candDominant = Object.entries(candEnergy).filter(([, v]) => v >= 3).map(([k]) => k)
-  const overlapCount = mainDominant.filter(c => candDominant.includes(c)).length
-
-  if (overlapCount === 0 && mainDominant.length > 0 && candDominant.length > 0) {
-    score += 8; notes.push('complementary energy distribution - no color conflicts')
-  }
-
-  score -= energyPenalty
+  });
+  score -= energyPenalty;
   if (energyPenalty > 0) {
-    notes.push(`shares heavy energy color load (${heavyOverlapCount} color${heavyOverlapCount > 1 ? 's' : ''})`)
+    notes.push('Shares heavy energy color load');
   }
 
-  return { score, notes }
-}
+  return { score, notes };
+};
 
 export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = null, maxResults = 15) => {
   if (!mainChar) return []
