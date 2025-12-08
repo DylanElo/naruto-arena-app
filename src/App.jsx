@@ -51,6 +51,24 @@ function App() {
     return saved ? new Set(JSON.parse(saved)) : new Set()
   })
 
+  // Ownership Handlers
+  const handleToggleCharacter = (id) => {
+    const newSet = new Set(ownedCharacters)
+    if (newSet.has(id)) {
+      newSet.delete(id)
+    } else {
+      newSet.add(id)
+    }
+    setOwnedCharacters(newSet)
+    localStorage.setItem('narutoArena_ownedCharacters', JSON.stringify(Array.from(newSet)))
+  }
+
+  const handleBatchUpdateCollection = (ids) => {
+    const newSet = new Set(ids)
+    setOwnedCharacters(newSet)
+    localStorage.setItem('narutoArena_ownedCharacters', JSON.stringify(Array.from(newSet)))
+  }
+
   // Persist Saved Teams
   useMemo(() => {
     localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams))
@@ -740,7 +758,12 @@ function App() {
       {/* Collection Tab */}
       {activeTab === 'collection' && (
         <div className="max-w-7xl mx-auto relative z-10">
-          <CollectionManager allCharacters={charactersData} />
+          <CollectionManager
+            allCharacters={charactersData}
+            ownedIds={Array.from(ownedCharacters)}
+            onToggle={handleToggleCharacter}
+            onBatchUpdate={handleBatchUpdateCollection}
+          />
         </div>
       )}
 

@@ -6,8 +6,7 @@ import {
     getCollectionStats
 } from '../utils/collectionManager';
 
-const CollectionManager = ({ allCharacters }) => {
-    const [ownedIds, setOwnedIds] = useState(loadCollection());
+const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('');
     const [showSetup, setShowSetup] = useState(ownedIds.length === 0);
     const [search, setSearch] = useState('');
@@ -17,14 +16,13 @@ const CollectionManager = ({ allCharacters }) => {
         const level = parseInt(userLevel);
         if (level >= 1 && level <= 40) {
             const ids = initializeCollectionByLevel(level, allCharacters);
-            setOwnedIds(ids);
+            onBatchUpdate(ids);
             setShowSetup(false);
         }
     };
 
     const handleToggle = (charId) => {
-        const updated = toggleCharacter(charId);
-        setOwnedIds(updated);
+        onToggle(charId);
     };
 
     const filteredChars = allCharacters.filter(c =>
@@ -94,8 +92,8 @@ const CollectionManager = ({ allCharacters }) => {
                         <div
                             key={char.id}
                             className={`relative rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${owned
-                                    ? 'border-green-500 bg-green-900/20 hover:bg-green-900/30'
-                                    : 'border-gray-700 bg-gray-900/50 hover:bg-gray-800/50 opacity-50'
+                                ? 'border-green-500 bg-green-900/20 hover:bg-green-900/30'
+                                : 'border-gray-700 bg-gray-900/50 hover:bg-gray-800/50 opacity-50'
                                 }`}
                             onClick={() => handleToggle(char.id)}
                         >
