@@ -1,32 +1,28 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
+import { assetPath } from './utils/assetPath'
 
 // Energy Colors Mapping
 const ENERGY_COLORS = {
-  green: 'text-green-400',
-  red: 'text-red-400',
-  blue: 'text-blue-400',
-  white: 'text-white',
-  black: 'text-gray-400', // Random/Specific
-  none: 'text-gray-500'
+  green: 'text-emerald-600',
+  red: 'text-rose-600',
+  blue: 'text-sky-600',
+  white: 'text-slate-700',
+  black: 'text-slate-500', // Random/Specific
+  none: 'text-slate-400'
 }
 
 const ENERGY_BG_COLORS = {
-  green: 'bg-green-900/50 border-green-500/50',
-  red: 'bg-red-900/50 border-red-500/50',
-  blue: 'bg-blue-900/50 border-blue-500/50',
-  white: 'bg-gray-100/20 border-white/50',
-  black: 'bg-gray-800 border-gray-600',
-  none: 'bg-gray-800 border-gray-700'
-}
-
-const assetPath = (relativePath) => {
-  const trimmedPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath
-  return `${import.meta.env.BASE_URL}${trimmedPath}`
+  green: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+  red: 'bg-rose-50 border-rose-200 text-rose-700',
+  blue: 'bg-sky-50 border-sky-200 text-sky-700',
+  white: 'bg-slate-100 border-slate-200 text-slate-700',
+  black: 'bg-slate-200 border-slate-300 text-slate-700',
+  none: 'bg-slate-100 border-slate-200 text-slate-600'
 }
 
 function App() {
@@ -71,7 +67,7 @@ function App() {
   }
 
   // Persist Saved Teams
-  useMemo(() => {
+  useEffect(() => {
     localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams))
   }, [savedTeams])
 
@@ -212,63 +208,63 @@ function App() {
   const ownedProgress = Math.round((ownedCharacters.size / charactersData.length) * 100)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute -left-32 top-10 w-80 h-80 bg-orange-500/25 blur-3xl rounded-full"></div>
-        <div className="absolute right-0 bottom-10 w-96 h-96 bg-blue-500/15 blur-3xl rounded-full"></div>
-        <div className="absolute inset-x-10 bottom-0 h-40 bg-gradient-to-t from-black/60 via-black/0"></div>
+    <div className="min-h-screen bg-gradient-to-br from-[#fdf7ff] via-[#eef7ff] to-[#f9fff2] text-slate-900 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-70 mix-blend-screen">
+        <div className="absolute -left-24 top-10 w-72 h-72 bg-[#c1ecff] blur-3xl rounded-full"></div>
+        <div className="absolute right-4 -bottom-10 w-96 h-96 bg-[#ffd1e8] blur-3xl rounded-full"></div>
+        <div className="absolute inset-x-10 bottom-0 h-52 bg-gradient-to-t from-white/60 via-transparent"></div>
       </div>
 
-      <header className="relative z-10 px-4 md:px-10 pt-8 pb-6 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent">
+      <header className="relative z-10 px-4 md:px-10 pt-8 pb-6 border-b border-white/60 bg-white/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(255,182,193,0.25)]">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 shadow-lg shadow-black/30">
-                <span className="text-xs tracking-[0.35em] text-orange-200 uppercase">Naruto Arena</span>
-                <span className="text-[11px] text-slate-300">Squad Architect</span>
+              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white shadow-lg shadow-sky-200 border border-white/70">
+                <span className="text-xs tracking-[0.35em] text-sky-500 uppercase">Naruto Arena</span>
+                <span className="text-[11px] text-slate-600">Squad Architect</span>
               </div>
-              <h1 className="mt-4 text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-200 to-yellow-300 drop-shadow-xl">
-                Rebuilt command center for shinobi theorycrafting
+              <h1 className="mt-4 text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-purple-600 to-pink-500 drop-shadow-lg">
+                Sunlit playground for shinobi theorycrafting
               </h1>
-              <p className="text-gray-300 mt-4 max-w-3xl text-sm md:text-base leading-relaxed">
-                A calmer, layered cockpit for the Naruto-Arena meta. Draft, analyze, and archive squads with clearer cards, responsive chips, and live momentum readouts.
+              <p className="text-slate-600 mt-4 max-w-3xl text-sm md:text-base leading-relaxed">
+                A brighter, airy cockpit for the Naruto-Arena meta. Draft, analyze, and archive squads with crisp cards, soft gradients, and live momentum readouts.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 text-sm">
-              <div className="bg-slate-900/70 border border-orange-400/40 rounded-2xl px-4 py-3 min-w-[160px] shadow-inner shadow-orange-500/15">
-                <div className="text-xs uppercase text-orange-200/80">Synergy health</div>
-                <div className="text-3xl font-extrabold text-orange-100">{fullTeamAnalysis.synergyScore}%</div>
-                <div className="text-[10px] text-orange-200/70">Live across slots</div>
+              <div className="bg-white border border-orange-100 rounded-2xl px-4 py-3 min-w-[160px] shadow-lg shadow-orange-200/60">
+                <div className="text-xs uppercase text-orange-600">Synergy health</div>
+                <div className="text-3xl font-extrabold text-orange-500">{fullTeamAnalysis.synergyScore}%</div>
+                <div className="text-[10px] text-orange-500/70">Live across slots</div>
               </div>
-              <div className="bg-slate-900/70 border border-blue-400/40 rounded-2xl px-4 py-3 min-w-[160px] shadow-inner shadow-blue-500/15">
-                <div className="text-xs uppercase text-blue-200/80">Energy focus</div>
-                <div className="flex items-center gap-2 text-sm text-white font-semibold">
-                  <span className={`px-2 py-1 rounded-full border ${teamEnergyMix.dominant ? ENERGY_BG_COLORS[teamEnergyMix.dominant] : 'bg-gray-800 border-gray-700'}`}>
+              <div className="bg-white border border-sky-100 rounded-2xl px-4 py-3 min-w-[160px] shadow-lg shadow-sky-200/60">
+                <div className="text-xs uppercase text-sky-600">Energy focus</div>
+                <div className="flex items-center gap-2 text-sm text-slate-900 font-semibold">
+                  <span className={`px-2 py-1 rounded-full border ${teamEnergyMix.dominant ? ENERGY_BG_COLORS[teamEnergyMix.dominant] : 'bg-slate-100 border-slate-200 text-slate-600'}`}>
                     {teamEnergyMix.dominant ? teamEnergyMix.dominant.toUpperCase() : 'Balanced'}
                   </span>
-                  <span className="text-blue-200 text-xs">{teamEnergyMix.spread}% concentration</span>
+                  <span className="text-sky-600 text-xs">{teamEnergyMix.spread}% concentration</span>
                 </div>
-                <div className="text-[10px] text-blue-200/70">{selectedTeam.length === 0 ? 'Add ninjas to see the mix' : 'Higher % means riskier economy'}</div>
+                <div className="text-[10px] text-slate-500">{selectedTeam.length === 0 ? 'Add ninjas to see the mix' : 'Higher % means riskier economy'}</div>
               </div>
-              <div className="bg-slate-900/70 border border-emerald-400/40 rounded-2xl px-4 py-3 min-w-[160px] shadow-inner shadow-emerald-500/15">
-                <div className="text-xs uppercase text-emerald-200/80">Collection</div>
-                <div className="text-3xl font-extrabold text-emerald-100">{ownedProgress}%</div>
-                <div className="text-[10px] text-emerald-200/70">{ownedCharacters.size} owned / {charactersData.length}</div>
+              <div className="bg-white border border-emerald-100 rounded-2xl px-4 py-3 min-w-[160px] shadow-lg shadow-emerald-200/60">
+                <div className="text-xs uppercase text-emerald-600">Collection</div>
+                <div className="text-3xl font-extrabold text-emerald-500">{ownedProgress}%</div>
+                <div className="text-[10px] text-emerald-600/70">{ownedCharacters.size} owned / {charactersData.length}</div>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3 bg-white/5 p-2 rounded-2xl border border-white/10 backdrop-blur">
-            <button onClick={() => setActiveTab('builder')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'builder' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
+          <div className="mt-6 flex flex-wrap items-center gap-3 bg-white p-2 rounded-2xl border border-white/70 backdrop-blur">
+            <button onClick={() => setActiveTab('builder')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'builder' ? 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg shadow-sky-200/80' : 'text-slate-600 hover:bg-slate-100'}`}>
               🛠️ Builder
             </button>
-            <button onClick={() => setActiveTab('collection')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'collection' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('collection')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'collection' ? 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg shadow-sky-200/80' : 'text-slate-600 hover:bg-slate-100'}`}>
               📚 Collection
             </button>
-            <button onClick={() => setActiveTab('counter')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'counter' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('counter')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'counter' ? 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg shadow-sky-200/80' : 'text-slate-600 hover:bg-slate-100'}`}>
               🎯 Counter Lab
             </button>
-            <button onClick={() => setActiveTab('meta')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'meta' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
+            <button onClick={() => setActiveTab('meta')} className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'meta' ? 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg shadow-sky-200/80' : 'text-slate-600 hover:bg-slate-100'}`}>
               🛰️ Meta Decks
             </button>
           </div>
@@ -280,28 +276,28 @@ function App() {
         <div className="max-w-7xl mx-auto p-4 md:p-10 relative z-10 space-y-6">
           <div className="grid grid-cols-1 xl:grid-cols-[2fr,1fr] gap-6">
             <div className="space-y-6">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl shadow-black/30 backdrop-blur">
+              <div className="bg-white/80 border border-white/70 rounded-3xl p-6 shadow-2xl shadow-sky-200/80 backdrop-blur-xl">
                 <div className="flex flex-wrap items-center gap-3 mb-5">
                   <div className="flex-1 min-w-[220px]">
-                    <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">Deck tray</p>
-                    <h2 className="text-3xl font-black text-white">Glass slots with quick gestures</h2>
-                    <p className="text-sm text-slate-200/90 leading-relaxed">Tap a card to peek at the full profile, press + to instantly reserve it, or use the randomizer to test weird synergies.</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-sky-500">Deck tray</p>
+                    <h2 className="text-3xl font-black text-slate-900">Glass slots with quick gestures</h2>
+                    <p className="text-sm text-slate-600 leading-relaxed">Tap a card to peek at the full profile, press + to instantly reserve it, or use the randomizer to test weird synergies.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={randomizeTeam} className="px-4 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-xl font-semibold text-white shadow-lg shadow-fuchsia-500/30">Shuffle trio</button>
-                    <button onClick={() => setSelectedTeam([])} className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl font-semibold text-slate-100 hover:border-red-400/70">Clear board</button>
-                    <button onClick={saveTeam} disabled={selectedTeam.length === 0 || !teamName.trim()} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-xl font-semibold text-white">Save deck</button>
+                    <button onClick={randomizeTeam} className="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-500 rounded-xl font-semibold text-white shadow-lg shadow-sky-200/60">Shuffle trio</button>
+                    <button onClick={() => setSelectedTeam([])} className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-700 hover:border-rose-300 hover:text-rose-500">Clear board</button>
+                    <button onClick={saveTeam} disabled={selectedTeam.length === 0 || !teamName.trim()} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-200 disabled:text-slate-400 rounded-xl font-semibold text-white">Save deck</button>
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-[1fr,280px] gap-4 items-stretch">
-                  <div className="bg-black/30 border border-slate-700/80 rounded-2xl p-4 flex flex-wrap gap-3">
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-wrap gap-3 shadow-inner shadow-slate-200/80">
                     {[0, 1, 2].map((index) => {
                       const char = selectedTeam[index]
                       return (
                         <div
                           key={index}
-                          className="flex-1 min-w-[220px] bg-slate-900/70 border border-slate-700 rounded-2xl overflow-hidden flex hover:border-orange-400/60 transition-all"
+                          className="flex-1 min-w-[220px] bg-white border border-slate-200 rounded-2xl overflow-hidden flex hover:border-sky-400/60 transition-all"
                         >
                           {char ? (
                             <>
@@ -314,7 +310,7 @@ function App() {
                                 />
                                 <button
                                   onClick={() => removeFromTeam(char.id)}
-                                  className="absolute top-2 right-2 bg-black/70 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                                  className="absolute top-2 right-2 bg-white/90 text-slate-700 rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-rose-500 hover:text-white transition-colors"
                                   title="Remove"
                                 >
                                   ×
@@ -322,19 +318,19 @@ function App() {
                               </div>
                               <div className="p-3 flex flex-col justify-between flex-1">
                                 <div>
-                                  <div className="text-xs uppercase text-orange-300/80">Slot {index + 1}</div>
-                                  <div className="font-bold text-lg text-white leading-tight">{char.name}</div>
+                                  <div className="text-xs uppercase text-sky-500">Slot {index + 1}</div>
+                                  <div className="font-bold text-lg text-slate-900 leading-tight">{char.name}</div>
                                   <div className="flex gap-1 mt-2 flex-wrap">
                                     {char.skills.slice(0, 3).map((skill, i) => (
-                                      <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-200 capitalize">
+                                      <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 capitalize">
                                         {(skill.classes || 'Skill').split(',')[0]}
                                       </span>
                                     ))}
                                   </div>
                                 </div>
                                 <div className="flex gap-1 mt-3">
-                                  {char.skills[0].energy.map((e, i) => (
-                                    <span key={i} className={`w-7 h-7 rounded-md border flex items-center justify-center text-[10px] font-bold ${ENERGY_BG_COLORS[e] || 'bg-gray-700/70 border-gray-700'}`}>
+                                  {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                    <span key={i} className={`w-7 h-7 rounded-md border flex items-center justify-center text-[10px] font-bold ${ENERGY_BG_COLORS[e] || 'bg-slate-100 border-slate-200 text-slate-600'}`}>
                                       {e === 'none' ? '-' : e[0].toUpperCase()}
                                     </span>
                                   ))}
@@ -342,7 +338,7 @@ function App() {
                               </div>
                             </>
                           ) : (
-                            <div className="flex items-center justify-center w-full h-24 text-slate-500 text-sm gap-2">
+                            <div className="flex items-center justify-center w-full h-24 text-slate-400 text-sm gap-2">
                               <span className="text-xl">＋</span>
                               <span>Select a shinobi</span>
                             </div>
@@ -352,25 +348,25 @@ function App() {
                     })}
                   </div>
 
-                  <div className="bg-black/30 border border-slate-700/80 rounded-2xl p-4 flex flex-col gap-3">
+                  <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 shadow-inner shadow-slate-200/80">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase text-slate-400">Tempo snapshot</p>
-                        <p className="text-2xl font-bold text-white">{fullTeamAnalysis.tempo.pressureRating}% pressure</p>
+                        <p className="text-xs uppercase text-sky-500">Tempo snapshot</p>
+                        <p className="text-2xl font-bold text-slate-900">{fullTeamAnalysis.tempo.pressureRating}% pressure</p>
                       </div>
-                      <div className="text-right text-xs text-slate-300">
+                      <div className="text-right text-xs text-slate-500">
                         <p>TTK: {fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
                         <p>Energy to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700">
-                        <p className="text-slate-400">Burst</p>
-                        <p className="text-white text-lg font-semibold">{fullTeamAnalysis.tempo.burstDamage || 0} dmg</p>
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-slate-500">Burst</p>
+                        <p className="text-slate-900 text-lg font-semibold">{fullTeamAnalysis.tempo.burstDamage || 0} dmg</p>
                       </div>
-                      <div className="bg-slate-900/60 rounded-lg p-3 border border-slate-700">
-                        <p className="text-slate-400">Energy</p>
-                        <p className="text-white text-lg font-semibold">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)} total</p>
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-slate-500">Energy</p>
+                        <p className="text-slate-900 text-lg font-semibold">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)} total</p>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap text-xs">
@@ -413,13 +409,13 @@ function App() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm truncate text-white">{char.name}</div>
                                   <div className="text-[11px] text-slate-400 truncate">{char.skills.map(s => s.name).slice(0, 2).join(' • ')}</div>
-                                  <div className="flex gap-1 mt-2">
-                                    {char.skills[0].energy.map((e, i) => (
-                                      <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-gray-700'}`}>
-                                        {e === 'none' ? '-' : e[0].toUpperCase()}
-                                      </span>
-                                    ))}
-                                  </div>
+                                    <div className="flex gap-1 mt-2">
+                                      {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                        <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-gray-700'}`}>
+                                          {e === 'none' ? '-' : e[0].toUpperCase()}
+                                        </span>
+                                      ))}
+                                    </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <button onClick={() => setViewCharacter(char)} className="text-xs text-blue-300 hover:text-blue-200">Open card</button>
