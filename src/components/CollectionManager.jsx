@@ -4,11 +4,13 @@ import {
     getCollectionStats
 } from '../utils/collectionManager'
 import { assetPath } from '../utils/assetPath'
+import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
     const [showSetup, setShowSetup] = useState(ownedIds.length === 0)
     const [search, setSearch] = useState('')
+    const [activeFilter, setActiveFilter] = useState('ALL')
     const stats = getCollectionStats(allCharacters, ownedIds)
 
     const handleLevelSetup = () => {
@@ -24,8 +26,43 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
         onToggle(charId)
     }
 
-    const filteredChars = allCharacters.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
+    // Filter logic - combines search + mechanic filter
+    const filteredChars = allCharacters.filter(c => {
+        // 1. Search text
+        if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+
+        // 2. Mechanic filter (requires checking knowledge base)
+        if (activeFilter !== 'ALL') {
+            const knowledge = getCharacterKnowledge(c.id)
+            if (!knowledge) return false
+
+            // Using V2 profile if available, falling back to legacy mechanics
+            const mech = knowledge.profile?.mechanics || knowledge.mechanics
+
+            switch (activeFilter) {
+                case 'STUN': return mech.stun > 0
+                case 'AOE': return mech.aoe > 0
+                case 'HEAL': return (mech.heal || 0) + (mech.healthSteal || 0) > 0
+                case 'PIERCING': return (mech.piercing || 0) > 0
+                case 'AFFLICTION': return (mech.affliction || 0) + (mech.dot || 0) > 0
+                case 'DEFENSE': return (mech.invulnerable || 0) + (mech.damageReduction || 0) > 0
+                case 'ENERGY': return (mech.energyGain || 0) > 0
+                default: return true
+            }
+        }
+        return true
+    })
+
+    const FilterButton = ({ label, filterKey, color }) => (
+        <button
+            onClick={() => setActiveFilter(filterKey)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
+                    ? `bg-${color}-500 border-${color}-400 text-white shadow-md`
+                    : 'bg-white/60 border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+        >
+            {label}
+        </button>
     )
 
     if (showSetup) {
@@ -72,23 +109,37 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3 mb-4">
-                    <div className="flex-1 min-w-[220px] relative">
-                        <input
-                            type="text"
-                            placeholder="Search characters or titles..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full p-3 bg-white/80 border border-slate-200 rounded-xl text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">⌕</span>
+                <div className="flex flex-col gap-3 mb-4">
+                    <div className="flex flex-wrap gap-3">
+                        <div className="flex-1 min-w-[220px] relative">
+                            <input
+                                type="text"
+                                placeholder="Search characters or titles..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full p-3 bg-white/80 border border-slate-200 rounded-xl text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">⌕</span>
+                        </div>
+                        <button
+                            onClick={() => setShowSetup(true)}
+                            className="bg-gradient-to-r from-sky-500 to-blue-500 text-white px-5 py-3 rounded-xl font-semibold shadow-lg shadow-sky-200/70 hover:scale-[1.01] transition-all"
+                        >
+                            Reset by level
+                        </button>
                     </div>
-                    <button
-                        onClick={() => setShowSetup(true)}
-                        className="bg-gradient-to-r from-sky-500 to-blue-500 text-white px-5 py-3 rounded-xl font-semibold shadow-lg shadow-sky-200/70 hover:scale-[1.01] transition-all"
-                    >
-                        Reset by level
-                    </button>
+
+                    {/* MECHANIC FILTERS */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        <FilterButton label="All" filterKey="ALL" color="slate" />
+                        <FilterButton label="⚡ Stun" filterKey="STUN" color="yellow" />
+                        <FilterButton label="💥 AoE" filterKey="AOE" color="red" />
+                        <FilterButton label="💚 Heal" filterKey="HEAL" color="emerald" />
+                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" color="purple" />
+                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" color="pink" />
+                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" color="blue" />
+                        <FilterButton label="🔋 Energy" filterKey="ENERGY" color="cyan" />
+                    </div>
                 </div>
             </div>
 

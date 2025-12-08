@@ -44,10 +44,22 @@ export function isBurst(desc, damageValue) {
 }
 
 /**
- * Detect if skill is AoE
+ * Detect targeting type
+ */
+export function detectTarget(desc) {
+    const d = desc.toLowerCase();
+    if (/all enemies|all characters/.test(d)) return 'allEnemies';
+    if (/all allies/.test(d)) return 'allAllies';
+    if (/one ally|target ally|an ally/.test(d)) return 'ally';
+    if (/self|user/.test(d)) return 'self';
+    return 'enemy';
+}
+
+/**
+ * Detect if skill is AoE (Legacy wrapper)
  */
 export function isAoE(desc) {
-    return /all enemies|all characters|all allies/i.test(desc);
+    return detectTarget(desc) === 'allEnemies' || detectTarget(desc) === 'allAllies';
 }
 
 /**
@@ -138,7 +150,12 @@ export function extractSkillTags(skill) {
 
         // Skill type
         mainClass: null,
-        persistence: null
+        // Skill type
+        mainClass: null,
+        persistence: null,
+
+        // Targeting
+        target: detectTarget(desc)
     };
 
     // Set burst flag
@@ -238,22 +255,36 @@ export function buildCharacterProfile(character) {
 
         // Special flags
         isGlassCannon: false,
-        isEnergyHungry: false
+        // Special flags
+        isGlassCannon: false,
+        isEnergyHungry: false,
+
+        // Targeting Analysis
+        targeting: {
+            self: 0,
+            ally: 0,
+            allAllies: 0,
+            enemy: 0,
+            allEnemies: 0
+        }
     };
 
     // Analyze each skill
     character.skills.forEach(skill => {
         const tags = extractSkillTags(skill);
 
-        // Count damage types
-        if (tags.damageType === 'affliction') profile.mechanics.affliction++;
-        if (tags.damageType === 'piercing') profile.mechanics.piercing++;
-        if (tags.damageType === 'normal') profile.mechanics.normal++;
-        if (tags.damageType === 'healthSteal') profile.mechanics.healthSteal++;
+        // ONLY count damage types if targeting enemies (not self-damage!)
+        const isOffensive = tags.target === 'enemy' || tags.target === 'allEnemies';
 
-        if (tags.isBurst) profile.mechanics.burst++;
-        if (tags.hasDot) profile.mechanics.dot++;
-        if (tags.isAoE) profile.mechanics.aoe++;
+        if (isOffensive) {
+            if (tags.damageType === 'affliction') profile.mechanics.affliction++;
+            if (tags.damageType === 'piercing') profile.mechanics.piercing++;
+            if (tags.damageType === 'normal') profile.mechanics.normal++;
+            if (tags.damageType === 'healthSteal') profile.mechanics.healthSteal++;
+            if (tags.isBurst) profile.mechanics.burst++;
+            if (tags.hasDot) profile.mechanics.dot++;
+            if (tags.isAoE) profile.mechanics.aoe++;
+        }
 
         // Count defense
         if (tags.defense.damageReduction) profile.mechanics.damageReduction++;
@@ -281,6 +312,11 @@ export function buildCharacterProfile(character) {
         tags.resource.energyColors.forEach(color => {
             profile.energy.colors[color]++;
         });
+
+        // Targeting tracking
+        if (tags.target) {
+            profile.targeting[tags.target]++;
+        }
     });
 
     // Calculate roles

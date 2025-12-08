@@ -774,7 +774,59 @@ const scorePartnerFit = (mainChar, candidate) => {
     }
   }
 
-  // Enhanced Mechanics synergy (manual-based)
+  // --- V2 MECHANICS CHECKS (Granular) ---
+  const mMechV2 = mainProfile.knowledge?.profile?.mechanics || {}
+  const cMechV2 = candProfile.knowledge?.profile?.mechanics || {}
+
+  // Affliction Synergy (Better than generic "stacking")
+  if (mMechV2.affliction > 0 && cMechV2.invulnerable > 0) {
+    score += 15; notes.push('invulnerability buys time for affliction to kill')
+  }
+  if (cMechV2.affliction > 0 && mMechV2.invulnerable > 0) {
+    score += 15; notes.push('invulnerability buys time for affliction to kill')
+  }
+
+  // Piercing Synergy (True Anti-Tank)
+  if (mMechV2.piercing > 0 && cMechV2.piercing > 0) {
+    score += 12; notes.push('double piercing ignores all defenses')
+  }
+
+  // Destruction + Piercing
+  if ((mMechV2.destructibleDefense > 0 && cMechV2.piercing > 0) || (cMechV2.destructibleDefense > 0 && mMechV2.piercing > 0)) {
+    score += 10; notes.push('piercing ignores DD while you stack your own defense')
+  }
+
+  // --- TARGETING SYNERGY ---
+  const mTarget = mainProfile.knowledge?.profile?.targeting || {}
+  const cTarget = candProfile.knowledge?.profile?.targeting || {}
+
+  // Ally Buff + Single Target DPS = Great Synergy
+  if ((cTarget.ally > 0 || cTarget.allAllies > 0) && mTarget.enemy > 0) {
+    score += 15; notes.push('can buff your single-target damage dealer')
+  }
+  if ((mTarget.ally > 0 || mTarget.allAllies > 0) && cTarget.enemy > 0) {
+    score += 15; notes.push('can buff their single-target damage dealer')
+  }
+
+  // AoE + AoE = Board Control
+  if (mTarget.allEnemies > 0 && cTarget.allEnemies > 0) {
+    score += 12; notes.push('dual AoE for board-wide pressure')
+  }
+
+  // Self-only skills are less team-friendly (slight penalty if both are selfish)
+  if (mTarget.self > 2 && cTarget.self > 2) {
+    score -= 10; notes.push('both characters are self-focused, limited team utility')
+  }
+
+  // Team Protector (ally invul/heal) + DPS Carry = Classic Combo
+  if ((cTarget.ally > 0 && cMech.invulnerable > 0) && mainRoles.primary === 'dps') {
+    score += 18; notes.push('can protect your carry with ally invulnerability')
+  }
+  if ((mTarget.ally > 0 && mMech.invulnerable > 0) && candRoles.primary === 'dps') {
+    score += 18; notes.push('can protect their carry with ally invulnerability')
+  }
+
+  // --- LEGACY MECHANICS CHECKS (Broad Buckets) ---
   if (mMech.stun > 0 && cMech.setup > 0) {
     score += 15; notes.push('your stuns give them safe setup turns')
   }

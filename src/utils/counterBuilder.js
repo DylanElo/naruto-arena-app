@@ -1,46 +1,45 @@
 /**
  * COUNTER BUILDER (TAG-BASED VERSION)
- * Uses the manual-driven knowledge engine instead of raw simulation.
- *
- * The public API is kept compatible:
- *   - calculateCounterScore(candidate, enemyTeam, currentTeam?)
- *   - getCounterReason(candidate, enemyTeam)
- *   - buildCounterTeam(enemyTeam, allCharacters, ownedCharacterIds?, currentTeam?)
+ * Uses the improved manual-driven knowledge engine directly.
  */
 
 import {
-  scoreCounterCandidateByTags,
-  explainCounterFitByTags,
-  recommendCounterCandidatesByTags
-} from './recommendationEngine'
+  analyzeEnemyThreats,
+  calculateNeeds,
+  scoreCounterMatch,
+  explainCounter,
+  buildCounterTeamManual
+} from './matchupLogic'
+
+import { buildCharacterProfile } from './skillTagger'
 
 // Simple wrapper: expose score based on tag analysis
 export const calculateCounterScore = (candidate, enemyTeam, currentTeam = []) => {
-  return scoreCounterCandidateByTags(candidate, enemyTeam, currentTeam)
+  if (!candidate || !enemyTeam || enemyTeam.length === 0) return 0;
+
+  const threats = analyzeEnemyThreats(enemyTeam);
+  const needs = calculateNeeds(threats);
+  const profile = buildCharacterProfile(candidate);
+
+  if (!profile) return 0;
+
+  return scoreCounterMatch(profile, needs);
 }
 
 // Simple wrapper: human-readable reason string
 export const getCounterReason = (candidate, enemyTeam) => {
-  return explainCounterFitByTags(candidate, enemyTeam)
+  if (!candidate || !enemyTeam || enemyTeam.length === 0) return "";
+
+  const threats = analyzeEnemyThreats(enemyTeam);
+  const needs = calculateNeeds(threats);
+  const profile = buildCharacterProfile(candidate);
+
+  if (!profile) return "";
+
+  return explainCounter(profile, threats, needs);
 }
 
 // Main entry point used by the React component
 export const buildCounterTeam = (enemyTeam, allCharacters, ownedCharacterIds = [], currentTeam = []) => {
-  if (!enemyTeam || enemyTeam.length === 0) return []
-
-  // Delegate candidate ranking to the tag-based engine
-  const recommended = recommendCounterCandidatesByTags(
-    enemyTeam,
-    allCharacters,
-    ownedCharacterIds,
-    currentTeam,
-    10
-  )
-
-  // Normalize field names for the UI (counterScore / counterReason)
-  return recommended.map(char => ({
-    ...char,
-    counterScore: char.counterScoreByTags ?? 0,
-    counterReason: char.counterReasonByTags ?? 'General good mechanics vs this team'
-  }))
+  return buildCounterTeamManual(enemyTeam, allCharacters, ownedCharacterIds, currentTeam);
 }
