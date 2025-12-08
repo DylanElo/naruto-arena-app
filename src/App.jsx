@@ -35,6 +35,7 @@ function App() {
   const [energyFilter, setEnergyFilter] = useState('all')
   const [classFilter, setClassFilter] = useState('all')
   const [effectFilter, setEffectFilter] = useState('all')
+  const [ownedOnly, setOwnedOnly] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState([])
   const [viewCharacter, setViewCharacter] = useState(null)
 
@@ -107,6 +108,8 @@ function App() {
     return charactersData.filter(char => {
       if (!char) return false
 
+      if (ownedOnly && !ownedCharacters.has(char.id)) return false
+
       const matchesSearch = (char.name || '').toLowerCase().includes(search.toLowerCase())
 
       const matchesEnergy = energyFilter === 'all' || (char.skills && char.skills.some(skill =>
@@ -123,7 +126,25 @@ function App() {
 
       return matchesSearch && matchesEnergy && matchesClass && matchesEffect
     })
-  }, [search, energyFilter, classFilter, effectFilter])
+  }, [search, energyFilter, classFilter, effectFilter, ownedOnly, ownedCharacters])
+
+  const activeFilters = useMemo(() => {
+    const chips = []
+    if (search.trim()) chips.push({ label: `Search: "${search.trim()}"`, onClear: () => setSearch('') })
+    if (energyFilter !== 'all') chips.push({ label: `Energy · ${energyFilter}`, onClear: () => setEnergyFilter('all') })
+    if (classFilter !== 'all') chips.push({ label: `Class · ${classFilter}`, onClear: () => setClassFilter('all') })
+    if (effectFilter !== 'all') chips.push({ label: `Effect · ${effectFilter}`, onClear: () => setEffectFilter('all') })
+    if (ownedOnly) chips.push({ label: 'Owned only', onClear: () => setOwnedOnly(false) })
+    return chips
+  }, [search, energyFilter, classFilter, effectFilter, ownedOnly])
+
+  const clearFilters = () => {
+    setSearch('')
+    setEnergyFilter('all')
+    setClassFilter('all')
+    setEffectFilter('all')
+    setOwnedOnly(false)
+  }
 
   // Team Management
   const addToTeam = (char) => {
@@ -182,35 +203,39 @@ function App() {
   }, [selectedTeam])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white p-4 md:p-10 font-sans relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 opacity-40">
-        <div className="absolute -left-10 top-10 w-72 h-72 bg-orange-500/30 blur-3xl rounded-full"></div>
-        <div className="absolute right-0 bottom-10 w-80 h-80 bg-blue-500/20 blur-3xl rounded-full"></div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white p-4 md:p-10 font-sans relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-30">
+        <div className="absolute -left-16 top-10 w-72 h-72 bg-orange-500/25 blur-3xl rounded-full"></div>
+        <div className="absolute right-0 bottom-10 w-80 h-80 bg-blue-500/15 blur-3xl rounded-full"></div>
+        <div className="absolute inset-x-10 bottom-0 h-40 bg-gradient-to-t from-black/60 via-black/0"></div>
       </div>
 
       <header className="mb-10 text-center relative z-10">
-        <p className="text-xs tracking-[0.4em] text-gray-400 uppercase mb-3">Naruto Arena Companion</p>
-        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-200 to-yellow-400 drop-shadow-lg">
-          Team Builder & Analyzer
+        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 shadow-lg shadow-black/30">
+          <span className="text-xs tracking-[0.35em] text-orange-200 uppercase">Naruto Arena</span>
+          <span className="text-[11px] text-slate-300">Companion Lab</span>
+        </div>
+        <h1 className="mt-4 text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-amber-200 to-yellow-300 drop-shadow-xl">
+          Build beautiful, readable squads
         </h1>
-        <p className="text-gray-300 mt-3 max-w-3xl mx-auto text-sm md:text-base">
-          Draft smarter squads with skill-driven synergy insights, turn-to-kill projections, and energy costs to secure the finish.
+        <p className="text-gray-300 mt-4 max-w-3xl mx-auto text-sm md:text-base leading-relaxed">
+          Cleaner cards, calmer contrasts, and soft glass panels keep the focus on strategy instead of noise. Track synergy, energy mix, and play patterns without the glare.
         </p>
       </header>
 
       {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto mb-4 relative z-10">
-        <div className="flex gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-700/60">
-          <button onClick={() => setActiveTab('builder')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'builder' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+      <div className="max-w-7xl mx-auto mb-6 relative z-10">
+        <div className="flex gap-2 bg-white/5 p-2 rounded-2xl border border-white/10 backdrop-blur">
+          <button onClick={() => setActiveTab('builder')} className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'builder' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
             🏗️ Team Builder
           </button>
-          <button onClick={() => setActiveTab('collection')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'collection' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+          <button onClick={() => setActiveTab('collection')} className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'collection' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
             📚 My Collection
           </button>
-          <button onClick={() => setActiveTab('counter')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'counter' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+          <button onClick={() => setActiveTab('counter')} className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'counter' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
             🎯 Counter Builder
           </button>
-          <button onClick={() => setActiveTab('meta')} className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${activeTab === 'meta' ? 'bg-orange-600 text-white shadow-lg' : 'bg-transparent text-gray-400 hover:text-white'}`}>
+          <button onClick={() => setActiveTab('meta')} className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${activeTab === 'meta' ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow-lg shadow-orange-500/30' : 'text-slate-200 hover:bg-white/5'}`}>
             📊 Meta Teams
           </button>
         </div>
@@ -219,21 +244,21 @@ function App() {
       {/* Team Builder Tab */}
       {activeTab === 'builder' && (
         <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          <div className="bg-gradient-to-r from-slate-900/90 via-slate-800/80 to-slate-900/80 border border-orange-500/20 rounded-3xl p-6 shadow-xl shadow-orange-500/10">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl shadow-black/30 backdrop-blur">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">Deck Tray</p>
                   <h2 className="text-3xl font-black text-white">Clan Wars-style builder</h2>
-                  <p className="text-sm text-slate-300 max-w-2xl">Arrange your three shinobi like a Clash Royale deck: see energy pressure, dominant color, and tempo at a glance before you dive into the card grid.</p>
+                  <p className="text-sm text-slate-200/90 max-w-2xl leading-relaxed">Arrange three shinobi on a calm glass canvas. Scan energy pressure, dominant color, and tempo before diving into the grid.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <div className="bg-black/40 border border-orange-500/30 rounded-2xl px-4 py-3 min-w-[140px] shadow-inner shadow-orange-500/20">
+                  <div className="bg-slate-950/80 border border-orange-400/30 rounded-2xl px-4 py-3 min-w-[140px] shadow-inner shadow-orange-500/15">
                     <div className="text-xs uppercase text-orange-200/80">Synergy</div>
                     <div className="text-3xl font-extrabold text-orange-100">{fullTeamAnalysis.synergyScore}%</div>
                     <div className="text-[10px] text-orange-200/70">Updated live</div>
                   </div>
-                  <div className="bg-black/40 border border-blue-500/30 rounded-2xl px-4 py-3 min-w-[180px] shadow-inner shadow-blue-500/20">
+                  <div className="bg-slate-950/80 border border-blue-400/30 rounded-2xl px-4 py-3 min-w-[180px] shadow-inner shadow-blue-500/15">
                     <div className="text-xs uppercase text-blue-200/80">Energy focus</div>
                     <div className="flex items-center gap-2 text-sm text-white font-semibold">
                       <span className={`px-2 py-1 rounded-full border ${teamEnergyMix.dominant ? ENERGY_BG_COLORS[teamEnergyMix.dominant] : 'bg-gray-800 border-gray-700'}`}>
@@ -616,31 +641,70 @@ function App() {
             </div>
 
             {/* RIGHT COLUMN: Character Selection */}
-            <div className="space-y-6">
+              <div className="space-y-6">
 
               {/* Filters */}
-              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/60 space-y-4 shadow-lg shadow-orange-500/10">
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-black/25 backdrop-blur sticky top-4">
                 <div className="flex flex-wrap gap-3 items-center">
                   <div className="flex-1 min-w-[220px]">
-                    <input
-                      type="text"
-                      placeholder="Search shinobi..."
-                      className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white focus:border-orange-500 focus:outline-none"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        placeholder="Search shinobi, abilities, or tags"
+                        className="w-full p-3 bg-slate-950/70 border border-white/10 rounded-xl text-white focus:border-amber-400 focus:outline-none pr-12 shadow-inner shadow-black/40"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 group-focus-within:text-amber-200">⌘K</span>
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-400">{filteredCharacters.length} cards shown</div>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-xs text-slate-200 bg-slate-900/70 px-3 py-2 rounded-full border border-white/10 cursor-pointer hover:border-amber-300/70 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={ownedOnly}
+                        onChange={(e) => setOwnedOnly(e.target.checked)}
+                        className="accent-amber-400"
+                      />
+                      Owned only
+                    </label>
+                    <div className="text-xs text-slate-300/90">{filteredCharacters.length} cards shown</div>
+                  </div>
                 </div>
 
+                {activeFilters.length > 0 && (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Active filters</span>
+                    {activeFilters.map((chip, idx) => (
+                      <button
+                        key={idx}
+                        onClick={chip.onClear}
+                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/70 border border-white/10 text-xs text-slate-50 hover:border-amber-300/70 shadow-sm shadow-black/40"
+                      >
+                        {chip.label}
+                        <span className="text-slate-400">×</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={clearFilters}
+                      className="text-[11px] uppercase tracking-[0.2em] text-amber-200 hover:text-amber-100 ml-auto"
+                    >
+                      Reset all
+                    </button>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Energy</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Energy</p>
+                    <p className="text-[11px] text-slate-500">Prioritize your opening hand</p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {['all', 'green', 'red', 'blue', 'white'].map(type => (
                       <button
                         key={type}
                         onClick={() => setEnergyFilter(type)}
-                        className={`px-3 py-2 rounded-full text-sm border transition-colors ${energyFilter === type ? 'bg-orange-600 text-white border-orange-400' : 'bg-gray-900 border-gray-700 text-slate-200 hover:border-orange-400/60'}`}
+                        className={`px-3 py-2 rounded-full text-sm border transition-colors shadow-sm ${energyFilter === type ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 border-amber-200 shadow-amber-300/40' : 'bg-slate-950/60 border-white/10 text-slate-100 hover:border-amber-300/60'}`}
                       >
                         {type === 'all' ? 'All energy' : type.charAt(0).toUpperCase() + type.slice(1)}
                       </button>
@@ -649,13 +713,16 @@ function App() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Class focus</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Class focus</p>
+                    <p className="text-[11px] text-slate-500">Balance control vs burst</p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {['all', 'physical', 'energy', 'strategic', 'mental', 'affliction', 'instant', 'action', 'control'].map(option => (
                       <button
                         key={option}
                         onClick={() => setClassFilter(option)}
-                        className={`px-3 py-2 rounded-full text-sm border transition-colors ${classFilter === option ? 'bg-blue-600 text-white border-blue-400' : 'bg-gray-900 border-gray-700 text-slate-200 hover:border-blue-400/60'}`}
+                        className={`px-3 py-2 rounded-full text-sm border transition-colors shadow-sm ${classFilter === option ? 'bg-gradient-to-r from-sky-400 to-blue-600 text-slate-950 border-sky-200 shadow-sky-300/40' : 'bg-slate-950/60 border-white/10 text-slate-100 hover:border-sky-300/60'}`}
                       >
                         {option === 'all' ? 'All classes' : option.charAt(0).toUpperCase() + option.slice(1)}
                       </button>
@@ -664,13 +731,16 @@ function App() {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Card effect</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Card effect</p>
+                    <p className="text-[11px] text-slate-500">Find the tools you need</p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {['all', 'stun', 'heal', 'invulnerable', 'aoe', 'energy', 'affliction', 'setup'].map(effect => (
                       <button
                         key={effect}
                         onClick={() => setEffectFilter(effect)}
-                        className={`px-3 py-2 rounded-full text-sm border transition-colors ${effectFilter === effect ? 'bg-purple-600 text-white border-purple-400' : 'bg-gray-900 border-gray-700 text-slate-200 hover:border-purple-400/60'}`}
+                        className={`px-3 py-2 rounded-full text-sm border transition-colors shadow-sm ${effectFilter === effect ? 'bg-gradient-to-r from-fuchsia-400 to-purple-700 text-slate-950 border-fuchsia-200 shadow-fuchsia-300/40' : 'bg-slate-950/60 border-white/10 text-slate-100 hover:border-fuchsia-300/60'}`}
                       >
                         {effect === 'all' ? 'All effects' : effect.charAt(0).toUpperCase() + effect.slice(1)}
                       </button>
@@ -684,7 +754,7 @@ function App() {
                 {filteredCharacters.slice(0, 60).map(char => (
                   <div
                     key={char.id}
-                    className="bg-slate-900/80 rounded-2xl border border-slate-800/80 hover:border-orange-400/80 transition-all hover:shadow-orange-500/25 hover:shadow-xl overflow-hidden group cursor-pointer flex flex-col"
+                    className="bg-white/5 rounded-2xl border border-white/10 hover:border-amber-300/70 transition-all hover:shadow-xl hover:shadow-amber-500/20 overflow-hidden group cursor-pointer flex flex-col backdrop-blur"
                     onClick={() => setViewCharacter(char)}
                   >
                     <div className="flex h-28">
@@ -692,16 +762,16 @@ function App() {
                         src={assetPath(`images/characters/${char.id}.png`)}
                         alt={char.name}
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Ninja' }}
-                        className="w-28 h-28 object-cover bg-gray-900"
+                        className="w-28 h-28 object-cover bg-slate-950/70"
                       />
                       <div className="p-3 flex-1 flex flex-col gap-2">
                         <div>
                           <div className="text-[11px] uppercase tracking-wide text-orange-300/80">Card #{char.id}</div>
-                          <h3 className="font-bold text-lg leading-tight group-hover:text-orange-400 transition-colors">{char.name}</h3>
+                          <h3 className="font-bold text-lg leading-tight group-hover:text-amber-300 transition-colors">{char.name}</h3>
                         </div>
                         <div className="flex gap-1 flex-wrap text-[11px] text-slate-300">
                           {char.skills.slice(0, 3).map((skill, idx) => (
-                            <span key={idx} className="px-2 py-1 rounded-full bg-slate-800 border border-slate-700 capitalize">{(skill.classes || '').split(',')[0] || 'Skill'}</span>
+                            <span key={idx} className="px-2 py-1 rounded-full bg-slate-950/60 border border-white/10 capitalize">{(skill.classes || '').split(',')[0] || 'Skill'}</span>
                           ))}
                         </div>
                         <div className="flex gap-1">
