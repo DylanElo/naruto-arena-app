@@ -44,7 +44,12 @@ export const StatusEffect = {
     DAMAGE_REDUCTION: 'damageReduction',
     DESTRUCTIBLE_DEFENSE: 'destructibleDefense',
     INCREASE_DAMAGE: 'increaseDamage',
-    DECREASE_DAMAGE: 'decreaseDamage'
+    DECREASE_DAMAGE: 'decreaseDamage',
+    HEAL: 'heal',
+    DRAIN: 'drain',
+    LEECH: 'leech',
+    REFLECT: 'reflect',
+    COUNTER: 'counter'
 };
 
 /**
@@ -279,6 +284,11 @@ export class Skill {
             // Mark as using legacy parsing
             this._usingStructuredData = false;
         }
+
+        // Additions based on Haskell code analysis
+        this.isCounter = /counter|reflect/i.test(this.description);
+        this.isProtection = /invulnerable|damage reduction|destructible defense/i.test(this.description);
+        this.hasSideEffect = /stun|heal|drain|leech/i.test(this.description);
     }
 
     /**
