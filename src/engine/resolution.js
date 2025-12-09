@@ -109,9 +109,9 @@ function applyDefense(damage, target, damageType) {
             break;
 
         case DamageType.NORMAL:
-        default:
+        default: {
             // NORMAL: Subject to Damage Reduction, then Defense, then HP
-            let reducedDamage = Math.max(0, damage - target.statusEffects.damageReduction);
+            const reducedDamage = Math.max(0, damage - target.statusEffects.damageReduction);
 
             if (reducedDamage > 0 && target.statusEffects.destructibleDefense > 0) {
                 const defenseAbsorbed = Math.min(reducedDamage, target.statusEffects.destructibleDefense);
@@ -121,6 +121,7 @@ function applyDefense(damage, target, damageType) {
                 result.hpDamage = reducedDamage;
             }
             break;
+        }
     }
 
     return result;
@@ -148,14 +149,14 @@ export function calculateHealthSteal(source, target, stealAmount) {
 /**
  * Status Effect Application
  */
-export function applyStun(target, duration) {
+export function applyStun(target) {
     target.statusEffects.stunned = true;
-    // In full implementation, track duration
+    // In a full implementation, duration would be tracked here.
 }
 
-export function applyInvulnerability(target, duration) {
+export function applyInvulnerability(target) {
     target.statusEffects.invulnerable = true;
-    // In full implementation, track duration
+    // In a full implementation, duration would be tracked here.
 }
 
 export function applyDamageReduction(target, amount) {

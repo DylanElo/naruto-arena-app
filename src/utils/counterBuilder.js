@@ -11,16 +11,10 @@ import {
   buildCounterTeamManual
 } from './matchupLogic'
 
-import { getCharacterKnowledge } from './knowledgeEngine'
-
-// Helper to get profile from knowledge engine
-function buildCharacterProfile(char) {
-  const knowledge = getCharacterKnowledge(char.id);
-  return knowledge?.profile || null;
-}
+import { buildCharacterProfile } from './skillTagger'
 
 // Simple wrapper: expose score based on tag analysis
-export const calculateCounterScore = (candidate, enemyTeam, currentTeam = []) => {
+export const calculateCounterScore = (candidate, enemyTeam) => {
   if (!candidate || !enemyTeam || enemyTeam.length === 0) return 0;
 
   const threats = analyzeEnemyThreats(enemyTeam);

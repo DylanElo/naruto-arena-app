@@ -3,13 +3,7 @@
  * Uses game manual relationships instead of guessing
  */
 
-import { getCharacterKnowledge } from './knowledgeEngine.js';
-
-// Helper to get profile from knowledge engine
-function buildCharacterProfile(char) {
-    const knowledge = getCharacterKnowledge(char.id);
-    return knowledge?.profile || null;
-}
+import { buildCharacterProfile } from './skillTagger.js';
 
 /**
  * MANUAL-BASED Counter Matrix
@@ -159,46 +153,46 @@ export function calculateNeeds(enemyThreats) {
 /**
  * Score a character against enemy needs
  */
-export function scoreCounterMatch(characterProfile, needs) {
+export function scoreCounterMatch(characterProfile, enemyThreats) {
     let score = 0;
 
     // Affliction need
-    score += Math.min(characterProfile.mechanics.affliction, needs.affliction) * 3;
+    score += Math.min(characterProfile.mechanics.affliction, enemyThreats.affliction) * 3;
 
     // Piercing need
-    score += Math.min(characterProfile.mechanics.piercing, needs.piercing) * 2;
+    score += Math.min(characterProfile.mechanics.piercing, enemyThreats.piercing) * 2;
 
     // Health steal need
-    score += Math.min(characterProfile.mechanics.healthSteal, needs.healthSteal) * 2;
+    score += Math.min(characterProfile.mechanics.healthSteal, enemyThreats.healthSteal) * 2;
 
     // Cleanse need
-    score += Math.min(characterProfile.mechanics.cleanse, needs.cleanse) * 3;
+    score += Math.min(characterProfile.mechanics.cleanse, enemyThreats.cleanse) * 3;
 
     // Heal need
-    score += Math.min(characterProfile.mechanics.heal, needs.heal) * 2;
+    score += Math.min(characterProfile.mechanics.heal, enemyThreats.heal) * 2;
 
     // Burst need
-    score += Math.min(characterProfile.mechanics.burst, needs.burst) * 2;
+    score += Math.min(characterProfile.mechanics.burst, enemyThreats.burst) * 2;
 
     // Invulnerability need
-    score += Math.min(characterProfile.mechanics.invulnerable, needs.invulnerable) * 3;
+    score += Math.min(characterProfile.mechanics.invulnerable, enemyThreats.invulnerable) * 3;
 
     // Ignore harmful need (immunity)
     const hasIgnoreHarmful = characterProfile.mechanics.invulnerable > 0 || characterProfile.mechanics.cleanse > 0;
-    score += (hasIgnoreHarmful && needs.ignoreHarmful > 0) ? needs.ignoreHarmful * 3 : 0;
+    score += (hasIgnoreHarmful && enemyThreats.ignoreHarmful > 0) ? enemyThreats.ignoreHarmful * 3 : 0;
 
     // Reflect need
-    score += Math.min(characterProfile.mechanics.reflect, needs.reflect) * 2;
+    score += Math.min(characterProfile.mechanics.reflect, enemyThreats.reflect) * 2;
 
     // Energy gain need
-    score += Math.min(characterProfile.mechanics.energyGain, needs.energyGain) * 3;
+    score += Math.min(characterProfile.mechanics.energyGain, enemyThreats.energyGain) * 3;
 
     // Low cost need
     const hasLowCost = characterProfile.energy.avgCost <= 1.5;
-    score += (hasLowCost && needs.lowCost > 0) ? needs.lowCost * 2 : 0;
+    score += (hasLowCost && enemyThreats.lowCost > 0) ? enemyThreats.lowCost * 2 : 0;
 
     // Control need  
-    score += Math.min(characterProfile.mechanics.stun + characterProfile.mechanics.energyRemoval, needs.control) * 3;
+    score += Math.min(characterProfile.mechanics.stun + characterProfile.mechanics.energyRemoval, enemyThreats.control) * 3;
 
     return score;
 }
@@ -206,7 +200,7 @@ export function scoreCounterMatch(characterProfile, needs) {
 /**
  * Generate counter explanation
  */
-export function explainCounter(characterProfile, enemyThreats, needs) {
+export function explainCounter(characterProfile, enemyThreats) {
     const reasons = [];
 
     // Affliction advantage

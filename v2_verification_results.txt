@@ -1,0 +1,50 @@
+--- V2 Engine Verification ---
+
+1. Sasuke Analysis (Expected: Anti-Tank, Piercing)
+{
+  "counter": 0,
+  "invisible": 0,
+  "immunity": 0,
+  "piercing": 1,
+  "punisher": 0,
+  "antiTank": 1,
+  "cleanse": 0,
+  "aoe": 0,
+  "stacking": 0,
+  "energyGen": 0,
+  "skillSteal": 0,
+  "stun": 0,
+  "invulnerable": 0,
+  "triggerOnAction": 0,
+  "triggerOnHit": 0
+}
+
+2. Ino (S) Analysis (Expected: Punisher, Immunity)
+{
+  "counter": 0,
+  "invisible": 0,
+  "immunity": 1,
+  "piercing": 1,
+  "punisher": 1,
+  "antiTank": 0,
+  "cleanse": 0,
+  "aoe": 0,
+  "stacking": 0,
+  "energyGen": 0,
+  "skillSteal": 1,
+  "stun": 0,
+  "invulnerable": 0,
+  "triggerOnAction": 1,
+  "triggerOnHit": 0
+}
+
+3. Team Analysis: Ino (S) + Shikamaru (Expected: Warning about Stun + Punisher)
+Warnings: [
+  "Potential Anti-Synergy: Stuns may prevent Punisher skills (like Ino S) from triggering."
+]
+Synergy Score: 27
+
+4. Team Strategies (Expected: Trap & Punish)
+Strategies: [
+  "Trap & Punish: Force enemies to make bad choices"
+]
