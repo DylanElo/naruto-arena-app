@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import charactersData from './data/characters.json'
+import skillEffectsData from './data/skill_effects.json'
+import { loadSkillEffects } from './engine/models.js'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
@@ -7,6 +9,10 @@ import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import Header from './components/layout/Header'
 import { ENERGY_BG_COLORS } from './utils/colors'
+
+// Initialize structured skill effects data at app startup
+loadSkillEffects(skillEffectsData)
+
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder')
@@ -355,13 +361,13 @@ function App() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm truncate text-light-primary">{char.name}</div>
                                   <div className="text-[11px] text-light-secondary/70 truncate">{char.skills.map(s => s.name).slice(0, 2).join(' • ')}</div>
-                                    <div className="flex gap-1 mt-2">
-                                      {(char.skills?.[0]?.energy ?? []).map((e, i) => (
-                                        <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
-                                          {e === 'none' ? '-' : e[0].toUpperCase()}
-                                        </span>
-                                      ))}
-                                    </div>
+                                  <div className="flex gap-1 mt-2">
+                                    {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                      <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
+                                        {e === 'none' ? '-' : e[0].toUpperCase()}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <button onClick={() => setViewCharacter(char)} className="text-xs text-brand-primary hover:text-brand-secondary">Open card</button>

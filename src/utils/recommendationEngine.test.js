@@ -1,6 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { analyzeTeam, getSuggestions, recommendPartnersForMain } from './recommendationEngine';
 import characters from '../data/characters.json';
+import skillEffectsData from '../data/skill_effects.json';
+import { loadSkillEffects } from '../engine/models.js';
+
+// Initialize skill effects before tests run
+beforeAll(() => {
+  loadSkillEffects(skillEffectsData);
+});
 
 describe('analyzeTeam', () => {
   it('should return default analysis for an empty team', () => {

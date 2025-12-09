@@ -1,5 +1,5 @@
 import { getCharacterKnowledge } from './knowledgeEngine'
-import { GameState, Character } from '../engine/models.js'
+import { GameState, Character, getSkillEffect } from '../engine/models.js'
 import { analyzeGameState as analyzeGameStateSimulation } from '../engine/analyzer.js'
 
 // --- DEFAULT ANALYSIS SHAPE -------------------------------------------------
@@ -121,7 +121,16 @@ export const analyzeCharacter = (char) => {
 
 // --- DAMAGE / TEMPO APPROXIMATION -------------------------------------------
 
-function extractSkillDamage(skill = {}) {
+function extractSkillDamage(skill = {}, characterId = null, skillIndex = null) {
+  // Try structured data first (more accurate)
+  if (characterId !== null && skillIndex !== null) {
+    const structured = getSkillEffect(characterId, skillIndex)
+    if (structured?.damage?.base) {
+      return structured.damage.base
+    }
+  }
+
+  // Fallback to string parsing
   const desc = (skill.description || '').toLowerCase()
   const damageMatches = [...desc.matchAll(/(\d+)\s+damage/gi)]
   if (!damageMatches.length) return 0
@@ -144,8 +153,8 @@ function buildDamageProfile(team = []) {
     let bestDPE = 0
     let bestCost = 0
 
-      ; (char.skills || []).forEach(skill => {
-        const dmg = extractSkillDamage(skill)
+      ; (char.skills || []).forEach((skill, skillIndex) => {
+        const dmg = extractSkillDamage(skill, char.id, skillIndex)
         if (!dmg) return
         const cost = energyCost(skill)
         const dpe = dmg / cost
@@ -201,25 +210,31 @@ function createBenchmarkTeams(allCharacters) {
   // Define benchmark archetypes using well-known starter characters
   // These represent common team strategies in the game
 
+  // Updated benchmark teams with more competitive meta compositions
   const benchmarks = [
     {
       name: 'Rush/Aggro',
-      teamIds: [10, 3, 4], // Rock Lee, Uchiha Sasuke, Inuzuka Kiba
+      teamIds: [10, 3, 4], // Rock Lee, Uchiha Sasuke, Inuzuka Kiba - classic burst
       description: 'High burst damage, fast kills'
     },
     {
-      name: 'Control',
-      teamIds: [7, 9, 5], // Nara Shikamaru, Yamanaka Ino, Aburame Shino
-      description: 'Stuns, DoTs, disruption'
+      name: 'Control/Lockdown',
+      teamIds: [13, 7, 9], // Gaara, Nara Shikamaru, Yamanaka Ino - stun chain
+      description: 'Stuns, lockdown, control'
     },
     {
-      name: 'Tank/Sustain',
-      teamIds: [13, 2, 12], // Gaara, Haruno Sakura, Hyuuga Neji
+      name: 'Sustain/Defense',
+      teamIds: [2, 6, 5], // Haruno Sakura, Hyuuga Hinata, Aburame Shino - healing + defense
       description: 'Defense, healing, outlast'
     },
     {
-      name: 'Balanced',
-      teamIds: [1, 6, 8], // Uzumaki Naruto, Hyuuga Hinata, Akimichi Chouji
+      name: 'Piercing/Anti-Tank',
+      teamIds: [3, 4, 15], // Uchiha Sasuke, Inuzuka Kiba, Temari - piercing damage
+      description: 'Piercing damage to break defensive teams'
+    },
+    {
+      name: 'Balanced/Flexible',
+      teamIds: [1, 12, 8], // Uzumaki Naruto, Hyuuga Neji, Akimichi Chouji
       description: 'Mixed strategy, adaptable'
     }
   ]
