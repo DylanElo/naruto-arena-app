@@ -1,4 +1,4 @@
-import { getCharacterKnowledge } from './knowledgeEngine'
+import { getCharacterKnowledge } from './knowledgeEngine.js'
 import { GameState, Character, getSkillEffect } from '../engine/models.js'
 import { analyzeGameState as analyzeGameStateSimulation } from '../engine/analyzer.js'
 
@@ -674,13 +674,25 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds =
       candidates = candidates.filter(c => ownedIds.has(c.id))
     }
 
+    // Analyze current team to find gaps
+    const currentAnalysis = analyzeTeam(currentTeam)
+    const weaknesses = currentAnalysis.weaknesses || []
+
+    // Explicitly identify if team is energy hungry
+    const teamNeeds = {
+      energy: weaknesses.some(w => w.includes('Energy hungry')),
+      sustain: weaknesses.some(w => w.includes('Low sustain')),
+      cleanse: weaknesses.some(w => w.includes('No cleanse')),
+      control: weaknesses.some(w => w.includes('Very little control'))
+    }
+
     // Score each candidate
     const scored = candidates.map(candidate => {
       // Partner fit with main (primary weight - 50%)
-      const mainFit = scorePartnerFit(main, candidate)
+      const mainFit = scorePartnerFit(main, candidate, teamNeeds)
 
       // Partner fit with secondary (secondary weight - 30%)
-      const secondaryFit = scorePartnerFit(secondary, candidate)
+      const secondaryFit = scorePartnerFit(secondary, candidate, teamNeeds)
 
       // Full team synergy (tertiary weight - 20%)
       const teamAnalysis = analyzeTeam([...currentTeam, candidate])
@@ -726,7 +738,7 @@ const getPrimaryRoles = (char) => {
   }
 }
 
-const scorePartnerFit = (mainChar, candidate) => {
+const scorePartnerFit = (mainChar, candidate, teamNeeds = {}) => {
   const mainProfile = analyzeCharacter(mainChar);
   const candProfile = analyzeCharacter(candidate);
 
@@ -823,6 +835,8 @@ const scorePartnerFit = (mainChar, candidate) => {
   // Energy battery
   const mainHasHighCost = mainProfile.knowledge?.skillProfiles?.some(sk => (sk.tags || []).includes('highCost'));
   const candHasEnergySupport = candProfile.knowledge?.hooks?.energySupport?.length > 0;
+
+  // Base energy synergy matched with high cost
   if (mainHasHighCost && candHasEnergySupport) {
     score += 25;
     notes.push('Acts as an energy battery for expensive skills');
@@ -833,6 +847,17 @@ const scorePartnerFit = (mainChar, candidate) => {
   if (candHasHighCost && mainHasEnergySupport) {
     score += 25;
     notes.push('Acts as an energy battery for expensive skills');
+  }
+
+  // TEAM GAP FIX: Explicit need for energy
+  // If the team is starving for energy, ANY energy generation is huge value
+  if (teamNeeds.energy) {
+    const energyGenAmt = cMech.energyGen || cMech.energyGain || 0
+    // Check "energyGen" (mechanic) or "energySupport" (hook)
+    if (candHasEnergySupport || energyGenAmt > 0) {
+      score += 45 // Huge boost for fixing the critical weakness
+      notes.push('✓ Fixes team\'s energy shortage')
+    }
   }
 
   // Protect-the-carry

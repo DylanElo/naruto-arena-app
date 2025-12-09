@@ -249,8 +249,13 @@ function extractStatusEffects(desc) {
     }
 
     // --- HEAL ---
+    // Multiple patterns to catch various heal descriptions:
+    // "heals X health", "heal them for X health", "healing X health", "restore X health", etc.
     const healMatch = desc.match(/(?:heal(?:s|ing)?|restore(?:s|ing)?|recover(?:s|ing)?)\s+(\d+)\s+health/i) ||
-        desc.match(/(\d+)\s+health\s+(?:to|is\s+restored)/i);
+        desc.match(/(?:heal(?:s|ing)?|restore(?:s|ing)?|recover(?:s|ing)?)\s+(?:\w+\s+)?(?:for\s+)?(\d+)\s+health/i) ||
+        desc.match(/(\d+)\s+health\s+(?:to|is\s+restored|is\s+healed)/i) ||
+        desc.match(/heal(?:s|ing)?\s+(?:them|him|her|one\s+ally|an\s+ally|himself|herself|itself)\s+(?:for\s+)?(\d+)\s+health/i) ||
+        desc.match(/heal(?:s|ing)?\s+(?:them|him|her|one\s+ally|an\s+ally|himself|herself|itself|all\s+allies)\s+(?:for\s+)?(\d+)/i);
     if (healMatch) {
         effects.heal = { amount: parseInt(healMatch[1]) };
     }
