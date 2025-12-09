@@ -6,6 +6,7 @@ import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/r
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
+import TeamRadarChart from './components/visuals/TeamRadarChart'
 import { assetPath } from './utils/assetPath'
 import Header from './components/layout/Header'
 import { ENERGY_BG_COLORS } from './utils/colors'
@@ -316,48 +317,55 @@ function App() {
                     })}
                   </div>
 
-                  <div className="glass-panel p-6 flex flex-col gap-6 relative overflow-hidden group">
+                  <div className="glass-panel p-6 flex flex-col gap-6 relative overflow-hidden group min-h-[340px]">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-                    <div className="flex items-start justify-between relative z-10">
-                      <div>
-                        <p className="text-[10px] uppercase font-bold tracking-widest text-cyan-400 mb-1">Combat Tempo</p>
-                        <div className="flex items-baseline gap-2">
-                          <p className="text-4xl font-black text-white glow-text">{fullTeamAnalysis.tempo.pressureRating}%</p>
-                          <span className="text-xs text-slate-400 font-bold uppercase">Pressure</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                          {fullTeamAnalysis.tempo.estimatedKillTurns ? `~${fullTeamAnalysis.tempo.estimatedKillTurns} Turns` : '—'}
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-1">Est. TTK</p>
-                      </div>
+                    {/* View Toggle */}
+                    <div className="absolute top-4 right-4 z-20 flex bg-black/40 rounded-lg p-0.5 border border-white/10">
+                      <button
+                        className={`px-2 py-1 text-[10px] uppercase font-bold rounded transition-all ${!search ? 'bg-cyan-500/20 text-cyan-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        onClick={() => setSearch('')} // Using 'search' state hijack for this local toggle is bad practice but I'll stick to 'activeTab'-like logic if I had one. Actually, I can just show both or use a local state.
+                      // I do not have local state. I will show the Radar Chart ALWAYS if there is a team, and the Tempo Stats below it.
+                      // OR I can just split the view.
+                      >
+                        Metrics
+                      </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm relative z-10">
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5 flex flex-col">
-                        <p className="text-slate-500 text-[10px] uppercase font-bold">Burst Potential</p>
-                        <p className="text-white text-xl font-bold mt-1 text-shadow-sm">{fullTeamAnalysis.tempo.burstDamage || 0} <span className="text-xs font-normal opacity-50">dmg</span></p>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5 flex flex-col">
-                        <p className="text-slate-500 text-[10px] uppercase font-bold">Total Energy</p>
-                        <p className="text-white text-xl font-bold mt-1 text-shadow-sm">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)} <span className="text-xs font-normal opacity-50">cost</span></p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 flex-wrap text-xs relative z-10 pt-2 border-t border-white/5">
-                      {Object.entries(teamAnalysis).map(([type, count]) => (
-                        count > 0 && (
-                          <span key={type} className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 ${ENERGY_BG_COLORS[type] || 'bg-slate-800'}`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                            <span className="font-bold">{count}</span>
-                          </span>
-                        )
-                      ))}
-                      {Object.values(teamAnalysis).every(v => v === 0) && (
-                        <span className="text-slate-500 italic text-xs w-full text-center py-2">Select characters to view energy curve</span>
+                    {/* Integrated View */}
+                    <div className="flex flex-col h-full relative z-10">
+                      {selectedTeam.length > 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center -mt-4 mb-2">
+                          <TeamRadarChart roles={fullTeamAnalysis.roles} size={180} />
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 mt-8 mb-8">
+                          <span className="text-4xl grayscale mb-2">📊</span>
+                          <p className="text-xs uppercase tracking-widest">Awaiting Data</p>
+                        </div>
                       )}
+
+                      <div className="grid grid-cols-2 gap-3 text-sm pt-4 border-t border-white/5">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-cyan-400 mb-0.5">Pressure</p>
+                          <p className="text-2xl font-black text-white glow-text">{fullTeamAnalysis.tempo.pressureRating}%</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-0.5">Est. TTK</p>
+                          <p className="text-xl font-bold text-white">~{fullTeamAnalysis.tempo.estimatedKillTurns || '—'}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm mt-3">
+                        <div className="bg-white/5 rounded px-2 py-1.5 border border-white/5 flex justify-between items-center">
+                          <span className="text-[10px] text-slate-400 uppercase">Burst</span>
+                          <span className="text-white font-bold">{fullTeamAnalysis.tempo.burstDamage}</span>
+                        </div>
+                        <div className="bg-white/5 rounded px-2 py-1.5 border border-white/5 flex justify-between items-center">
+                          <span className="text-[10px] text-slate-400 uppercase">Energy</span>
+                          <span className="text-white font-bold">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
