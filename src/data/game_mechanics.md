@@ -1,5 +1,6 @@
 # Naruto Arena - Complete Game Mechanics Documentation
-*Extracted from https://naruto-arena.net/en/the-basics*
+
+*Compiled from official game manual (naruto-arena.net), verified against naruto-unison implementation, and updated with observed gameplay patterns.*
 
 ---
 
@@ -9,188 +10,299 @@
 
 **Team Composition**: 
 - Pick a team of **3 ninjas**
-- Fight another player's team
+- Fight another player's team of 3
 
 **Victory Condition**:
-- Reduce your opposition to **0 health points** to win the match
+- Reduce all 3 enemy ninjas to **0 health points** to win
+
+**Health**:
+- Each ninja has **100 health points** by default
+- Health cannot exceed starting maximum
+
+---
+
+## Chakra (Energy) System
+
+The game uses a **5-type chakra system**, which maps to our color coding:
+
+| Chakra Type | Color Code | Common Usage |
+|-------------|------------|--------------|
+| **Bloodline** (Blood) | Red | Clan techniques, Kekkei Genkai |
+| **Genjutsu** (Gen) | White | Mental/illusion skills |
+| **Ninjutsu** (Nin) | Blue | Chakra-based attacks |
+| **Taijutsu** (Tai) | Green | Physical attacks |
+| **Random** (Rand) | Black/Any | Universal, can substitute any type |
+
+### Chakra Mechanics
+
+- Each team gains chakra at the start of their turn
+- **Chakra generation**: 1 chakra per living ninja × 3 ninjas = 3 chakra per turn (normally)
+- **Random chakra** can substitute for any specific type when paying costs
+- Some skills **steal** or **absorb** enemy chakra
+- Some skills **grant** additional chakra to allies
+
+### Chakra Cost Examples
+- `[Tai]` = 1 Taijutsu chakra
+- `[Nin, Rand]` = 1 Ninjutsu + 1 Random chakra
+- `[Blood, Blood]` = 2 Bloodline chakra
+- `[Gen, Gen, Rand]` = 2 Genjutsu + 1 Random chakra
 
 ---
 
 ## Skill System
 
-### Skill Classes
+### Skill Classes (Primary)
 
-Based on scraped character data, skills are classified into:
+These define the *kind* of skill:
 
-1. **Physical** - Direct damage attacks
-2. **Strategic** - Support, buffs, debuffs, protection
-3. **Energy** - Chakra-based attacks
-4. **Affliction** - Status effects, damage over time
-5. **Action** - Special action mechanics
+| Class | Description |
+|-------|-------------|
+| **Physical** | Direct melee combat, bodyweight attacks |
+| **Chakra** | Chakra-based energy attacks |
+| **Mental** | Psychological effects, genjutsu |
+| **Summon** | Summoning jutsu |
 
-### Skill Execution Types
+### Skill Range
 
-#### Control Skills
-- **Require constant contact** between caster and target
-- If contact is broken, the skill will end
-- Control skills are **only cast once** at the start when they make contact with the target (works like instants)
-- **Special behavior**: If the caster loses ALL self-effects of a control skill (including "This skill can be canceled" text), the skill starts working like an instant skill
+| Range | Description |
+|-------|-------------|
+| **Melee** | Close-range, can be blocked by Physical invulnerability |
+| **Ranged** | Long-range, cannot be avoided by close-range defenses |
 
-#### Instant Skills
-- Execute immediately
-- Most common skill type in the game
+### Special Skill Modifiers
 
-### Special Modifiers
+| Modifier | Description |
+|----------|-------------|
+| **Bypassing** | Ignores invulnerability (but not damage reduction) |
+| **Invisible** | Effect is hidden from the enemy until triggered |
+| **Soulbound** | Effect ends if the caster dies |
+| **Nonstacking** | Multiple uses don't stack, just refresh duration |
+| **Extending** | Adds duration instead of refreshing |
+| **Uncounterable** | Cannot be countered |
+| **Unreflectable** | Cannot be reflected |
+| **Unremovable** | Cannot be removed/cleansed |
 
-#### Affliction*
-- The part of the skill's description followed by a ***** is what makes that skill an affliction skill **in addition to its main class**
-- Example: A skill could be "Physical, Affliction*" where the affliction portion is marked with *
+### Skill Duration Types
 
-#### Instant*
-- The part of the skill's description followed by a ***** is **not stopped** by:
-  - Caster being stunned
-  - Target becoming invulnerable
-- This makes certain skill effects bypass normal defensive mechanics
+| Type | Behavior |
+|------|----------|
+| **Instant** | Executes immediately, one-time effect |
+| **Action** | Repeats each turn for the duration |
+| **Control** | Requires maintaining "contact" with target; breaks if interrupted |
 
 ---
 
-## Energy System
+## Damage System
 
-Based on scraped character data, the game uses a **5-color energy system**:
+### Damage Types
 
-| Energy Color | ID | Common Usage |
-|--------------|----|--------------| 
-| **Green** | 0 | Physical skills, basic attacks |
-| **Red** | 1 | Offensive/Fire skills |
-| **Blue** | 2 | Energy/Chakra skills |
-| **White** | 3 | Support/Strategic skills |
-| **Black** | 4 | Universal (any energy type) |
+| Type | Blocked By | Notes |
+|------|------------|-------|
+| **Normal Damage** | Defense, Invulnerability, Damage Reduction | Standard attacks |
+| **Piercing Damage** | Defense only (ignores DR) | Bypasses damage reduction |
+| **Affliction Damage** | Nothing (ignores both) | Cannot be reduced or blocked |
 
-### Energy Mechanics
-- Skills require specific energy types to activate
-- Skills can require **multiple energy** (e.g., "1 blue + 1 black")
-- Some skills cost **"none"** (0 energy, free to use)
-- Energy is gained each turn (exact rate TBD)
+### Damage Formula
+
+```
+Final Damage = Base × (1 + Strengthen% - Weaken%) + Strengthen_Flat - Weaken_Flat
+             → then modified by target's Reduce/Bleed effects
+             → then absorbed by Defense (destructible)
+             → finally applied to Health
+```
+
+**Special Cases**:
+- **Piercing**: Skips the Reduce step (but not Defense)
+- **Affliction**: Skips both Reduce AND Defense; applies directly to Health
+- **Threshold**: If base damage ≤ threshold, damage is nullified entirely
+
+### Defense Types
+
+| Type | Description |
+|------|-------------|
+| **Destructible Defense** | HP-like shield that absorbs damage before health |
+| **Damage Reduction (DR)** | Flat amount subtracted from incoming damage |
+| **Invulnerability** | Complete immunity to certain skill classes |
+| **Barrier** | Defense on the *caster* that absorbs outgoing damage |
+
+---
+
+## Status Effects (Complete Taxonomy)
+
+### Helpful Effects (Buffs)
+
+| Effect | Description |
+|--------|-------------|
+| **Absorb** | Gain chakra when targeted by enemy skills |
+| **AntiChannel** | Ignore damage from ongoing channel effects |
+| **AntiCounter** | Skills cannot be countered or reflected |
+| **Bless** | Adds bonus to healing skills |
+| **Boost** | Multiplies effects received from allies |
+| **Build** | Adds to destructible defense skills |
+| **Bypass** | All skills ignore invulnerability |
+| **DamageToDefense** | Convert incoming damage to defense |
+| **Duel** | Invulnerable to everyone except one target |
+| **Endure** | Health cannot drop below 1 |
+| **Enrage** | Ignore harmful status effects |
+| **Focus** | Immune to stuns and disabling effects |
+| **Heal** | Restore health each turn |
+| **Invulnerable** | Immune to certain skill classes |
+| **Limit** | Cap maximum damage received |
+| **Nullify** | Ignore enemy skills (but still targetable) |
+| **Pierce** | All damage becomes piercing |
+| **Redirect** | Redirect incoming skills to another target |
+| **Reduce** | Reduce damage received (flat or %) |
+| **Reflect** | Reflect the first harmful skill back |
+| **ReflectAll** | Continuously reflect a class of skills |
+| **Strengthen** | Deal additional damage |
+| **Threshold** | Nullify damage below a certain amount |
+
+### Harmful Effects (Debuffs)
+
+| Effect | Description |
+|--------|-------------|
+| **Afflict** | Take affliction damage each turn |
+| **Alone** | Cannot be targeted by allies |
+| **Bleed** | Take additional damage from attacks |
+| **Block** | Treats a target as invulnerable to you |
+| **BlockAllies** | Cannot affect allies |
+| **BlockEnemies** | Cannot affect enemies |
+| **Disable** | Prevents applying certain effects |
+| **Exhaust** | Skills cost 1 additional random chakra |
+| **Expose** | Cannot reduce damage or become invulnerable |
+| **NoIgnore** | Cannot ignore harmful effects (counters Enrage) |
+| **Plague** | Cannot be healed or cured |
+| **Restrict** | AoE attacks must target a single enemy |
+| **Reveal** | Invisible effects become visible to enemies |
+| **Seal** | Ignore helpful status effects |
+| **Share** | Damage received is also dealt to an ally |
+| **Silence** | Cannot cause non-damage effects |
+| **Snare** | Increase skill cooldowns |
+| **Stun** | Disable skills of a certain class |
+| **Swap** | Skills target opposite team |
+| **Taunt** | Can only affect one target |
+| **Throttle** | Applied effects last fewer turns |
+| **Uncounter** | Cannot use counters or reflects |
+| **Undefend** | Cannot benefit from destructible defense |
+| **Unreduce** | Reduce effectiveness of damage reduction |
+| **Weaken** | Deal less damage |
+
+### Stun Types
+
+Stuns can target specific skill classes:
+
+| Stun Type | Disables |
+|-----------|----------|
+| **Stun All** | All skills |
+| **Stun Physical** | Physical skills only |
+| **Stun Mental** | Mental skills only |
+| **Stun Chakra** | Chakra skills only |
+| **Stun NonMental** | All except mental skills |
+| **Stun NonPhysical** | All except physical skills |
 
 ---
 
 ## Cooldown System
 
-Skills have cooldown periods after use:
+| Cooldown | Description |
+|----------|-------------|
+| **None (0)** | Usable every turn |
+| **1 turn** | Usable every other turn |
+| **2-3 turns** | Moderate cooldown |
+| **4+ turns** | Long cooldown (usually powerful skills) |
 
-- **None**: No cooldown, can be used every turn
-- **1-4 turns**: Skill cannot be reused for X turns after activation
-- Cooldowns balance powerful skills (longer cooldown = more powerful)
+### Cooldown Modifiers
+- **Snare**: Increases cooldowns by X turns
+- **Cooldown Reduction**: Some skills reduce their own cooldown
 
 ---
 
-## Battle Mechanics
+## Advanced Mechanics
 
-### Status Effects
+### Trigger System
 
-From scraped data, we observe:
+Certain effects trigger on specific events:
 
-**Offensive Effects:**
-- **Direct Damage**: "deals X damage to one enemy"
-- **Stun**: "stuns their skills for X turns" (prevents skill use)
-  - Can stun specific skill types: Physical, Strategic, Energy
-- **Bonus Damage**: Conditional extra damage under certain conditions
+| Trigger | When It Fires |
+|---------|---------------|
+| **OnDamage** | When the ninja deals damage |
+| **OnDamaged** | When the ninja takes damage |
+| **OnHarm** | When using any harmful skill |
+| **OnCounter** | When countered |
+| **OnReflect** | When reflected |
+| **OnDeath** | When dying (can trigger resurrection) |
+| **OnRes** | When resurrecting |
 
-**Defensive Effects:**
-- **Invulnerability**: "makes character invulnerable for X turn" (immune to damage)
-  - **EXCEPTION**: Skills with Instant* modifier bypass invulnerability for certain effects
-- **Damage Reduction**: "gains X points of damage reduction for Y turns"
-- **Immunity**: Some skills grant immunity to stun effects
+### Bombs
 
-### Skill Interactions
+Some effects have "bombs" - actions that trigger when the effect expires:
 
-**Breaking Contact (Control Skills):**
-- Control skills end if contact between caster and target is broken
-- Examples that might break contact: Death, invulnerability, displacement
+| Bomb Type | When It Fires |
+|-----------|---------------|
+| **Remove** | When effect is removed early |
+| **Expire** | When effect naturally ends |
+| **Done** | When turn processing completes |
 
-**Stun Resistance:**
-- Some skills provide "ignore all enemy stun effects"
-- Example: Sakura's Inner Sakura
+### Control Skills
 
-**Conditional Bonuses:**
-- Skills can deal extra damage when other skills are active
-- Example: Naruto's "Uzumaki Naruto Combo" deals +10 damage during "Shadow Clones"
+Control skills maintain "contact" between caster and target:
+- If contact is broken (caster dies, target becomes invulnerable), the skill ends
+- Control skills only apply their effect once at the start
+- Breaking a control skill removes its ongoing effects
 
 ---
 
 ## Team Building Strategy
 
 ### Energy Management
-- Balance energy costs across your 3 ninjas
-- Black energy is versatile but limited
+- Balance chakra costs across your 3 ninjas
+- Random chakra is versatile but less specific
 - Mix low-cost spam skills with high-cost finishers
+- Consider chakra stealing/denial for disruption
 
-### Skill Synergies
-Look for characters with:
-- **Combo Chains**: Skills that boost each other's effectiveness
-- **Stun Chains**: Lock down opponent skills systematically
-- **Balanced Offense/Defense**: Mix damage with protection
-- **Cooldown Stagger**: Avoid all characters having long cooldowns simultaneously
+### Role Composition
 
-### Class Balance
-- **Physical**: Consistent turn-by-turn damage
-- **Strategic**: Team control and protection
-- **Energy**: High-burst damage potential
-- **Affliction**: Sustained damage and debuffs
-- **Action**: Unique mechanics advantages
+| Role | Contribution |
+|------|--------------|
+| **DPS** | Consistent or burst damage output |
+| **Tank** | Defense, DR, destructible defense |
+| **Support** | Healing, cleansing, ally buffs |
+| **Control** | Stuns, energy denial, cooldown manipulation |
 
-### Common Patterns (from scraped data)
+### Synergy Types
 
-**Starter Characters:**
-- Usually have 1 Green-cost Physical attack (no cooldown)
-- 1 Black-cost Strategic buff/defensive skill (4-turn cooldown)
-- 1-2 signature skills with moderate costs
-
-**Defensive Skills:**
-- "Hide" skills provide 1-turn invulnerability (4-turn cooldown, 1 Black energy)
-- Damage reduction buffs typically last 3-4 turns
-
-**Ultimate Skills:**
-- Usually require 2+ energy (commonly Blue + Black)
-- Often have 1-turn cooldowns
-- Deal 40-50 damage or powerful effects
-
----
-
-## Character Progression
-
-Based on mission data:
-
-**Level Gates**: 1, 6, 11, 16, 21, 26, 31, 36
-- Missions unlock characters at specific level requirements
-- Higher level = access to more powerful characters
-
-**Character Variants**:
-- Base versions (e.g., "Uzumaki Naruto")
-- Shippuden versions marked with (S) (e.g., "Uzumaki Naruto (S)")
-- Special forms (e.g., "Kyuubi Naruto", "Cursed Seal Sasuke")
+| Synergy | Example |
+|---------|---------|
+| **Combo Skills** | Skills that deal bonus damage during other skills |
+| **Mark + Payoff** | Apply debuff, then exploit it for damage |
+| **Stun Chain** | Combine stuns to lock enemies |
+| **Sustain** | Healing + damage reduction for survivability |
+| **Burst** | Stack damage buffs for one-turn kills |
 
 ---
 
 ## Meta Observations
 
-### Energy Cost Patterns
-- Green (0): 70%+ of characters have a no-cooldown Green skill
-- Black (4): Most common for 4-turn cooldown defensive skills
-- Blue (2): Reserved for high-damage "Energy" class skills
-- Multi-energy skills: Usually 2 energy, rarely 3+
+### Common Patterns
 
-### Cooldown Distribution
-- **No cooldown**: Basic spam skills (usually 1 per character)
-- **1 turn**: High-impact skills with quick turnaround
-- **2-3 turns**: Moderate power skills
-- **4 turns**: Standard for defensive/buff skills
+**Standard Kit (4 skills)**:
+1. **Basic Attack**: Low/no cooldown, moderate damage
+2. **Signature Move**: Higher damage, 1-2 turn cooldown
+3. **Utility Skill**: Buff, debuff, or control effect
+4. **Defense/Invuln**: 1-turn invulnerability, 4-turn cooldown
 
-### Skill Count Per Character
-- **Average**: 4-5 skills per character
-- **Minimum**: 4 skills (basic characters)
-- **Maximum**: 8 skills (complex characters like Chiyo)
+### Energy Cost Distribution
+- `[Tai]`: Most common for basic attacks
+- `[Nin, Rand]` or `[Gen, Rand]`: Common for signature moves
+- `[Rand]` alone: Common for utility/buffs
+- 3+ chakra: Reserved for powerful ultimates
+
+### Damage Benchmarks
+- **15-20**: Basic attacks
+- **25-35**: Standard damage skills
+- **40-50**: High damage / ultimate skills
+- **60+**: Rare, usually conditional or high cost
 
 ---
 
-*This documentation is compiled from the official game manual at naruto-arena.net/en/the-basics and verified against scraped character/mission data.*
+*This documentation is compiled from the official game manual, the naruto-unison Haskell implementation, and verified against live gameplay observations.*
