@@ -3,7 +3,13 @@
  * Based on manual mechanics, not guessing
  */
 
-import { buildCharacterProfile } from './skillTagger.js';
+import { getCharacterKnowledge } from './knowledgeEngine.js';
+
+// Helper to get profile from knowledge engine
+function buildCharacterProfile(char) {
+    const knowledge = getCharacterKnowledge(char.id);
+    return knowledge?.profile || null;
+}
 
 /**
  * Find best partners for a main character
