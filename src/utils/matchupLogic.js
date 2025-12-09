@@ -3,13 +3,7 @@
  * Uses game manual relationships instead of guessing
  */
 
-import { getCharacterKnowledge } from './knowledgeEngine.js';
-
-// Helper to get profile from knowledge engine
-function buildCharacterProfile(char) {
-    const knowledge = getCharacterKnowledge(char.id);
-    return knowledge?.profile || null;
-}
+import { buildCharacterProfile } from './skillTagger.js';
 
 /**
  * MANUAL-BASED Counter Matrix

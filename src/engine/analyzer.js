@@ -152,8 +152,8 @@ export function findBestMove(gameState, teamIndex = 0) {
                         score += 75; // Prioritize removing enemies
                     }
 
-                    // Penalize overkill slightly to differentiate between two lethal moves
-                    score -= Math.max(0, damage - target.hp) * 0.1;
+                    // Penalize overkill to prefer efficient lethal moves
+                    score -= Math.max(0, damage - target.hp) * 1.5;
 
                     if (score > bestMove.score) {
                         bestMove = {

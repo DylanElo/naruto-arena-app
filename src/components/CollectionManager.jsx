@@ -53,12 +53,12 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
         return true
     })
 
-    const FilterButton = ({ label, filterKey }) => (
+    const FilterButton = ({ label, filterKey, color }) => (
         <button
             onClick={() => setActiveFilter(filterKey)}
-            className={`px-4 py-2 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
-                ? `bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.3)]`
-                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
+                    ? `bg-brand-primary border-brand-secondary text-dark-primary shadow-md`
+                    : 'bg-dark-secondary border-dark-tertiary text-light-secondary hover:bg-dark-tertiary'
                 }`}
         >
             {label}
@@ -67,10 +67,9 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     if (showSetup) {
         return (
-            <div className="glass-panel p-8 shadow-2xl max-w-lg mx-auto relative overflow-hidden mt-10">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
-                <h2 className="text-3xl font-bold text-white mb-3 tracking-tight glow-text">🎮 Collection Setup</h2>
-                <p className="text-slate-400 mb-6 leading-relaxed">Tell us your Naruto-Arena level and we'll auto-mark everything you've unlocked so your builder starts warm.</p>
+            <div className="bg-dark-secondary rounded-3xl border border-dark-tertiary p-8 shadow-2xl max-w-lg mx-auto backdrop-blur-xl relative overflow-hidden">
+                <h2 className="text-3xl font-black text-brand-primary mb-3 tracking-tight">🎮 Collection Setup</h2>
+                <p className="text-light-secondary mb-6 leading-relaxed">Tell us your Naruto-Arena level and we'll auto-mark everything you've unlocked so your builder starts warm.</p>
                 <input
                     type="number"
                     min="1"
@@ -79,13 +78,13 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                     onChange={(e) => setUserLevel(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLevelSetup()}
                     placeholder="Enter level (1-40)"
-                    className="w-full p-4 bg-[rgba(0,0,0,0.4)] border border-[var(--border-subtle)] rounded-xl text-white mb-6 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all"
+                    className="w-full p-3 bg-dark-primary border border-dark-tertiary rounded-xl text-light-primary mb-4 focus:border-brand-primary focus:ring-2 focus:ring-brand-secondary focus:outline-none"
                 />
-                <div className="flex gap-3">
-                    <button onClick={handleLevelSetup} className="flex-1 btn-primary py-3 rounded-xl font-bold">
+                <div className="flex gap-2">
+                    <button onClick={handleLevelSetup} className="flex-1 bg-gradient-to-r from-brand-primary to-brand-secondary hover:shadow-lg text-dark-primary py-3 rounded-xl font-semibold transition-all">
                         Auto-import characters
                     </button>
-                    <button onClick={() => setShowSetup(false)} className="flex-1 btn-ghost py-3 rounded-xl font-semibold border-white/10 text-slate-400 hover:text-rose-400 hover:border-rose-500/50">
+                    <button onClick={() => setShowSetup(false)} className="flex-1 bg-dark-secondary border border-dark-tertiary hover:border-rose-500 hover:text-rose-500 text-light-secondary py-3 rounded-xl font-semibold transition-all">
                         Skip (Manual)
                     </button>
                 </div>
@@ -94,98 +93,88 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="glass-panel p-6 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-500 via-purple-500 to-cyan-500 opacity-50 group-hover:opacity-80 transition-opacity"></div>
-
-                <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+        <div className="space-y-6">
+            <div className="bg-dark-secondary rounded-3xl border border-dark-tertiary p-6 shadow-2xl backdrop-blur-xl">
+                <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                     <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-cyan-400 mb-1">Collection vault</p>
-                        <h2 className="text-3xl font-black text-white glow-text">MY CHARACTER COLLECTION</h2>
-                        <p className="text-slate-400 text-sm mt-2 max-w-xl">Tap any card to toggle ownership. The grid lights up and pulses when you own a character.</p>
+                        <p className="text-xs uppercase tracking-[0.25em] text-brand-primary">Collection vault</p>
+                        <h2 className="text-3xl font-black text-light-primary">📚 My Character Collection</h2>
+                        <p className="text-light-secondary text-sm mt-1">Tap any card to toggle ownership. The grid lights up when you own it.</p>
                     </div>
-                    <div className="flex items-center gap-4 bg-[rgba(0,0,0,0.3)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 backdrop-blur-sm">
-                        <div className="text-xs uppercase text-cyan-500/80 font-bold tracking-wider">Owned</div>
-                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-white drop-shadow-[0_0_10px_rgba(6,182,212,0.5)]">{stats.owned}</div>
-                        <div className="text-sm text-slate-500 font-medium">/ {stats.total} <span className="text-xs ml-1 opacity-50">({stats.percentage}%)</span></div>
+                    <div className="flex items-center gap-3 bg-dark-primary border border-dark-tertiary rounded-2xl px-4 py-3 shadow-inner">
+                        <div className="text-xs uppercase text-brand-primary">Owned</div>
+                        <div className="text-3xl font-black text-brand-secondary">{stats.owned}</div>
+                        <div className="text-sm text-light-secondary">/ {stats.total} ({stats.percentage}%)</div>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 mb-4">
                     <div className="flex flex-wrap gap-3">
-                        <div className="flex-1 min-w-[220px] relative group/search">
+                        <div className="flex-1 min-w-[220px] relative">
                             <input
                                 type="text"
                                 placeholder="Search characters or titles..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full p-3 pl-12 bg-[rgba(0,0,0,0.3)] border border-[var(--border-subtle)] rounded-xl text-white focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 focus:outline-none transition-all"
+                                className="w-full p-3 bg-dark-primary border border-dark-tertiary rounded-xl text-light-primary focus:border-brand-primary focus:ring-2 focus:ring-brand-secondary focus:outline-none"
                             />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within/search:text-cyan-400 transition-colors">⌕</span>
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-light-secondary text-sm">⌕</span>
                         </div>
                         <button
                             onClick={() => setShowSetup(true)}
-                            className="bg-white/5 hover:bg-white/10 text-cyan-300 border border-cyan-500/30 px-5 py-3 rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center gap-2"
+                            className="bg-gradient-to-r from-brand-primary to-brand-secondary text-dark-primary px-5 py-3 rounded-xl font-semibold shadow-lg hover:scale-[1.01] transition-all"
                         >
-                            <span className="text-lg">↺</span> Reset by level
+                            Reset by level
                         </button>
                     </div>
 
                     {/* MECHANIC FILTERS */}
-                    <div className="flex flex-wrap gap-2 pt-2 pb-1">
-                        <FilterButton label="All" filterKey="ALL" />
-                        <FilterButton label="⚡ Stun" filterKey="STUN" />
-                        <FilterButton label="💥 AoE" filterKey="AOE" />
-                        <FilterButton label="💚 Heal" filterKey="HEAL" />
-                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" />
-                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" />
-                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" />
-                        <FilterButton label="🔋 Energy" filterKey="ENERGY" />
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        <FilterButton label="All" filterKey="ALL" color="slate" />
+                        <FilterButton label="⚡ Stun" filterKey="STUN" color="yellow" />
+                        <FilterButton label="💥 AoE" filterKey="AOE" color="red" />
+                        <FilterButton label="💚 Heal" filterKey="HEAL" color="emerald" />
+                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" color="purple" />
+                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" color="pink" />
+                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" color="blue" />
+                        <FilterButton label="🔋 Energy" filterKey="ENERGY" color="cyan" />
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-10">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {filteredChars.map(char => {
                     const owned = ownedIds.includes(char.id)
                     return (
                         <div
                             key={char.id}
-                            className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 group ${owned
-                                ? 'glass-panel border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)] scale-[1.02] z-10'
-                                : 'bg-white/5 border border-white/5 opacity-60 hover:opacity-100 hover:bg-white/10 hover:border-white/20 hover:scale-[1.02] hover:z-10'
+                            className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all group ${owned
+                                ? 'border-2 border-brand-secondary bg-dark-tertiary shadow-lg'
+                                : 'border border-dark-tertiary bg-dark-secondary shadow-sm hover:shadow-md'
                                 }`}
                             onClick={() => handleToggle(char.id)}
                         >
-                            <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 transition-opacity ${owned ? 'opacity-80' : 'opacity-60'}`}></div>
-
-                            {/* Glow effect on hover */}
-                            <div className="absolute inset-0 bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
-
+                            <div className="absolute inset-0 bg-gradient-to-b from-dark-primary/40 via-transparent to-dark-primary/80 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <img
                                 src={assetPath(`images/characters/${char.id}.png`)}
                                 alt={char.name}
                                 onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=?' }}
-                                className={`w-full h-40 object-cover object-top transition-transform duration-500 ${owned ? 'group-hover:scale-110' : 'grayscale group-hover:grayscale-0'}`}
-                                loading="lazy"
+                                className="w-full h-32 object-cover"
                             />
-
-                            <div className="absolute bottom-0 left-0 right-0 p-3 z-30 flex items-center justify-between">
-                                <div className="min-w-0">
-                                    <div className={`text-xs font-bold truncate ${owned ? 'text-white text-shadow-sm' : 'text-slate-400'}`}>{char.name}</div>
-                                    <div className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">#{char.id}</div>
+                            <div className="p-3 bg-dark-secondary/90 backdrop-blur flex items-center justify-between">
+                                <div>
+                                    <div className="text-xs text-light-primary font-bold truncate">{char.name}</div>
+                                    <div className="text-[11px] uppercase tracking-wide text-light-secondary">#{char.id}</div>
                                 </div>
-
-                                {owned ? (
-                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500 text-black text-xs font-bold shadow-[0_0_10px_rgba(6,182,212,0.6)]">
-                                        ✓
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center w-6 h-6 rounded-full border border-slate-600 text-slate-600 text-[10px] group-hover:border-slate-400 group-hover:text-slate-400">
-                                        +
-                                    </div>
-                                )}
+                                <div className={`text-[10px] px-2 py-1 rounded-full border ${owned ? 'bg-brand-primary border-brand-secondary text-dark-primary' : 'bg-dark-tertiary border-dark-tertiary text-light-secondary'}`}>
+                                    {owned ? 'Owned' : 'Locked'}
+                                </div>
                             </div>
+                            {owned && (
+                                <div className="absolute top-2 right-2 bg-brand-primary text-dark-primary rounded-full w-7 h-7 flex items-center justify-center font-bold shadow-lg">
+                                    ✓
+                                </div>
+                            )}
                         </div>
                     )
                 })}
