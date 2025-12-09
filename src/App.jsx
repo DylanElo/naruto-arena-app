@@ -303,12 +303,12 @@ function App() {
                   <div className="bg-dark-primary border border-dark-tertiary rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase text-brand-primary">Tempo snapshot</p>
-                        <p className="text-2xl font-bold text-light-primary">{fullTeamAnalysis.tempo.pressureRating}% pressure</p>
+                        <p className="text-xs uppercase text-brand-primary">Team Synergy</p>
+                        <p className="text-2xl font-bold text-light-primary">{fullTeamAnalysis.synergyScore}%</p>
                       </div>
                       <div className="text-right text-xs text-light-secondary/70">
                         <p>TTK: {fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
-                        <p>Energy to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
+                        <p>Cost to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -317,8 +317,8 @@ function App() {
                         <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.burstDamage || 0} dmg</p>
                       </div>
                       <div className="bg-dark-secondary rounded-lg p-3 border border-dark-tertiary">
-                        <p className="text-light-secondary/70">Energy</p>
-                        <p className="text-light-primary text-lg font-semibold">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)} total</p>
+                        <p className="text-light-secondary/70">Pressure</p>
+                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.pressureRating || 0}%</p>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap text-xs">

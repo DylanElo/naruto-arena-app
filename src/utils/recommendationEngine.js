@@ -292,7 +292,7 @@ function simulateCandidatePerformance(candidateTeam, allCharacters) {
         gameState.teams[1] = enemyTeam.map(c => new Character(c))
 
         const analysis = analyzeGameStateSimulation(gameState, 0)
-        totalHpDelta += analysis.hpDelta || 0
+        totalHpDelta += analysis.hpAdvantage || 0
         totalPressure += analysis.overallScore || 0
 
         // Simple win probability heuristic based on overall score
