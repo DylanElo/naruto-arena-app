@@ -174,8 +174,11 @@ function extractStatusEffects(desc) {
         effects.energyGain = { amount: parseInt(energyGainMatch[1]) };
     }
 
-    // Heal
-    const healMatch = desc.match(/heal[s]? .*for (\d+) health/i) || desc.match(/heal[s]? (\d+) health/i) || desc.match(/recover[s]? (\d+) health/i);
+    // Heal - note: must match "healing" as well as "heal" and "heals"
+    const healMatch = desc.match(/heal(?:s|ing)? .*for (\d+) health/i) ||
+        desc.match(/heal(?:s|ing)? (\d+) health/i) ||
+        desc.match(/heal(?:s|ing)? .* (\d+) health/i) ||
+        desc.match(/recover[s]? (\d+) health/i);
     if (healMatch) {
         effects.heal = { amount: parseInt(healMatch[1]) };
     }

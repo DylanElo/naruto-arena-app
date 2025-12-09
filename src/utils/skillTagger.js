@@ -72,8 +72,8 @@ export const DEFENSE_PATTERNS = {
     invulnerable: /invulnerable for \d+ turn/i,
     selfInvul: /this (skill|character) makes .* invulnerable/i,
     teamInvul: /(one ally|all allies).*invulnerable/i,
-    heal: /heal[s]? .* for \d+ health|heal \d+ health|recover[s]? \d+ health/i,
-    cleanse: /remove[s]? all harmful effects|remove[s]? harmful effects/i,
+    heal: /heal(?:s|ing)? .* for \d+ health|heal(?:s|ing)? \d+ health|heal(?:s|ing)? .* \d+ health|recover[s]? \d+ health/i,
+    cleanse: /remov(?:es?|ing) (?:all )?harmful.{0,30}(?:effects?|skills?)/i,
     lifelink: /lifelink/i,
     ignoreHarmful: /ignore[s]? (all )?harmful effects/i,
     ignoreHelpful: /ignore[s]? (all )?helpful effects/i

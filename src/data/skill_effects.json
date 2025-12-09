@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2025-12-09T02:05:14.182Z",
+  "generatedAt": "2025-12-09T02:21:57.312Z",
   "characterCount": 449,
   "skillCount": 1971,
   "skills": {
@@ -22293,7 +22293,7 @@
         "energyRemoval": null,
         "energyGain": null,
         "heal": {
-          "amount": 50
+          "amount": 40
         },
         "mark": null
       },
@@ -28324,7 +28324,9 @@
         },
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 20
+        },
         "mark": null
       },
       "flags": {
@@ -34037,7 +34039,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 25
+        },
         "mark": null
       },
       "flags": {
@@ -53901,7 +53905,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 15
+        },
         "mark": null
       },
       "flags": {
@@ -54407,7 +54413,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 30
+        },
         "mark": null
       },
       "flags": {
@@ -54746,7 +54754,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 25
+        },
         "mark": null
       },
       "flags": {
@@ -59259,7 +59269,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 10
+        },
         "mark": null
       },
       "flags": {
@@ -73340,7 +73352,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 20
+        },
         "mark": null
       },
       "flags": {
@@ -73574,7 +73588,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 20
+        },
         "mark": null
       },
       "flags": {
@@ -86304,7 +86320,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 5
+        },
         "mark": null
       },
       "flags": {
@@ -86707,7 +86725,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 100
+        },
         "mark": null
       },
       "flags": {
@@ -89463,7 +89483,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 30
+        },
         "mark": null
       },
       "flags": {
@@ -96080,7 +96102,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 20
+        },
         "mark": null
       },
       "flags": {
@@ -109914,7 +109938,9 @@
         "damageDecrease": null,
         "energyRemoval": null,
         "energyGain": null,
-        "heal": null,
+        "heal": {
+          "amount": 5
+        },
         "mark": null
       },
       "flags": {
