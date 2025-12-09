@@ -1,2 +1,131 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
+
+/* Antigravity-inspired Base Styles */
+
+:root {
+    --bg-deep: #050505;
+    --bg-card: #0F0F11;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-glow: rgba(255, 255, 255, 0.15);
+    --accent-glow: rgba(56, 189, 248, 0.3);
+    /* Electric Blue Glow */
+    --text-primary: #EDEDED;
+    --text-secondary: #A1A1A1;
+}
+
+body {
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle Grid Background */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image:
+        linear-gradient(var(--border-subtle) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center top;
+    opacity: 0.15;
+    z-index: -1;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Utility Classes for "Antigravity" Effect */
+
+.glass-panel {
+    background: rgba(15, 15, 17, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 20px -5px var(--accent-glow);
+    background: rgba(20, 20, 22, 0.7);
+}
+
+.glow-text {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary {
+    background: rgba(255, 255, 255, 0.95);
+    color: #000;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Animation Utilities */
+@keyframes pulse-subtle {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
