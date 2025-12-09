@@ -45,8 +45,8 @@ export function analyzeGameState(gameState, teamIndex = 0) {
 function calculateHpAdvantage(myTeam, enemyTeam) {
     const myTotalHp = myTeam.reduce((sum, char) => sum + char.hp, 0);
     const enemyTotalHp = enemyTeam.reduce((sum, char) => sum + char.hp, 0);
-    const myMaxHp = myTeam.reduce((sum, char) => sum + 100, 0);
-    const enemyMaxHp = enemyTeam.reduce((sum, char) => sum + 100, 0);
+    const myMaxHp = myTeam.reduce((sum) => sum + 100, 0);
+    const enemyMaxHp = enemyTeam.reduce((sum) => sum + 100, 0);
 
     const myHpPercentage = myTotalHp / myMaxHp;
     const enemyHpPercentage = enemyTotalHp / enemyMaxHp;

@@ -1,5 +1,5 @@
 import { recommendPartnersForMain, getSuggestions } from './src/utils/recommendationEngine.js'
-import charactersData from './src/data/characters.json' assert { type: 'json' }
+import charactersData from './src/data/characters.json' with { type: 'json' }
 
 console.log('--- Testing Ino(B) Partner Recommendations ---\n')
 

@@ -10,7 +10,7 @@ const createMockCharacter = (id, hp, skills = [], cooldowns = [0, 0, 0, 0], stat
     statusEffects: { stunned: false, ...statusEffects },
     isAlive: () => hp > 0,
     // Simplified skill check for threat calculation
-    canUseSkill: (skillIndex, energyPool) => {
+    canUseSkill: (skillIndex) => {
         if (statusEffects.stunned || (cooldowns && cooldowns[skillIndex] > 0)) {
             return false;
         }

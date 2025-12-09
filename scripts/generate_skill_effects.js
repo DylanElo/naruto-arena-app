@@ -227,7 +227,6 @@ function parseClasses(classesStr) {
 
 function generateSkillEffect(character, skill, skillIndex) {
     const desc = skill.description || '';
-    const key = `${character.id}_${skillIndex}`;
 
     const damageValue = extractDamageValue(desc);
     const damageType = detectDamageType(desc);

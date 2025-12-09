@@ -30,7 +30,7 @@ function mapMechanics(profileMech) {
 }
 
 // Reconstruct legacy hooks object from new profile data
-function mapHooks(profile, tagsList) {
+function mapHooks(profile) {
   const setups = []
   const payoffs = []
   const sustain = []
@@ -105,7 +105,7 @@ export function buildKnowledgeBase(charList = characters) {
     })
 
     const combinedTags = Array.from(new Set(skillProfiles.flatMap(s => s.tags)))
-    const hooks = mapHooks(profile, combinedTags)
+    const hooks = mapHooks(profile)
 
     knowledge[char.id] = {
       id: char.id,

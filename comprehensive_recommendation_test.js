@@ -5,7 +5,7 @@ import {
     recommendCounterCandidatesByTags,
     analyzeCharacter
 } from './src/utils/recommendationEngine.js'
-import charactersData from './src/data/characters.json' assert { type: 'json' }
+import charactersData from './src/data/characters.json' with { type: 'json' }
 import fs from 'fs'
 
 console.log('='.repeat(80))

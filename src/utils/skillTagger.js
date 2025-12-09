@@ -150,8 +150,6 @@ export function extractSkillTags(skill) {
 
         // Skill type
         mainClass: null,
-        // Skill type
-        mainClass: null,
         persistence: null,
 
         // Targeting
@@ -253,8 +251,6 @@ export function buildCharacterProfile(character) {
             usesRandom: false
         },
 
-        // Special flags
-        isGlassCannon: false,
         // Special flags
         isGlassCannon: false,
         isEnergyHungry: false,

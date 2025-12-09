@@ -53,18 +53,6 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
         return true
     })
 
-    const FilterButton = ({ label, filterKey, color }) => (
-        <button
-            onClick={() => setActiveFilter(filterKey)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
-                    ? `bg-brand-primary border-brand-secondary text-dark-primary shadow-md`
-                    : 'bg-dark-secondary border-dark-tertiary text-light-secondary hover:bg-dark-tertiary'
-                }`}
-        >
-            {label}
-        </button>
-    )
-
     if (showSetup) {
         return (
             <div className="bg-dark-secondary rounded-3xl border border-dark-tertiary p-8 shadow-2xl max-w-lg mx-auto backdrop-blur-xl relative overflow-hidden">
@@ -130,14 +118,14 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
                     {/* MECHANIC FILTERS */}
                     <div className="flex flex-wrap gap-2 pt-2">
-                        <FilterButton label="All" filterKey="ALL" color="slate" />
-                        <FilterButton label="⚡ Stun" filterKey="STUN" color="yellow" />
-                        <FilterButton label="💥 AoE" filterKey="AOE" color="red" />
-                        <FilterButton label="💚 Heal" filterKey="HEAL" color="emerald" />
-                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" color="purple" />
-                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" color="pink" />
-                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" color="blue" />
-                        <FilterButton label="🔋 Energy" filterKey="ENERGY" color="cyan" />
+                        <FilterButton label="All" filterKey="ALL" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="⚡ Stun" filterKey="STUN" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="💥 AoE" filterKey="AOE" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="💚 Heal" filterKey="HEAL" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                        <FilterButton label="🔋 Energy" filterKey="ENERGY" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
                     </div>
                 </div>
             </div>
@@ -182,5 +170,19 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
         </div>
     )
 }
+
+// This component is defined outside of CollectionManager to prevent re-creation on every render.
+// It receives activeFilter and setActiveFilter as props to manage state.
+const FilterButton = ({ label, filterKey, activeFilter, setActiveFilter }) => (
+    <button
+        onClick={() => setActiveFilter(filterKey)}
+        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
+                ? `bg-brand-primary border-brand-secondary text-dark-primary shadow-md`
+                : 'bg-dark-secondary border-dark-tertiary text-light-secondary hover:bg-dark-tertiary'
+            }`}
+    >
+        {label}
+    </button>
+);
 
 export default CollectionManager

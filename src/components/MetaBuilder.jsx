@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { generateMetaTeams, getPlaystyleDescription } from '../utils/metaBuilder';
 import { loadCollection } from '../utils/collectionManager';
 
