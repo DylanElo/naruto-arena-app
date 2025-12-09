@@ -162,8 +162,51 @@ function extractStatusEffects(desc) {
         effects.damageDecrease = { amount: parseInt(dmgDecMatch[1]) };
     }
 
-    // Energy Removal
-    const energyRemMatch = desc.match(/remove[s]? (\d+) (?:random )?energy/i) || desc.match(/lose[s]? (\d+) (?:random )?energy/i);
+    // --- FOCUS (immune to stun/disable) ---
+    if (/immune\s+to\s+stun/i.test(desc) || /ignores?\s+stuns?\s+and\s+disabling/i.test(desc)) {
+        effects.focus = { duration: extractDuration(desc).turns };
+    }
+
+    // --- HEAL ---
+    // Multiple patterns to catch various heal descriptions:
+    // "heals X health", "heal them for X health", "healing X health", "restore X health", etc.
+    const healMatch = desc.match(/(?:heal(?:s|ing)?|restore(?:s|ing)?|recover(?:s|ing)?)\s+(\d+)\s+health/i) ||
+        desc.match(/(?:heal(?:s|ing)?|restore(?:s|ing)?|recover(?:s|ing)?)\s+(?:\w+\s+)?(?:for\s+)?(\d+)\s+health/i) ||
+        desc.match(/(\d+)\s+health\s+(?:to|is\s+restored|is\s+healed)/i) ||
+        desc.match(/heal(?:s|ing)?\s+(?:them|him|her|one\s+ally|an\s+ally|himself|herself|itself)\s+(?:for\s+)?(\d+)\s+health/i) ||
+        desc.match(/heal(?:s|ing)?\s+(?:them|him|her|one\s+ally|an\s+ally|himself|herself|itself|all\s+allies)\s+(?:for\s+)?(\d+)/i);
+    if (healMatch) {
+        effects.heal = { amount: parseInt(healMatch[1]) };
+    }
+
+    // --- AFFLICT (damage over time) ---
+    const afflictMatch = desc.match(/(\d+)\s+affliction\s+damage/i);
+    if (afflictMatch && /for\s+\d+\s+turns?/i.test(desc)) {
+        effects.afflict = {
+            amount: parseInt(afflictMatch[1]),
+            duration: extractDuration(desc).turns
+        };
+    }
+
+    // --- STRENGTHEN (deal more damage) ---
+    const strengthenMatch = desc.match(/deal(?:s|ing)?\s+(\d+)\s+(?:additional|more|extra)\s+damage/i);
+    if (strengthenMatch) {
+        effects.strengthen = { amount: parseInt(strengthenMatch[1]) };
+        effects.damageIncrease = { amount: parseInt(strengthenMatch[1]) };
+    }
+
+    // --- WEAKEN (deal less damage) ---
+    const weakenMatch = desc.match(/deal(?:s|ing)?\s+(\d+)\s+less\s+damage/i) ||
+        desc.match(/damage\s+(?:is\s+)?(?:lowered|reduced|weakened)\s+by\s+(\d+)/i) ||
+        desc.match(/weaken(?:s|ing)?\s+(?:their\s+)?damage\s+by\s+(\d+)/i);
+    if (weakenMatch) {
+        effects.weaken = { amount: parseInt(weakenMatch[1]) };
+        effects.damageDecrease = { amount: parseInt(weakenMatch[1]) };
+    }
+
+    // --- ENERGY REMOVAL ---
+    const energyRemMatch = desc.match(/(?:remove|drain|deplete|steal)s?\s+(\d+)\s+(?:random\s+)?(?:chakra|energy)/i) ||
+        desc.match(/(?:lose|loses)\s+(\d+)\s+(?:random\s+)?(?:chakra|energy)/i);
     if (energyRemMatch) {
         effects.energyRemoval = { amount: parseInt(energyRemMatch[1]) };
     }
@@ -172,12 +215,6 @@ function extractStatusEffects(desc) {
     const energyGainMatch = desc.match(/gain[s]? (\d+) (?:random )?energy/i);
     if (energyGainMatch) {
         effects.energyGain = { amount: parseInt(energyGainMatch[1]) };
-    }
-
-    // Heal
-    const healMatch = desc.match(/heal[s]? .*for (\d+) health/i) || desc.match(/heal[s]? (\d+) health/i) || desc.match(/recover[s]? (\d+) health/i);
-    if (healMatch) {
-        effects.heal = { amount: parseInt(healMatch[1]) };
     }
 
     // Mark (for conditional effects)
@@ -339,5 +376,6 @@ async function main() {
 
 main().catch(err => {
     console.error('❌ Error:', err);
+    fs.writeFileSync('generation_error.log', err.stack || String(err));
     process.exit(1);
 });
