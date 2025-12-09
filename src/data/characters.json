@@ -3962,18 +3962,6 @@
     ]
   },
   {
-    "id": 83,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 84,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
     "id": 85,
     "name": "Morino Ibiki",
     "description": "A Konoha jounin, and the leader of the Torture and Interrogation force, Ibiki is a hard, sadistic man, who enjoys communicating through pain. Like his personality, Ibiki enjoys torturing his enemies, putting them in awkward situations where they have no choice but to lose.",
@@ -4017,18 +4005,6 @@
         "classes": "Strategic,Instant"
       }
     ]
-  },
-  {
-    "id": 86,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 87,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   },
   {
     "id": 88,
@@ -4324,12 +4300,6 @@
         "classes": "Strategic,Instant"
       }
     ]
-  },
-  {
-    "id": 95,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   },
   {
     "id": 96,
@@ -5717,12 +5687,6 @@
         "classes": "Strategic,Instant"
       }
     ]
-  },
-  {
-    "id": 124,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   },
   {
     "id": 125,
@@ -8947,12 +8911,6 @@
     ]
   },
   {
-    "id": 190,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
     "id": 191,
     "name": "Fuu",
     "description": "Fuu is a kunoichi from Takigakure and the jinchuuriki of the Seven-Tails, Choumei, Fuu is a sweet-hearted young girl who is always looking for new friends. ORIGINAL DESIGN: TheDarkLegend",
@@ -9619,12 +9577,6 @@
         "classes": "Physical,Instant"
       }
     ]
-  },
-  {
-    "id": 205,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   },
   {
     "id": 206,
@@ -11267,12 +11219,6 @@
         "classes": "Strategic,Instant"
       }
     ]
-  },
-  {
-    "id": 237,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   },
   {
     "id": 238,
@@ -21387,143 +21333,5 @@
         "classes": "Achievement,Instant"
       }
     ]
-  },
-  {
-    "id": 428,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 429,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 430,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 431,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 432,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 433,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 434,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 435,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 436,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 437,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 438,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 439,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 440,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 441,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 442,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 443,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 444,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 445,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 446,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 447,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 448,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 449,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
-  },
-  {
-    "id": 450,
-    "name": "Character Name:",
-    "description": "Uzumaki Naruto",
-    "skills": []
   }
 ]
