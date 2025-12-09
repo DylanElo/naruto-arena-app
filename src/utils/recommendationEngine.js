@@ -1174,11 +1174,7 @@ export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
     return {
       ...baseAnalysis,
       simulation: {
-        hpDelta: simAnalysis.hpDelta,
-        killThreat: simAnalysis.killThreat,
-        energyEfficiency: simAnalysis.energyEfficiency,
-        cooldownPressure: simAnalysis.cooldownPressure,
-        overallScore: simAnalysis.overallScore
+        ...simAnalysis
       }
     }
   } catch (error) {
