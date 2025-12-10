@@ -231,9 +231,12 @@ function App() {
               <div className="bg-dark-secondary border border-dark-tertiary rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
                 <div className="flex flex-wrap items-center gap-3 mb-5">
                   <div className="flex-1 min-w-[220px]">
-                    <p className="text-xs uppercase tracking-[0.3em] text-brand-primary">Deck tray</p>
-                    <h2 className="text-3xl font-black text-light-primary">Glass slots with quick gestures</h2>
-                    <p className="text-sm text-light-secondary leading-relaxed">Tap a card to peek at the full profile, press + to instantly reserve it, or use the randomizer to test weird synergies.</p>
+                    <h1 className="text-4xl font-black text-light-primary sm:text-5xl">
+                      Shinobi Theorycrafting Hub
+                    </h1>
+                    <p className="mt-4 text-lg text-light-secondary leading-relaxed">
+                      A modern, sleek cockpit for the Naruto-Arena meta. Draft, analyze, and archive squads with a new dark theme and vibrant accents.
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={randomizeTeam} className="px-4 py-2 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-xl font-semibold text-dark-primary shadow-lg">Shuffle trio</button>
@@ -303,22 +306,22 @@ function App() {
                   <div className="bg-dark-primary border border-dark-tertiary rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase text-brand-primary">Team Synergy</p>
+                        <p className="text-xs uppercase text-brand-primary">Tempo snapshot</p>
                         <p className="text-2xl font-bold text-light-primary">{fullTeamAnalysis.synergyScore}%</p>
                       </div>
                       <div className="text-right text-xs text-light-secondary/70">
-                        <p>TTK: {fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
-                        <p>Cost to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
+                        <p>HP advantage: {fullTeamAnalysis.simulation?.hpAdvantage?.toFixed(0) || 'N/A'}</p>
+                        <p>Control: {fullTeamAnalysis.simulation?.controlAdvantage?.toFixed(0) || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="bg-dark-secondary rounded-lg p-3 border border-dark-tertiary">
-                        <p className="text-light-secondary/70">Burst</p>
-                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.burstDamage || 0} dmg</p>
+                        <p className="text-light-secondary/70">Threat</p>
+                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.simulation?.threatAdvantage?.toFixed(0) || 'N/A'}</p>
                       </div>
                       <div className="bg-dark-secondary rounded-lg p-3 border border-dark-tertiary">
-                        <p className="text-light-secondary/70">Pressure</p>
-                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.pressureRating || 0}%</p>
+                        <p className="text-light-secondary/70">Energy</p>
+                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.simulation?.energyAdvantage?.toFixed(0) || 'N/A'}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap text-xs">
