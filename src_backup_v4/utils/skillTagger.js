@@ -26,7 +26,6 @@ export function detectDamageType(desc) {
  */
 export function extractDamageValue(desc) {
     const match = desc.match(/(\d+)\s*(?:affliction|piercing)?\s*damage/i);
-    if (desc.toLowerCase().includes('heal')) return 0;
     return match ? parseInt(match[1]) : 0;
 }
 
@@ -41,7 +40,7 @@ export function hasDot(desc) {
  * Detect if skill is burst (high single-target damage)
  */
 export function isBurst(desc, damageValue) {
-    return damageValue >= 35 && !hasDot(desc) && !/all enemies/i.test(desc);
+    return damageValue >= 40 && !hasDot(desc) && !/all enemies/i.test(desc);
 }
 
 /**
@@ -84,7 +83,7 @@ export const DEFENSE_PATTERNS = {
  * CONTROL & DISRUPTION (from manual)
  */
 export const CONTROL_PATTERNS = {
-    hardStun: /stun(s|ned)? the target/i,
+    hardStun: /stunned for \d+ turn|this character is stunned/i,
     classStun: /stunned.*(physical|energy|mental|strategic|affliction)/i,
     aoeStun: /all enemies.*stunned/i,
     energyRemoval: /remove[s]? \d+ .* energy|lose[s]? \d+ .* energy/i,
@@ -210,20 +209,7 @@ export function buildCharacterProfile(character) {
         name: character.name,
 
         // Roles
-        roles: {
-            // Damage
-            nuker: 0,       // High, single-target burst
-            aoe_specialist: 0, // Damages multiple enemies
-            dot_specialist: 0, // Damage-over-time
-
-            // Defense
-            protector: 0,   // Healing and cleansing
-            staller: 0,     // Uses DR, invulnerability, DD
-
-            // Control / Support
-            disruptor: 0,   // Stuns, energy removal, counters
-            enabler: 0,     // Energy generation, buffs
-        },
+        roles: { dps: 0, tank: 0, support: 0, control: 0 },
 
         // Mechanics counts
         mechanics: {
@@ -279,12 +265,11 @@ export function buildCharacterProfile(character) {
         }
     };
 
-    let totalDamagePoints = 0;
-    let totalDefensePoints = 0;
-
     // Analyze each skill
     character.skills.forEach(skill => {
         const tags = extractSkillTags(skill);
+
+        // ONLY count damage types if targeting enemies (not self-damage!)
         const isOffensive = tags.target === 'enemy' || tags.target === 'allEnemies';
 
         if (isOffensive) {
@@ -297,70 +282,68 @@ export function buildCharacterProfile(character) {
             if (tags.isAoE) profile.mechanics.aoe++;
         }
 
+        // Count defense
         if (tags.defense.damageReduction) profile.mechanics.damageReduction++;
         if (tags.defense.destructibleDefense) profile.mechanics.destructibleDefense++;
         if (tags.defense.invulnerable) profile.mechanics.invulnerable++;
         if (tags.defense.heal) profile.mechanics.heal++;
         if (tags.defense.cleanse) profile.mechanics.cleanse++;
 
+        // Count control
         if (tags.control.hardStun || tags.control.classStun) profile.mechanics.stun++;
         if (tags.control.energyRemoval) profile.mechanics.energyRemoval++;
         if (tags.control.counter) profile.mechanics.counter++;
         if (tags.control.reflect) profile.mechanics.reflect++;
-        
+
+        // Energy gain
         if (tags.resource.energyGain > 0) profile.mechanics.energyGain += tags.resource.energyGain;
 
+        // Aggregate hooks
         Object.keys(tags.hooks).forEach(hook => {
             if (tags.hooks[hook]) profile.hooks[hook] = true;
         });
 
+        // Energy tracking
         if (tags.resource.usesRandom) profile.energy.usesRandom = true;
         tags.resource.energyColors.forEach(color => {
             profile.energy.colors[color]++;
         });
 
+        // Targeting tracking
         if (tags.target) {
             profile.targeting[tags.target]++;
         }
-
-        // --- New Role Scoring Logic ---
-        if (isOffensive) {
-            if (tags.isBurst) profile.roles.nuker += 1.5;
-            if (tags.isAoE) profile.roles.aoe_specialist += 1.2;
-            if (tags.hasDot || tags.damageType === 'affliction') profile.roles.dot_specialist += 1.2;
-            totalDamagePoints += tags.damageValue > 0 ? 1 : 0;
-        }
-
-        if (tags.defense.heal || tags.defense.cleanse) profile.roles.protector += 1.5;
-        if (tags.defense.damageReduction || tags.defense.destructibleDefense || tags.defense.invulnerable) {
-            profile.roles.staller += 1.2;
-            totalDefensePoints++;
-        }
-
-        if (tags.control.hardStun || tags.control.energyRemoval || tags.control.counter) {
-            profile.roles.disruptor += 1.3;
-        }
-
-        if (tags.resource.energyGain > 0) profile.roles.enabler += 1.5;
     });
-    
-    // --- Role Normalization & Legacy Mapping ---
-    const granularRoles = { ...profile.roles };
-    const legacyRoles = { dps: 0, tank: 0, support: 0, control: 0 };
-    legacyRoles.dps = granularRoles.nuker + granularRoles.aoe_specialist * 0.8 + granularRoles.dot_specialist * 0.8;
-    legacyRoles.tank = granularRoles.staller;
-    legacyRoles.support = granularRoles.protector + granularRoles.enabler;
-    legacyRoles.control = granularRoles.disruptor;
-    
-    profile.roles = legacyRoles;
-    profile.granularRoles = granularRoles;
 
+    // Calculate roles
+    character.skills.forEach(skill => {
+        const tags = extractSkillTags(skill);
+
+        if (tags.control.hardStun || tags.control.energyRemoval || tags.control.counter || tags.control.reflect) {
+            profile.roles.control++;
+        }
+
+        if (tags.damageType || tags.isBurst) {
+            profile.roles.dps++;
+        }
+
+        if (tags.defense.damageReduction || tags.defense.destructibleDefense || tags.defense.invulnerable) {
+            profile.roles.tank++;
+        }
+
+        if (tags.defense.heal || tags.defense.cleanse || tags.resource.energyGain > 0) {
+            profile.roles.support++;
+        }
+    });
+
+    // Calculate energy stats
     const totalEnergyCost = Object.values(profile.energy.colors).reduce((a, b) => a + b, 0);
     const skillCount = character.skills.length;
     profile.energy.avgCost = skillCount > 0 ? totalEnergyCost / skillCount : 0;
 
-    profile.isGlassCannon = totalDamagePoints >= 2 && totalDefensePoints === 0;
-    profile.isEnergyHungry = profile.energy.avgCost >= 1.8;
+    // Special flags
+    profile.isGlassCannon = (profile.roles.dps >= 3 && profile.roles.tank === 0);
+    profile.isEnergyHungry = profile.energy.avgCost >= 2;
 
     return profile;
 }

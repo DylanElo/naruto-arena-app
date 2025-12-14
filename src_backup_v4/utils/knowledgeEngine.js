@@ -1,5 +1,5 @@
-import characters from '../data/characters.json' with { type: 'json' }
-import { buildCharacterProfile, extractSkillTags } from './skillTagger.js'
+import characters from '../data/characters.json'
+import { buildCharacterProfile, extractSkillTags } from './skillTagger'
 
 // Map new granular mechanics to legacy broad buckets for compatibility
 function mapMechanics(profileMech) {

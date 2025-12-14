@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import charactersData from './data/characters.json'
+import skillEffectsData from './data/skill_effects.json'
+import { loadSkillEffects } from './engine/models.js'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
@@ -7,6 +9,10 @@ import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import Header from './components/layout/Header'
 import { ENERGY_BG_COLORS } from './utils/colors'
+
+// Initialize structured skill effects data at app startup
+loadSkillEffects(skillEffectsData)
+
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder')
@@ -297,12 +303,12 @@ function App() {
                   <div className="bg-dark-primary border border-dark-tertiary rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs uppercase text-brand-primary">Tempo snapshot</p>
-                        <p className="text-2xl font-bold text-light-primary">{fullTeamAnalysis.tempo.pressureRating}% pressure</p>
+                        <p className="text-xs uppercase text-brand-primary">Team Synergy</p>
+                        <p className="text-2xl font-bold text-light-primary">{fullTeamAnalysis.synergyScore}%</p>
                       </div>
                       <div className="text-right text-xs text-light-secondary/70">
                         <p>TTK: {fullTeamAnalysis.tempo.estimatedKillTurns ?? '—'}</p>
-                        <p>Energy to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
+                        <p>Cost to Kill: {fullTeamAnalysis.tempo.costToKill ?? '—'}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -311,8 +317,8 @@ function App() {
                         <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.burstDamage || 0} dmg</p>
                       </div>
                       <div className="bg-dark-secondary rounded-lg p-3 border border-dark-tertiary">
-                        <p className="text-light-secondary/70">Energy</p>
-                        <p className="text-light-primary text-lg font-semibold">{Object.values(teamAnalysis).reduce((a, b) => a + b, 0)} total</p>
+                        <p className="text-light-secondary/70">Pressure</p>
+                        <p className="text-light-primary text-lg font-semibold">{fullTeamAnalysis.tempo.pressureRating || 0}%</p>
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap text-xs">
@@ -355,13 +361,13 @@ function App() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm truncate text-light-primary">{char.name}</div>
                                   <div className="text-[11px] text-light-secondary/70 truncate">{char.skills.map(s => s.name).slice(0, 2).join(' • ')}</div>
-                                    <div className="flex gap-1 mt-2">
-                                      {(char.skills?.[0]?.energy ?? []).map((e, i) => (
-                                        <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
-                                          {e === 'none' ? '-' : e[0].toUpperCase()}
-                                        </span>
-                                      ))}
-                                    </div>
+                                  <div className="flex gap-1 mt-2">
+                                    {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                      <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
+                                        {e === 'none' ? '-' : e[0].toUpperCase()}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <button onClick={() => setViewCharacter(char)} className="text-xs text-brand-primary hover:text-brand-secondary">Open card</button>
@@ -648,7 +654,7 @@ function App() {
                                 ))}
                               </div>
                               <div className="flex gap-1">
-                                {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                {char.skills[0].energy.map((e, i) => (
                                   <span key={i} className={`w-7 h-7 rounded-md border flex items-center justify-center text-[10px] font-bold ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary/70 border-dark-tertiary'}`}>
                                     {e === 'none' ? '-' : e[0].toUpperCase()}
                                   </span>

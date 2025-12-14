@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Become Genin",
+    "level": 1,
+    "rewards": "Character: Uzumaki Naruto"
+  },
+  {
+    "id": 2,
+    "name": "Team 7 Assembles",
+    "level": 1,
+    "rewards": "Character: Haruno Sakura"
+  },
+  {
+    "id": 3,
+    "name": "Prodigy Test",
+    "level": 1,
+    "rewards": "Character: Uchiha Sasuke"
+  },
+  {
+    "id": 4,
+    "name": "Chunin Hopeful",
+    "level": 2,
+    "rewards": "Character: Rock Lee"
+  }
+]

@@ -18,47 +18,37 @@ export function calculateOutcome(source, target, skill) {
         damageDealt: 0,
         defenseRemoved: 0,
         blocked: false,
-        killed: false,
-        statusApplied: []
+        killed: false
     };
 
-    // Process each effect in the skill
-    for (const effect of skill.effects) {
-        if (effect.type === 'damage') {
-            // Conditional Damage
-            let baseDamage = effect.amount;
-            if (effect.condition && effect.condition.status) {
-                if (source.activeStatuses.has(effect.condition.status)) {
-                    baseDamage += effect.condition.bonus;
-                }
-            }
-
-            // Check Invulnerability
-            if (target.statusEffects.invulnerable && !effect.ignoreInvulnerability) {
-                result.blocked = true;
-                continue; // Skip this effect
-            }
-            
-            // Apply Modifiers & Defense
-            const finalDamage = applyDamageModifiers(baseDamage, source, target);
-            const damageResult = applyDefense(finalDamage, target, effect.damageType || DamageType.NORMAL);
-            
-            result.damageDealt += damageResult.hpDamage;
-            result.defenseRemoved += damageResult.defenseDamage;
-
-            target.takeDamage(damageResult.hpDamage);
-            target.statusEffects.destructibleDefense = Math.max(0, target.statusEffects.destructibleDefense - damageResult.defenseDamage);
-
-        } else if (effect.type === 'stun') {
-            applyStun(target, effect.duration);
-            result.statusApplied.push('stun');
-        } else if (effect.type === 'damage_reduction') {
-            applyDamageReduction(target, effect.amount);
-            source.activeStatuses.add(effect.status);
-            result.statusApplied.push('damage_reduction');
-        }
-        // ... handle other effect types like heal, energy gain, etc.
+    // Skip if no damage
+    if (skill.damage <= 0) {
+        return result;
     }
+
+    // STEP 1: Check Invulnerability
+    if (target.statusEffects.invulnerable && !skill.ignoreInvulnerability) {
+        result.blocked = true;
+        return result;
+    }
+
+    // STEP 2: Base Calculation
+    let finalDamage = skill.damage;
+
+    // STEP 3: Apply Modifiers
+    finalDamage = applyDamageModifiers(finalDamage, source, target);
+
+    // STEP 4: Apply Defense (3-Tier System)
+    const damageResult = applyDefense(finalDamage, target, skill.damageType);
+
+    result.damageDealt = damageResult.hpDamage;
+    result.defenseRemoved = damageResult.defenseDamage;
+
+    // Apply damage to target
+    target.takeDamage(damageResult.hpDamage);
+    target.statusEffects.destructibleDefense = Math.max(0,
+        target.statusEffects.destructibleDefense - damageResult.defenseDamage
+    );
 
     if (!target.isAlive()) {
         result.killed = true;
@@ -161,12 +151,12 @@ export function calculateHealthSteal(source, target, stealAmount) {
  */
 export function applyStun(target) {
     target.statusEffects.stunned = true;
-    // In full implementation, track duration
+    // In a full implementation, duration would be tracked here.
 }
 
 export function applyInvulnerability(target) {
     target.statusEffects.invulnerable = true;
-    // In full implementation, track duration
+    // In a full implementation, duration would be tracked here.
 }
 
 export function applyDamageReduction(target, amount) {

@@ -1,5 +1,5 @@
 import { getCharacterKnowledge } from './knowledgeEngine.js'
-import { GameState, Character } from '../engine/models.js'
+import { GameState, Character, getSkillEffect } from '../engine/models.js'
 import { analyzeGameState as analyzeGameStateSimulation } from '../engine/analyzer.js'
 
 // --- DEFAULT ANALYSIS SHAPE -------------------------------------------------
@@ -17,8 +17,6 @@ const DEFAULT_ANALYSIS = {
     aoe: 0,
     stacking: 0,
     energyGen: 0,
-    heal: 0,
-    damage_reduction: 0,
     skillSteal: 0,
     stun: 0,
     invulnerable: 0,
@@ -50,189 +48,95 @@ const DEFAULT_ANALYSIS = {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
-// --- FALLBACK SKILmultipleL ANALYSIS (TEXT-BASED) ----------------------------------
-// This is a temporary solution for characters that have not been migrated
-// to the structured `effects` data model. It's less accurate but provides
-// baseline analysis.
-
-const analyzeSkillsByText = (skills = []) => {
-  const mechanics = { ...DEFAULT_ANALYSIS.mechanics };
-  if (!skills) return mechanics;
-
-  const keywordMap = {
-    counter: [/counter/gi],
-    invisible: [/invisible/gi],
-    immunity: [/immunity/gi],
-    piercing: [/piercing/gi, /ignores damage reduction/gi],
-    punisher: [/punish/gi],
-    antiTank: [/destructible defense/gi, /reduces damage taken/gi],
-    cleanse: [/cleanse/gi, /removes (?:all )?(?:harmful effects|debuffs|harmful non-conditional affliction)/gi],
-    aoe: [/all enemies/gi],
-    stacking: [/stacking/gi, /affliction/gi],
-    energyGen: [/gain (?:one|\d+) (?:green|red|blue|white|black|random) energy/gi, /generates (?:one|\d+)/gi, /gain \d+ chakra/gi],
-    heal: [/heals (?:an ally|\d+)/gi, /heal/gi],
-    damage_reduction: [/damage reduction/gi],
-    skillSteal: [/steal/gi],
-    stun: [/stun/gi, /stuns/gi, /stunning/gi, /incapacitate/gi],
-    invulnerable: [/invulnerable/gi, /invulnerability/gi],
-    statusShield: [/status shield/gi],
-    antiAffliction: [/ignores harmful non-conditional affliction/gi],
-    triggerOnAction: [/when another ally acts/gi],
-    triggerOnHit: [/when hit/gi],
-    achievement: [/achievement/gi],
-    setup: [/setup/gi, /mark/gi],
-    sustain: [/sustain/gi],
-    defense: [/defense/gi]
-  };
-
-  skills.forEach(skill => {
-    const text = `${skill.name} ${skill.description}`; // Keep case for some regex, use /i flag
-
-    for (const mechanic in keywordMap) {
-      for (const regex of keywordMap[mechanic]) {
-        const matches = text.match(regex);
-        if (matches) {
-          mechanics[mechanic] += matches.length;
-        }
-      }
-    }
-  });
-
-  return mechanics;
-};
-
-const inferRolesFromSkills = (mechanics, skills) => {
-  const roles = { tank: 0, support: 0, control: 0, dps: 0 };
-  if (!mechanics) return roles;
-
-  // Infer roles based on mechanics
-  if (mechanics.stun > 0 || mechanics.skillSteal > 0) roles.control += 1;
-  if (mechanics.cleanse > 0 || mechanics.heal > 0 || mechanics.energyGen > 0) roles.support += 1;
-  if (mechanics.damage_reduction > 0 || mechanics.counter > 0 || mechanics.defense > 0 || mechanics.immunity > 0) roles.tank += 1;
-
-  // Infer DPS from damage-dealing skills
-  let damageSkillCount = 0;
-  (skills || []).forEach(skill => {
-    const damage = extractSkillDamage(skill);
-    if (damage > 0) {
-      damageSkillCount++;
-    }
-    // High-damage skills strongly suggest a DPS role
-    if (damage >= 30) {
-      roles.dps += 1.5;
-    }
-  });
-
-  if (damageSkillCount >= 2) {
-    roles.dps += 1;
-  }
-
-  // Normalize to prevent a character from dominating all roles
-  const total = Object.values(roles).reduce((a, b) => a + b, 0);
-  if (total > 0) {
-    Object.keys(roles).forEach(key => {
-      roles[key] = (roles[key] / total) * 2; // Arbitrary scaling factor
-    });
-  }
-
-  return roles;
-};
-
-
 // --- CHARACTER ANALYSIS -----------------------------------------------------
 
 export const analyzeCharacter = (char) => {
   if (!char || !char.id) {
     return {
       roles: { tank: 0, support: 0, control: 0, dps: 0 },
-      mechanics: { ...DEFAULT_ANALYSIS.mechanics },
+      mechanics: {
+        counter: 0,
+        invisible: 0,
+        immunity: 0,
+        piercing: 0,
+        punisher: 0,
+        antiTank: 0,
+        cleanse: 0,
+        aoe: 0,
+        stacking: 0,
+        energyGen: 0,
+        skillSteal: 0,
+        stun: 0,
+        invulnerable: 0,
+        statusShield: 0,
+        antiAffliction: 0,
+        triggerOnAction: 0,
+        triggerOnHit: 0,
+        achievement: 0,
+        setup: 0,
+        sustain: 0,
+        defense: 0
+      },
       knowledge: null
     }
   }
 
   const knowledge = getCharacterKnowledge(char.id)
   if (!knowledge) {
-    const fallbackMechanics = analyzeSkillsByText(char.skills);
-    const fallbackRoles = inferRolesFromSkills(fallbackMechanics, char.skills);
     return {
-      roles: fallbackRoles,
-      mechanics: fallbackMechanics,
+      roles: { tank: 0, support: 0, control: 0, dps: 0 },
+      mechanics: {
+        counter: 0,
+        invisible: 0,
+        immunity: 0,
+        piercing: 0,
+        punisher: 0,
+        antiTank: 0,
+        cleanse: 0,
+        aoe: 0,
+        stacking: 0,
+        energyGen: 0,
+        skillSteal: 0,
+        stun: 0,
+        invulnerable: 0,
+        statusShield: 0,
+        antiAffliction: 0,
+        triggerOnAction: 0,
+        triggerOnHit: 0,
+        achievement: 0,
+        setup: 0,
+        sustain: 0,
+        defense: 0
+      },
       knowledge: null
     }
   }
 
-  const analysis = {
+  return {
     roles: knowledge.roles,
-    mechanics: { ...DEFAULT_ANALYSIS.mechanics },
+    mechanics: knowledge.mechanics,
     knowledge
-  };
-
-  const hasStructuredEffects = (char.skills || []).some(skill => skill.effects && skill.effects.length > 0);
-
-  if (hasStructuredEffects) {
-    // New structured data path
-    (char.skills || []).forEach(skill => {
-      (skill.effects || []).forEach(effect => {
-        if (analysis.mechanics[effect.type] !== undefined) {
-          analysis.mechanics[effect.type]++;
-        }
-      });
-    });
-  } else {
-    // Fallback to text parsing for older data
-    const textMechanics = analyzeSkillsByText(char.skills);
-    Object.keys(textMechanics).forEach(key => {
-      // Use the value from text analysis (usually 0 or 1)
-      if (textMechanics[key] > 0) {
-        analysis.mechanics[key] = textMechanics[key];
-      }
-    });
   }
-
-  return analysis;
 }
 
 // --- DAMAGE / TEMPO APPROXIMATION -------------------------------------------
 
-function extractSkillDamage(skill = {}) {
-  // New structured data path
-  if (skill.effects && skill.effects.length > 0) {
-    let maxDamage = 0;
-    skill.effects.forEach(effect => {
-      if (effect.type === 'damage') {
-        let currentDamage = effect.amount || 0;
-        if (effect.condition && effect.condition.bonus) {
-          currentDamage += effect.condition.bonus;
-        }
-        if (effect.target === 'all_enemies') {
-          currentDamage *= 3; // Approximate AoE value
-        }
-        if (currentDamage > maxDamage) {
-          maxDamage = currentDamage;
-        }
-      }
-    });
-    return maxDamage;
+function extractSkillDamage(skill = {}, characterId = null, skillIndex = null) {
+  // Try structured data first (more accurate)
+  if (characterId !== null && skillIndex !== null) {
+    const structured = getSkillEffect(characterId, skillIndex)
+    if (structured?.damage?.base) {
+      return structured.damage.base
+    }
   }
 
-  // Fallback: improved text parsing
-  const desc = (skill.description || '').toLowerCase();
-  let totalDamage = 0;
-
-  // Find all "deals X damage" instances and sum them up.
-  const damageRegex = /deals (\d+) damage/g;
-  let match;
-  while ((match = damageRegex.exec(desc)) !== null) {
-    totalDamage += parseInt(match[1], 10);
-  }
-
-  // Consider AoE multipliers.
-  if (desc.includes('to all enemies') || desc.includes('to each enemy')) {
-    // If damage was already calculated, multiply it. Otherwise, estimate a base AoE damage.
-    totalDamage = totalDamage > 0 ? totalDamage * 2.5 : 15 * 2.5;
-  }
-
-  return totalDamage;
+  // Fallback to string parsing
+  const desc = (skill.description || '').toLowerCase()
+  const damageMatches = [...desc.matchAll(/(\d+)\s+damage/gi)]
+  if (!damageMatches.length) return 0
+  // Take the highest damage number mentioned
+  const nums = damageMatches.map(m => Number(m[1])).filter(n => !Number.isNaN(n))
+  return nums.length ? Math.max(...nums) : 0
 }
 
 function energyCost(skill = {}) {
@@ -249,8 +153,8 @@ function buildDamageProfile(team = []) {
     let bestDPE = 0
     let bestCost = 0
 
-      ; (char.skills || []).forEach(skill => {
-        const dmg = extractSkillDamage(skill)
+      ; (char.skills || []).forEach((skill, skillIndex) => {
+        const dmg = extractSkillDamage(skill, char.id, skillIndex)
         if (!dmg) return
         const cost = energyCost(skill)
         const dpe = dmg / cost
@@ -295,6 +199,8 @@ function buildDamageProfile(team = []) {
     estimatedKillTurns
   }
 }
+
+
 
 // --- TEAM ANALYSIS ----------------------------------------------------------
 
@@ -361,13 +267,12 @@ export const analyzeTeam = (team) => {
 
   // Pressure rating: mix of burst, DPE and key mechanics
   let pressureRating = 0
-  pressureRating += Math.min(dmgProfile.burstDamage, 150) / 150 * 40 // up to 40 pts from raw burst
-  pressureRating += Math.min(dmgProfile.avgDPE, 25) / 25 * 20 // up to 20 pts from efficiency
+  pressureRating += Math.min(dmgProfile.burstDamage, 150) / 150 * 45 // up to 45 pts from raw burst
+  pressureRating += Math.min(dmgProfile.avgDPE, 25) / 25 * 25 // up to 25 pts from efficiency
 
-  if (mechanics.stacking > 0) pressureRating += 10
-  if (mechanics.stun > 0) pressureRating += 12
-  if (mechanics.antiTank > 0 || mechanics.piercing > 0) pressureRating += 10
-  if (mechanics.aoe > 0) pressureRating += 8
+  if (mechanics.stacking > 0) pressureRating += 8
+  if (mechanics.stun > 0) pressureRating += 8
+  if (mechanics.antiTank > 0 || mechanics.piercing > 0) pressureRating += 6
   pressureRating = clamp(Math.round(pressureRating), 0, 100)
 
   // Role balance score
@@ -447,69 +352,52 @@ export const analyzeTeam = (team) => {
   const synergyHighlights = []
   const strategies = []
 
-  // Granular role analysis
-  const granularRoles = { nuker: 0, aoe_specialist: 0, dot_specialist: 0, protector: 0, staller: 0, disruptor: 0, enabler: 0 };
-  team.forEach(member => {
-      const knowledge = getCharacterKnowledge(member.id);
-      if (knowledge?.profile?.granularRoles) {
-          Object.keys(granularRoles).forEach(r => {
-              granularRoles[r] += knowledge.profile.granularRoles[r] || 0;
-          });
-      }
-  });
-
-
-  // Highlights / strengths based on granular roles
-  if (granularRoles.nuker > 0 && granularRoles.enabler > 0) {
-      synergyHighlights.push('Energy Battery for Nuker');
-  }
-  if (granularRoles.staller > 0 && granularRoles.dot_specialist > 0) {
-      synergyHighlights.push('Stall & Attrition Combo');
-  }
-  if (granularRoles.disruptor > 0 && (granularRoles.nuker > 0 || granularRoles.dot_specialist > 0)) {
-      synergyHighlights.push('Disruption Creates Openings for Damage');
-  }
-  if (granularRoles.protector > 0 && (roles.dps > 2.5 || team.some(m => getCharacterKnowledge(m.id)?.profile?.isGlassCannon))) {
-      synergyHighlights.push('Protection for High-Value Threats');
+  // Highlights / strengths
+  if (mechanics.stun > 0 && hookCounts.setups > 0) {
+    synergyHighlights.push('Stun + setup synergy')
+  } else if (mechanics.stun > 0) {
+    synergyHighlights.push('Reliable crowd control (stuns)')
   }
 
+  if (mechanics.stacking >= 2) {
+    synergyHighlights.push('Affliction / DoT pressure')
+  }
 
-  // Strengths
-  if (pressureRating >= 75) strengths.push('High-pressure offense');
-  if (roles.dps > 2.5 && mechanics.piercing > 0) strengths.push('Excellent anti-tank capabilities');
-  if (mechanics.stun > 1 || mechanics.counter > 1) strengths.push('Strong control over the battlefield');
-  if (mechanics.cleanse > 0 && mechanics.heal > 0) strengths.push('Robust healing and cleansing');
-  if (granularRoles.aoe_specialist > 1.5) strengths.push('Overwhelming AoE pressure');
-  if (mechanics.energyGen > 1) strengths.push('Superior energy generation');
+  if (mechanics.antiTank > 0 || mechanics.piercing > 0) {
+    synergyHighlights.push('Tools vs heavy DR / tanks (anti-tank)')
+  }
 
+  if (hookCounts.energySupport > 0 && hookCounts.highCostThreats > 0) {
+    synergyHighlights.push('Energy battery for high-cost skills')
+  }
 
-  // Weaknesses & Warnings
+  if (mechanics.immunity > 0 || mechanics.invulnerable > 0 || mechanics.cleanse > 0) {
+    synergyHighlights.push('Defensive tools to protect carries')
+  }
+
+  if (mechanics.stun > 0) strengths.push('Crowd control: stuns / disables')
+  if (mechanics.stacking > 0) strengths.push('Attrition plan: damage-over-time / affliction')
+  if (mechanics.cleanse > 0) strengths.push('Access to healing / cleanse vs DoT & debuffs')
+  if (mechanics.antiTank > 0 || mechanics.piercing > 0) strengths.push('Can punch through DR / defensive teams')
+  if (mechanics.energyGen > 0) strengths.push('Extra energy generation for long games')
+  if (mechanics.immunity > 0 || mechanics.invulnerable > 0) strengths.push('Damage reduction / invulnerability available')
+  if (pressureRating >= 70) strengths.push('High pressure: strong burst or sustained damage output')
+
+  // Weaknesses & Warnings (anti-synergy detection)
   const warnings = []
 
-  // Role-based weaknesses
-  if (roles.dps < 1.5 && dmgProfile.burstDamage < 90) {
-      weaknesses.push('Very low damage output, may struggle to secure kills.');
-      warnings.push('⚠️ Lacks a clear win condition.');
+  // Basic coverage gaps
+  if (mechanics.cleanse === 0) weaknesses.push('No cleanse / healing vs affliction or DoT')
+  if (mechanics.stun + mechanics.counter === 0) weaknesses.push('Very little control (no stuns or counters)')
+  if (mechanics.antiTank === 0 && mechanics.piercing === 0) weaknesses.push('No direct tools vs DR / defensive walls')
+  if (mechanics.immunity === 0 && mechanics.invulnerable === 0 && mechanics.cleanse === 0) {
+    weaknesses.push('Low sustain: fragile in grindy matches')
   }
-  if (roles.dps > 2.5 && granularRoles.protector === 0 && granularRoles.staller === 0) {
-      weaknesses.push('Glass Cannon: High damage but extremely fragile.');
-  }
-  if (granularRoles.disruptor < 1) {
-      weaknesses.push('Vulnerable to enemy combos and control.');
-  }
-  if (granularRoles.protector < 1) {
-      weaknesses.push('No healing or cleansing, struggles in long fights.');
-  }
-
-  // Mechanic Gaps
-  if (mechanics.antiTank === 0 && mechanics.piercing === 0) weaknesses.push('No tools to deal with heavy defense (DR/DD).');
-  if (mechanics.cleanse === 0 && mechanics.statusShield === 0) weaknesses.push('Susceptible to stun-locks and affliction damage.');
-
 
   // Energy problems
   if (hookCounts.highCostThreats > 1 && mechanics.energyGen === 0) {
-      weaknesses.push('Energy hungry: many high-cost skills but no energy generation');
-      warnings.push('⚠️ High energy requirements without support');
+    weaknesses.push('Energy hungry: many high-cost skills but no energy generation')
+    warnings.push('⚠️ High energy requirements without support')
   }
 
   // Energy color bottleneck
@@ -517,32 +405,51 @@ export const analyzeTeam = (team) => {
   const energyEntries = Object.entries(energyDistribution)
   const dominantEnergy = energyEntries.find(([, count]) => count >= totalEnergy * 0.6)
   if (dominantEnergy && totalEnergy >= 6) {
-      warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
+    warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
   }
 
   // Energy concentration warning
   if (energyTeamPenalty > 0) {
-      weaknesses.push('Very concentrated chakra colors – team is prone to bad rolls')
+    weaknesses.push('Very concentrated chakra colors – team is prone to bad rolls')
   }
 
   // Too setup-heavy (no payoff)
   if (hookCounts.setups >= 2 && hookCounts.payoffs < 1) {
-      warnings.push('⚠️ Multiple setup characters but weak payoff. Add a finisher or burst damage.')
+    warnings.push('⚠️ Multiple setup characters but weak payoff. Add a finisher or burst damage.')
+  }
+
+  // All defensive, no win condition
+  if (roles.dps < 1 && dmgProfile.burstDamage < 80) {
+    warnings.push('⚠️ Unclear win condition: very low damage output')
+  }
+
+  // Too fragile for an aggressive team
+  if (dmgProfile.burstDamage >= 120 && mechanics.immunity === 0 && mechanics.invulnerable === 0) {
+    weaknesses.push('High damage but fragile: no invulnerability or DR')
+  }
+
+  // Role imbalance: all same role
+  const roleEntries = Object.entries(roles).filter(([, v]) => v > 0)
+  if (roleEntries.length === 1 && team.length >= 2) {
+    const [roleName] = roleEntries[0]
+    warnings.push(`⚠️ All characters are ${roleName}s - consider role diversity`)
   }
 
   // Strategies / gameplans
-  if (granularRoles.nuker > 1.5) {
-      strategies.push('Focus on eliminating a key enemy threat quickly with single-target burst.');
-  } else if (granularRoles.aoe_specialist > 1.5) {
-      strategies.push('Apply consistent pressure to the entire enemy team with AoE damage.');
-  } else if (granularRoles.dot_specialist > 1.2 && granularRoles.staller > 1) {
-      strategies.push('Win through attrition by stalling defensively while DoTs wear down the enemy.');
-  } else if (granularRoles.disruptor > 1.5 && roles.dps > 1.5) {
-      strategies.push('Control the flow of the game by disrupting enemies, then capitalize on openings.');
+  if (dmgProfile.burstDamage >= 120) {
+    strategies.push('Burst priority target quickly, then snowball the fight')
   }
-
+  if (mechanics.stacking > 0 && hookCounts.sustain > 0) {
+    strategies.push('Apply DoTs / affliction and protect your team while they tick')
+  }
+  if (mechanics.stun > 0 && mechanics.energyGen > 0) {
+    strategies.push('Lock key enemies with stuns while ramping energy advantage')
+  }
+  if (hookCounts.sustain >= 2 && dmgProfile.burstDamage < 100) {
+    strategies.push('Play a grindy sustain game and outlast enemy resources')
+  }
   if (strategies.length === 0) {
-      strategies.push('Flexible composition: adapt your plan to the matchup')
+    strategies.push('Flexible composition: adapt your plan to the matchup')
   }
 
   return {
@@ -599,13 +506,25 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds =
       candidates = candidates.filter(c => ownedIds.has(c.id))
     }
 
+    // Analyze current team to find gaps
+    const currentAnalysis = analyzeTeam(currentTeam)
+    const weaknesses = currentAnalysis.weaknesses || []
+
+    // Explicitly identify if team is energy hungry
+    const teamNeeds = {
+      energy: weaknesses.some(w => w.includes('Energy hungry')),
+      sustain: weaknesses.some(w => w.includes('Low sustain')),
+      cleanse: weaknesses.some(w => w.includes('No cleanse')),
+      control: weaknesses.some(w => w.includes('Very little control'))
+    }
+
     // Score each candidate
     const scored = candidates.map(candidate => {
       // Partner fit with main (primary weight - 50%)
-      const mainFit = scorePartnerFit(main, candidate)
+      const mainFit = scorePartnerFit(main, candidate, teamNeeds)
 
       // Partner fit with secondary (secondary weight - 30%)
-      const secondaryFit = scorePartnerFit(secondary, candidate)
+      const secondaryFit = scorePartnerFit(secondary, candidate, teamNeeds)
 
       // Full team synergy (tertiary weight - 20%)
       const teamAnalysis = analyzeTeam([...currentTeam, candidate])
@@ -634,94 +553,190 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds =
 }
 
 // --- BUILD-AROUND MAIN CHARACTER -------------------------------------------
-const getPrimaryRoles = (char) => {
-  const knowledge = getCharacterKnowledge(char.id);
-  const roles = knowledge?.profile?.granularRoles || {};
-  
-  const entries = Object.entries(roles)
-    .filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1]);
 
-  if (!entries.length) return { primary: null, secondary: null };
-  const [primary] = entries;
-  const secondary = entries[1] || null;
+const getPrimaryRoles = (char) => {
+  const { roles } = analyzeCharacter(char)
+  const entries = Object.entries(roles || {})
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+
+  if (!entries.length) return { primary: null, secondary: null }
+  const [primary] = entries
+  const secondary = entries[1] || null
 
   return {
     primary: primary[0],
     secondary: secondary ? secondary[0] : null
-  };
-};
+  }
+}
 
-const scorePartnerFit = (mainChar, candidate) => {
-    const mainProfile = getCharacterKnowledge(mainChar.id)?.profile;
-    const candProfile = getCharacterKnowledge(candidate.id)?.profile;
+const scorePartnerFit = (mainChar, candidate, teamNeeds = {}) => {
+  const mainProfile = analyzeCharacter(mainChar);
+  const candProfile = analyzeCharacter(candidate);
 
-    if (!mainProfile || !candProfile) return { score: 0, notes: [] };
+  const mainRoles = getPrimaryRoles(mainChar);
+  const candRoles = getPrimaryRoles(candidate);
 
-    const mainRoles = getPrimaryRoles(mainChar);
-    const candRoles = getPrimaryRoles(candidate);
+  let score = 0;
+  const notes = [];
 
-    let score = 0;
-    const notes = [];
+  const mMech = mainProfile.mechanics;
+  const cMech = candProfile.mechanics;
 
-    // Role complementarity using granular roles
-    const mainPrimary = mainRoles.primary;
-    const candPrimary = candRoles.primary;
-
-    if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(mainPrimary)) {
-        if (candPrimary === 'protector') { score += 30; notes.push('Protects the main damage dealer'); }
-        if (candPrimary === 'staller') { score += 25; notes.push('Buys time for the damage dealer to scale'); }
-        if (candPrimary ==='disruptor') { score += 20; notes.push('Disrupts enemies, creating openings'); }
-        if (candPrimary === 'enabler') { score += 25; notes.push('Provides energy for expensive skills'); }
-    } else if (mainPrimary === 'protector' || mainPrimary === 'enabler') {
-        if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(candPrimary)) {
-            score += 30; notes.push('Provides a clear win condition');
-        }
-    } else if (mainPrimary === 'disruptor') {
-        if (candPrimary === 'nuker' || candPrimary === 'dot_specialist') {
-            score += 28; notes.push('Capitalizes on disruptions with heavy damage');
-        }
+  // Role complementarity
+  if (mainRoles.primary === 'dps') {
+    if (candRoles.primary === 'support') {
+      score += 30;
+      notes.push('Provides support to a primary damage dealer');
+    } else if (candRoles.primary === 'tank') {
+      score += 25;
+      notes.push('Provides protection for a damage dealer');
+    } else if (candRoles.primary === 'control') {
+      score += 20;
+      notes.push('Controls enemies, allowing the DPS to act safely');
     }
+  } else if (mainRoles.primary === 'support') {
+    if (candRoles.primary === 'dps') {
+      score += 30;
+      notes.push('Provides a clear win condition for a support character');
+    } else if (candRoles.primary === 'control') {
+      score += 20;
+      notes.push('Locks down enemies while you sustain');
+    } else if (candRoles.primary === 'tank') {
+      score += 15;
+      notes.push('Creates a highly defensive team');
+    }
+  } else if (mainRoles.primary === 'control') {
+    if (candRoles.primary === 'dps') {
+      score += 30;
+      notes.push('A classic control + damage combination');
+    } else if (candRoles.primary === 'tank') {
+      score += 15;
+      notes.push('A defensive control style');
+    } else if (candRoles.primary === 'support') {
+      score += 15;
+      notes.push('A sustainable control strategy');
+    }
+  } else if (mainRoles.primary === 'tank') {
+    if (candRoles.primary === 'dps') {
+      score += 30;
+      notes.push('A classic tank + carry combination');
+    } else if (candRoles.primary === 'support') {
+      score += 20;
+      notes.push('A sustain-heavy team that can outlast opponents');
+    } else if (candRoles.primary === 'control') {
+      score += 15;
+      notes.push('A defensive control shell');
+    }
+  }
 
-    // Explicit mechanic synergies
-    const mHooks = mainProfile.hooks;
-    const cHooks = candProfile.hooks;
-    const mMech = mainProfile.mechanics;
-    const cMech = candProfile.mechanics;
+  // Mechanic synergies
+  if (mMech.stun > 0 && cMech.setup > 0) {
+    score += 20;
+    notes.push('Stuns provide safe setup turns');
+  }
+  if (mMech.setup > 0 && cMech.stun > 0) {
+    score += 20;
+    notes.push('Stuns provide safe setup turns');
+  }
+  if (mMech.stacking > 0 && cMech.stun > 0) {
+    score += 15;
+    notes.push('Control keeps enemies under DoTs/affliction');
+  }
+  if (cMech.stacking > 0 && mMech.stun > 0) {
+    score += 15;
+    notes.push('Control keeps enemies under DoTs/affliction');
+  }
+  if (mMech.antiTank > 0 && cMech.stacking > 0) {
+    score += 15;
+    notes.push('Anti-tank tools plus DoTs to break defensive teams');
+  }
+  if (cMech.antiTank > 0 && mMech.stacking > 0) {
+    score += 15;
+    notes.push('DoTs plus anti-tank to punish DR/DD');
+  }
+  if (mMech.counter > 0 && cMech.counter > 0) {
+    score += 10;
+    notes.push('Multiple counters for defensive versatility');
+  }
+  if (mMech.aoe > 0 && cMech.aoe > 0) {
+    score += 10;
+    notes.push('Dual AOE pressure can overwhelm grouped enemies');
+  }
 
-    // Setup -> Payoff
-    if (mHooks.createsStun && cHooks.needsStunnedTarget) { score += 35; notes.push('Synergy: Sets up stuns for payoff'); }
-    if (cHooks.createsStun && mHooks.needsStunnedTarget) { score += 35; notes.push('Synergy: Sets up stuns for payoff'); }
-    if (mHooks.createsMark && cHooks.needsMarkedTarget) { score += 35; notes.push('Synergy: Applies marks for payoff'); }
-    if (cHooks.createsMark && mHooks.needsMarkedTarget) { score += 35; notes.push('Synergy: Applies marks for payoff'); }
+  // Energy battery
+  const mainHasHighCost = mainProfile.knowledge?.skillProfiles?.some(sk => (sk.tags || []).includes('highCost'));
+  const candHasEnergySupport = candProfile.knowledge?.hooks?.energySupport?.length > 0;
 
-    // Enabler -> High-Cost Finisher
-    if (mainProfile.isEnergyHungry && candPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
-    if (candProfile.isEnergyHungry && mainPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
+  // Base energy synergy matched with high cost
+  if (mainHasHighCost && candHasEnergySupport) {
+    score += 25;
+    notes.push('Acts as an energy battery for expensive skills');
+  }
 
-    // Protector -> Glass Cannon
-    if (mainProfile.isGlassCannon && candPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
-    if (candProfile.isGlassCannon && mainPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
-    
-    // Staller + DOT Specialist
-    if (mainPrimary === 'staller' && candPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
-    if (candPrimary === 'staller' && mainPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
+  const candHasHighCost = candProfile.knowledge?.skillProfiles?.some(sk => (sk.tags || []).includes('highCost'));
+  const mainHasEnergySupport = mainProfile.knowledge?.hooks?.energySupport?.length > 0;
+  if (candHasHighCost && mainHasEnergySupport) {
+    score += 25;
+    notes.push('Acts as an energy battery for expensive skills');
+  }
 
-    // Energy distribution analysis
-    const mainEnergy = mainProfile.energy.colors;
-    const candEnergy = candProfile.energy.colors;
-    let energyPenalty = 0;
-    Object.keys(mainEnergy).forEach(color => {
-        if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
-            energyPenalty += 15;
+  // TEAM GAP FIX: Explicit need for energy
+  // If the team is starving for energy, ANY energy generation is huge value
+  if (teamNeeds.energy) {
+    const energyGenAmt = cMech.energyGen || cMech.energyGain || 0
+    // Check "energyGen" (mechanic) or "energySupport" (hook)
+    if (candHasEnergySupport || energyGenAmt > 0) {
+      score += 45 // Huge boost for fixing the critical weakness
+      notes.push('✓ Fixes team\'s energy shortage')
+    }
+  }
+
+  // Protect-the-carry
+  const mainIsCarry = mainHasHighCost || (mainRoles.primary === 'dps' && (mMech.piercing > 0 || mMech.stacking > 0));
+  const candHasProtection = cMech.immunity > 0 || cMech.invulnerable > 0 || cMech.cleanse > 0 || cMech.statusShield > 0;
+  if (mainIsCarry && candHasProtection) {
+    score += 25;
+    notes.push('Can keep the main threat alive');
+  }
+
+  const candIsCarry = candHasHighCost || (candRoles.primary === 'dps' && (cMech.piercing > 0 || cMech.stacking > 0));
+  const mainHasProtection = mMech.immunity > 0 || mMech.invulnerable > 0 || mMech.cleanse > 0 || mMech.statusShield > 0;
+  if (candIsCarry && mainHasProtection) {
+    score += 25;
+    notes.push('Can keep the main threat alive');
+  }
+
+  // Energy distribution analysis
+  const mainEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 };
+  const candEnergy = { green: 0, red: 0, blue: 0, white: 0, black: 0 };
+
+  const countColors = (char, bucket) => {
+    (char.skills || []).forEach(skill => {
+      (skill.energy || []).forEach(e => {
+        if (e && bucket[e.toLowerCase()] !== undefined) {
+          bucket[e.toLowerCase()]++;
         }
+      });
     });
-    score -= energyPenalty;
-    if (energyPenalty > 0) {
-        notes.push('Warning: Shares a heavy energy color load');
-    }
+  };
 
-    return { score, notes };
+  countColors(mainChar, mainEnergy);
+  countColors(candidate, candEnergy);
+
+  // Penalize heavy overlap in energy colors
+  let energyPenalty = 0;
+  Object.keys(mainEnergy).forEach(color => {
+    if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
+      energyPenalty += 10;
+    }
+  });
+  score -= energyPenalty;
+  if (energyPenalty > 0) {
+    notes.push('Shares heavy energy color load');
+  }
+
+  return { score, notes };
 };
 
 export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = null, maxResults = 15) => {
@@ -1016,11 +1031,7 @@ export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
     return {
       ...baseAnalysis,
       simulation: {
-        hpDelta: simAnalysis.hpDelta,
-        killThreat: simAnalysis.killThreat,
-        energyEfficiency: simAnalysis.energyEfficiency,
-        cooldownPressure: simAnalysis.cooldownPressure,
-        overallScore: sim.overallScore
+        ...simAnalysis
       }
     }
   } catch (error) {

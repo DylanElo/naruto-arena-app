@@ -3,14 +3,8 @@
  * Evaluates game states and calculates advantage
  */
 
-import { StatusEffect } from './models.js';
-
-const SCORE_WEIGHTS = {
-    HP: 0.4,
-    ENERGY: 0.15,
-    CONTROL: 0.25,
-    THREAT: 0.2,
-};
+import { EnergyType } from './models.js';
+import { calculateOutcome } from './resolution.js';
 
 /**
  * Analyze current game state and return a score
@@ -21,169 +15,222 @@ export function analyzeGameState(gameState, teamIndex = 0) {
     const enemyTeam = gameState.teams[1 - teamIndex];
 
     const metrics = {
-        hpAdvantage: calculateHpAdvantage(myTeam, enemyTeam),
-        energyAdvantage: calculateEnergyAdvantage(myTeam, gameState.energyPools[teamIndex]),
-        controlAdvantage: calculateControlAdvantage(myTeam, enemyTeam),
-        threatAdvantage: calculateThreatAdvantage(myTeam, enemyTeam, gameState.energyPools[teamIndex], gameState.energyPools[1 - teamIndex]),
+        hpDelta: 0,
+        energyEfficiency: 0,
+        cooldownPressure: 0,
+        killThreat: 0,
         overallScore: 0
     };
 
+    // 1. HP DELTA
+    metrics.hpDelta = calculateHPDelta(myTeam, enemyTeam);
+
+    // 2. ENERGY EFFICIENCY
+    metrics.energyEfficiency = calculateEnergyEfficiency(myTeam, gameState.energyPools[teamIndex]);
+
+    // 3. COOLDOWN PRESSURE
+    metrics.cooldownPressure = calculateCooldownPressure(myTeam, enemyTeam);
+
+    // 4. KILL THREAT (Lethal Check)
+    metrics.killThreat = calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex);
+
     // Calculate Overall Score (weighted sum)
-    // Weights are chosen to prioritize long-term advantage over immediate threats.
-    // HP advantage is the most significant factor, as it represents the overall game state.
-    // Control and threat advantage are also important, but less so than HP.
-    // Energy advantage is the least important, as it is the most volatile.
     metrics.overallScore =
-        (metrics.hpAdvantage * SCORE_WEIGHTS.HP) +
-        (metrics.energyAdvantage * SCORE_WEIGHTS.ENERGY) +
-        (metrics.controlAdvantage * SCORE_WEIGHTS.CONTROL) +
-        (metrics.threatAdvantage * SCORE_WEIGHTS.THREAT);
+        (metrics.hpDelta * 1.0) +
+        (metrics.energyEfficiency * 0.5) +
+        (metrics.cooldownPressure * 0.3) +
+        (metrics.killThreat * 2.0);
 
     return metrics;
 }
 
-function calculateHpAdvantage(myTeam, enemyTeam) {
-    const myTotalHp = myTeam.reduce((sum, char) => sum + char.hp, 0);
-    const enemyTotalHp = enemyTeam.reduce((sum, char) => sum + char.hp, 0);
-    const myMaxHp = myTeam.reduce((sum) => sum + 100, 0);
-    const enemyMaxHp = enemyTeam.reduce((sum) => sum + 100, 0);
+/**
+ * 1. HP DELTA
+ * (My Team Total HP) - (Enemy Team Total HP)
+ */
+function calculateHPDelta(myTeam, enemyTeam) {
+    const myHP = myTeam.reduce((sum, char) => sum + char.hp, 0);
+    const enemyHP = enemyTeam.reduce((sum, char) => sum + char.hp, 0);
 
-    const myHpPercentage = myTotalHp / myMaxHp;
-    const enemyHpPercentage = enemyTotalHp / enemyMaxHp;
-
-    return (myHpPercentage - enemyHpPercentage) * 100;
+    return myHP - enemyHP;
 }
 
-function calculateEnergyAdvantage(team, energyPool) {
-    let energyScore = 0;
-    energyScore += Object.values(energyPool).reduce((sum, val) => sum + val, 0) * 5;
+/**
+ * 2. ENERGY EFFICIENCY
+ * Probability of drawing required energy
+ * Formula: P(energy E) = 1 - (0.75)^N, where N = number of chars generating E
+ */
+function calculateEnergyEfficiency(team) {
+    let efficiencyScore = 0;
+
+    // Count energy-generating characters for each type
+    const energyGenerators = {
+        [EnergyType.TAIJUTSU]: 0,
+        [EnergyType.BLOODLINE]: 0,
+        [EnergyType.NINJUTSU]: 0,
+        [EnergyType.GENJUTSU]: 0
+    };
 
     team.forEach(char => {
         if (!char.isAlive()) return;
+
         char.skills.forEach(skill => {
-            if (skill.effects && skill.effects.energyGain) {
-                energyScore += skill.effects.energyGain.amount * 5;
-            }
+            skill.energyCost.forEach(energyType => {
+                if (energyType !== EnergyType.RANDOM && energyGenerators[energyType] !== undefined) {
+                    energyGenerators[energyType]++;
+                }
+            });
         });
     });
 
-    return Math.min(energyScore, 100);
-}
-
-function calculateControlAdvantage(myTeam, enemyTeam) {
-    let controlScore = 0;
-
-    // Cooldown pressure
-    const myCooldowns = myTeam.reduce((sum, char) => sum + char.cooldowns.reduce((a, b) => a + b, 0), 0);
-    const enemyCooldowns = enemyTeam.reduce((sum, char) => sum + char.cooldowns.reduce((a, b) => a + b, 0), 0);
-    controlScore += (enemyCooldowns - myCooldowns) * 2;
-
-    // Stun and debuff pressure
-    enemyTeam.forEach(char => {
-        if (char.statusEffects.stunned) {
-            controlScore += 20;
+    // Calculate probability for each energy type
+    Object.entries(energyGenerators).forEach(([, count]) => {
+        if (count > 0) {
+            const probability = 1 - Math.pow(0.75, count);
+            efficiencyScore += probability * 100; // Scale to 0-100 range
         }
     });
 
-    return Math.max(0, controlScore);
-}
-
-function calculateThreatAdvantage(myTeam, enemyTeam, myEnergy, enemyEnergy) {
-    let myThreat = 0;
-    let enemyThreat = 0;
-
-    myTeam.forEach(char => {
-        if (!char.isAlive()) return;
-        char.skills.forEach((skill, index) => {
-            if (char.canUseSkill(index, myEnergy)) {
-                myThreat += skill.damage || 0;
-                if (skill.hasSideEffect) myThreat += 10;
-            }
-        });
-    });
-
-    enemyTeam.forEach(char => {
-        if (!char.isAlive()) return;
-        char.skills.forEach((skill, index) => {
-            if (char.canUseSkill(index, enemyEnergy)) {
-                enemyThreat += skill.damage || 0;
-                if (skill.hasSideEffect) enemyThreat += 10;
-            }
-        });
-    });
-
-    const threatDifferential = myThreat - enemyThreat;
-    return Math.max(0, threatDifferential / 2);
+    return efficiencyScore;
 }
 
 /**
- * Find the best move for the current team.
- * This function evaluates all possible skill uses against all possible targets
- * and selects the one with the highest strategic score.
+ * 3. COOLDOWN PRESSURE
+ * Sum of (Enemy Cooldowns) - Sum of (My Cooldowns)
+ * Higher is better (enemy has more skills on cooldown)
  */
-export function findBestMove(gameState, teamIndex = 0) {
+function calculateCooldownPressure(myTeam, enemyTeam) {
+    const myCooldowns = myTeam.reduce((sum, char) =>
+        sum + char.cooldowns.reduce((a, b) => a + b, 0), 0
+    );
+
+    const enemyCooldowns = enemyTeam.reduce((sum, char) =>
+        sum + char.cooldowns.reduce((a, b) => a + b, 0), 0
+    );
+
+    return enemyCooldowns - myCooldowns;
+}
+
+/**
+ * 4. KILL THREAT (Lethal Check)
+ * Can we kill an enemy this turn?
+ * Warning: Must check for Counter skills
+ */
+function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
+    let maxThreat = 0;
+
+    // For each enemy character
+    // We assume enemy has infinite/unknown energy for threat calculation to be safe, 
+    // OR we can pass a dummy pool if we want to be realistic. 
+    // For now, let's assuming they might have energy is safer (worst-case analysis).
+    enemyTeam.forEach(enemy => {
+        if (!enemy.isAlive()) return;
+
+        // Check if enemy has counter skill available
+        const hasCounter = enemy.skills.some((skill, index) => {
+            const isCounter = /counter|reflect/i.test(skill.description);
+            const isAvailable = enemy.canUseSkill(index, gameState.energyPools[1 - teamIndex]); // Approximation for enemy energy
+            return isCounter && isAvailable;
+        });
+
+        // If enemy has counter, threat is 0
+        if (hasCounter) return;
+
+        // Calculate total instant damage we can deal
+        let totalInstantDamage = 0;
+        let totalPiercingDamage = 0;
+
+        myTeam.forEach(char => {
+            if (!char.isAlive()) return;
+
+            char.skills.forEach((skill, index) => {
+                if (!char.canUseSkill(index, gameState.energyPools[teamIndex])) return;
+
+                // Only count instant skills
+                if (skill.classes.includes('Instant')) {
+                    if (skill.damageType === 'piercing') {
+                        totalPiercingDamage += skill.damage;
+                    } else {
+                        totalInstantDamage += skill.damage;
+                    }
+                }
+            });
+        });
+
+        const combinedDamage = totalInstantDamage + totalPiercingDamage;
+
+        // Check if we can kill this enemy
+        if (enemy.hp < combinedDamage) {
+            // Higher threat if enemy is lower HP (prioritize finishing kills)
+            const threat = 100 - enemy.hp;
+            maxThreat = Math.max(maxThreat, threat);
+        }
+    });
+
+    return maxThreat;
+}
+
+/**
+ * Find best move for current game state
+ * Returns { characterIndex, skillIndex, targetIndex, expectedValue }
+ */
+export function findBestMove(gameState, teamIndex) {
     const myTeam = gameState.teams[teamIndex];
     const enemyTeam = gameState.teams[1 - teamIndex];
-    const energy = gameState.energyPools[teamIndex];
-    let bestMove = { score: -Infinity, action: null };
 
-    myTeam.forEach(char => {
+    let bestMove = {
+        characterIndex: -1,
+        skillIndex: -1,
+        targetIndex: -1,
+        expectedValue: -Infinity
+    };
+
+    // Evaluate all possible moves
+    myTeam.forEach((char, charIndex) => {
         if (!char.isAlive()) return;
 
         char.skills.forEach((skill, skillIndex) => {
-            if (char.canUseSkill(skillIndex, energy)) {
-                // For now, we assume all skills target enemies. A more complex model
-                // would differentiate between buffs, heals, and attacks.
-                enemyTeam.forEach(target => {
-                    if (!target.isAlive()) return;
+            if (!char.canUseSkill(skillIndex, gameState.energyPools[teamIndex])) return;
 
-                    // Score the move based on a heuristic
-                    let score = 0;
-                    const damage = skill.damage || 0;
+            // For each potential target
+            enemyTeam.forEach((target, targetIndex) => {
+                if (!target.isAlive()) return;
 
-                    // Base score from damage and side effects
-                    score += damage;
-                    if (skill.hasSideEffect) {
-                        score += 15; // Side effects are valuable
-                    }
+                // Simulate outcome
+                const outcome = calculateOutcome(char, target, skill);
 
-                    // Significant bonus for a killing blow
-                    if (target.hp > 0 && target.hp <= damage) {
-                        score += 75; // Prioritize removing enemies
-                    }
+                // Simple value function: damage dealt + kill bonus
+                let value = outcome.damageDealt;
+                if (outcome.killed) {
+                    value += 100; // Big bonus for kills
+                }
 
-                    // Penalize overkill to prefer efficient lethal moves
-                    score -= Math.max(0, damage - target.hp) * 1.5;
-
-                    if (score > bestMove.score) {
-                        bestMove = {
-                            score,
-                            action: {
-                                type: 'SKILL',
-                                characterId: char.id,
-                                skillId: skillIndex,
-                                targetId: target.id, // Correctly identify the target
-                            },
-                        };
-                    }
-                });
-            }
+                if (value > bestMove.expectedValue) {
+                    bestMove = {
+                        characterIndex: charIndex,
+                        skillIndex,
+                        targetIndex,
+                        expectedValue: value
+                    };
+                }
+            });
         });
     });
 
-    if (bestMove.action) {
-        return bestMove.action;
-    }
-
-    return { type: 'PASS' }; // No available moves
+    return bestMove;
 }
 
 /**
- * Calculate win probability based on game state score
- * Uses a logistic function for a smooth curve
+ * Calculate win probability based on current state
+ * Returns probability (0 to 1) that Team A wins
  */
-export function calculateWinProbability(score) {
-    // Sigmoid function to map score (-100 to 100) to a probability (0 to 1)
-    const k = 0.025; // Steepness of the curve
-    return 1 / (1 + Math.exp(-k * score));
+export function calculateWinProbability(gameState, teamIndex = 0) {
+    const metrics = analyzeGameState(gameState, teamIndex);
+
+    // Simple logistic function based on overall score
+    // This is a heuristic and can be tuned
+    const score = metrics.overallScore;
+    const probability = 1 / (1 + Math.exp(-score / 50));
+
+    return probability;
 }
