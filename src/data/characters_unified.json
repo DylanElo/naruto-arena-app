@@ -8487,20 +8487,6 @@
       "hasTrueMechanics": false
     },
     {
-      "id": 83,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 84,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
       "id": 85,
       "name": "Morino Ibiki",
       "description": "A Konoha jounin, and the leader of the Torture and Interrogation force, Ibiki is a hard, sadistic man, who enjoys communicating through pain. Like his personality, Ibiki enjoys torturing his enemies, putting them in awkward situations where they have no choice but to lose.",
@@ -8613,20 +8599,6 @@
           }
         ]
       }
-    },
-    {
-      "id": 86,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 87,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
     },
     {
       "id": 88,
@@ -9128,13 +9100,6 @@
           }
         ]
       }
-    },
-    {
-      "id": 95,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
     },
     {
       "id": 96,
@@ -11944,13 +11909,6 @@
           }
         ]
       }
-    },
-    {
-      "id": 124,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
     },
     {
       "id": 125,
@@ -17695,13 +17653,6 @@
       }
     },
     {
-      "id": 190,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
       "id": 191,
       "name": "Fuu",
       "description": "Fuu is a kunoichi from Takigakure and the jinchuuriki of the Seven-Tails, Choumei, Fuu is a sweet-hearted young girl who is always looking for new friends. ORIGINAL DESIGN: TheDarkLegend",
@@ -18663,13 +18614,6 @@
           "isInferred": true
         }
       ],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 205,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
       "hasTrueMechanics": false
     },
     {
@@ -21232,13 +21176,6 @@
           "isInferred": true
         }
       ],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 237,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
       "hasTrueMechanics": false
     },
     {
@@ -35967,167 +35904,6 @@
           "isInferred": true
         }
       ],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 428,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 429,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 430,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 431,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 432,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 433,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 434,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 435,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 436,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 437,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 438,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 439,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 440,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 441,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 442,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 443,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 444,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 445,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 446,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 447,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 448,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 449,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
-      "hasTrueMechanics": false
-    },
-    {
-      "id": 450,
-      "name": "Character Name:",
-      "description": "Uzumaki Naruto",
-      "skills": [],
       "hasTrueMechanics": false
     }
   ]
