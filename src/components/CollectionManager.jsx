@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
     initializeCollectionByLevel,
     getCollectionStats
@@ -11,7 +11,9 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
     const [showSetup, setShowSetup] = useState(ownedIds.length === 0)
     const [search, setSearch] = useState('')
     const [activeFilter, setActiveFilter] = useState('ALL')
-    const stats = getCollectionStats(allCharacters, ownedIds)
+
+    // Bolt Optimization: Memoize stats to avoid recalc on unrelated renders
+    const stats = useMemo(() => getCollectionStats(allCharacters, ownedIds), [allCharacters, ownedIds])
 
     const handleLevelSetup = () => {
         const level = parseInt(userLevel)
@@ -26,31 +28,33 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
         onToggle(charId)
     }
 
-    // Filter logic - combines search + mechanic filter
-    const filteredChars = allCharacters.filter(c => {
-        // 1. Search text
-        if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+    // Bolt Optimization: Memoize filtering to prevent O(N) lookup on every render (e.g. when toggling cards)
+    const filteredChars = useMemo(() => {
+        return allCharacters.filter(c => {
+            // 1. Search text
+            if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
 
-        // 2. Mechanic filter (requires checking knowledge base)
-        if (activeFilter !== 'ALL') {
-            const knowledge = getCharacterKnowledge(c.id)
-            if (!knowledge) return false
+            // 2. Mechanic filter (requires checking knowledge base)
+            if (activeFilter !== 'ALL') {
+                const knowledge = getCharacterKnowledge(c.id)
+                if (!knowledge) return false
 
-            const mech = knowledge.profile?.mechanics || knowledge.mechanics
+                const mech = knowledge.profile?.mechanics || knowledge.mechanics
 
-            switch (activeFilter) {
-                case 'STUN': return mech.stun > 0
-                case 'AOE': return mech.aoe > 0
-                case 'HEAL': return (mech.heal || 0) + (mech.healthSteal || 0) > 0
-                case 'PIERCING': return (mech.piercing || 0) > 0
-                case 'AFFLICTION': return (mech.affliction || 0) + (mech.dot || 0) > 0
-                case 'DEFENSE': return (mech.invulnerable || 0) + (mech.damageReduction || 0) > 0
-                case 'ENERGY': return (mech.energyGain || 0) > 0
-                default: return true
+                switch (activeFilter) {
+                    case 'STUN': return mech.stun > 0
+                    case 'AOE': return mech.aoe > 0
+                    case 'HEAL': return (mech.heal || 0) + (mech.healthSteal || 0) > 0
+                    case 'PIERCING': return (mech.piercing || 0) > 0
+                    case 'AFFLICTION': return (mech.affliction || 0) + (mech.dot || 0) > 0
+                    case 'DEFENSE': return (mech.invulnerable || 0) + (mech.damageReduction || 0) > 0
+                    case 'ENERGY': return (mech.energyGain || 0) > 0
+                    default: return true
+                }
             }
-        }
-        return true
-    })
+            return true
+        })
+    }, [allCharacters, search, activeFilter])
 
     if (showSetup) {
         return (

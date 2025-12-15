@@ -109,8 +109,8 @@ function App() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === tab
-                  ? 'bg-chakra-blue text-konoha-950 shadow-neon-blue'
-                  : 'text-light-secondary hover:text-white hover:bg-white/5'
+                ? 'bg-chakra-blue text-konoha-950 shadow-neon-blue'
+                : 'text-light-secondary hover:text-white hover:bg-white/5'
                 }`}
             >
               {tab}
@@ -268,9 +268,11 @@ function App() {
                     <button
                       key={color}
                       onClick={() => setEnergyFilter(color)}
+                      aria-label={`Filter by ${color} energy`}
+                      title={`Filter by ${color} energy`}
                       className={`w-8 h-8 rounded flex items-center justify-center border transition-all ${energyFilter === color
-                          ? 'border-chakra-blue bg-chakra-blue/20 text-chakra-blue shadow-neon-blue'
-                          : 'border-konoha-700 bg-konoha-800 text-gray-500 hover:border-gray-500'
+                        ? 'border-chakra-blue bg-chakra-blue/20 text-chakra-blue shadow-neon-blue'
+                        : 'border-konoha-700 bg-konoha-800 text-gray-500 hover:border-gray-500'
                         }`}
                     >
                       {color === 'all' ? '*' : <div className={`w-3 h-3 rounded-full ${ENERGY_BG_COLORS[color]}`}></div>}
