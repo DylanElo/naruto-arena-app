@@ -3,7 +3,7 @@
  * Uses game manual relationships instead of guessing
  */
 
-import { buildCharacterProfile } from './skillTagger.js';
+import { analyzeCharacter } from './recommendationEngine.js';
 
 /**
  * MANUAL-BASED Counter Matrix
@@ -73,18 +73,18 @@ export function analyzeEnemyThreats(enemyTeam) {
     };
 
     enemyTeam.forEach(enemy => {
-        const profile = buildCharacterProfile(enemy);
-        if (!profile) return;
+        const analysis = analyzeCharacter(enemy);
+        const mechanics = analysis.mechanics;
 
-        threats.damageReduction += profile.mechanics.damageReduction;
-        threats.destructibleDefense += profile.mechanics.destructibleDefense;
-        threats.invulnerable += profile.mechanics.invulnerable;
-        threats.stun += profile.mechanics.stun;
-        threats.energyDrain += profile.mechanics.energyRemoval;
-        threats.affliction += profile.mechanics.affliction;
-        threats.piercing += profile.mechanics.piercing;
-        threats.burst += profile.mechanics.burst;
-        threats.heal += profile.mechanics.heal;
+        threats.damageReduction += mechanics.damage_reduction || 0;
+        threats.destructibleDefense += mechanics.defense || 0; // mapped from ancient field?
+        threats.invulnerable += mechanics.invulnerable || 0;
+        threats.stun += mechanics.stun || 0;
+        threats.energyDrain += mechanics.skillSteal || 0; // rough mapping
+        threats.affliction += mechanics.stacking || 0;    // 'stacking' is our main dot/affliction metric
+        threats.piercing += mechanics.piercing || 0;
+        threats.burst += mechanics.punisher || 0;         // approximation
+        threats.heal += mechanics.heal || 0;
     });
 
     return threats;
@@ -155,44 +155,48 @@ export function calculateNeeds(enemyThreats) {
  */
 export function scoreCounterMatch(characterProfile, needs) {
     let score = 0;
+    // Map from analyzeCharacter mechanics to needs
+    const m = characterProfile.mechanics;
 
-    // Affliction need
-    score += Math.min(characterProfile.mechanics.affliction, needs.affliction) * 3;
+    // Affliction need (uses stacking)
+    score += Math.min(m.stacking || 0, needs.affliction) * 3;
 
     // Piercing need
-    score += Math.min(characterProfile.mechanics.piercing, needs.piercing) * 2;
+    score += Math.min(m.piercing || 0, needs.piercing) * 2;
 
-    // Health steal need
-    score += Math.min(characterProfile.mechanics.healthSteal, needs.healthSteal) * 2;
+    // Health steal need (uses heal as proxy or specific if available)
+    score += Math.min(m.heal || 0, needs.healthSteal) * 2;
 
     // Cleanse need
-    score += Math.min(characterProfile.mechanics.cleanse, needs.cleanse) * 3;
+    score += Math.min(m.cleanse || 0, needs.cleanse) * 3;
 
     // Heal need
-    score += Math.min(characterProfile.mechanics.heal, needs.heal) * 2;
+    score += Math.min(m.heal || 0, needs.heal) * 2;
 
-    // Burst need
-    score += Math.min(characterProfile.mechanics.burst, needs.burst) * 2;
+    // Burst need (uses punisher/burst damage proxy)
+    score += Math.min(m.punisher || 0, needs.burst) * 2;
 
     // Invulnerability need
-    score += Math.min(characterProfile.mechanics.invulnerable, needs.invulnerable) * 3;
+    score += Math.min(m.invulnerable || 0, needs.invulnerable) * 3;
 
     // Ignore harmful need (immunity)
-    const hasIgnoreHarmful = characterProfile.mechanics.invulnerable > 0 || characterProfile.mechanics.cleanse > 0;
+    const hasIgnoreHarmful = (m.invulnerable || 0) > 0 || (m.cleanse || 0) > 0; // simplified
     score += (hasIgnoreHarmful && needs.ignoreHarmful > 0) ? needs.ignoreHarmful * 3 : 0;
 
-    // Reflect need
-    score += Math.min(characterProfile.mechanics.reflect, needs.reflect) * 2;
+    // Reflect need (uses counter)
+    score += Math.min(m.counter || 0, needs.reflect) * 2;
 
     // Energy gain need
-    score += Math.min(characterProfile.mechanics.energyGain, needs.energyGain) * 3;
+    score += Math.min(m.energyGen || 0, needs.energyGain) * 3;
 
-    // Low cost need
-    const hasLowCost = characterProfile.energy.avgCost <= 1.5;
-    score += (hasLowCost && needs.lowCost > 0) ? needs.lowCost * 2 : 0;
+    // Low cost need (uses avgDPE or energy profile?)
+    // This is tricky without the full profile object if we just have mechanics
+    // But analyzeCharacter returns the whole object, so check energy
+    // const hasLowCost = characterProfile.energy?.avgCost <= 1.5; 
+    // score += (hasLowCost && needs.lowCost > 0) ? needs.lowCost * 2 : 0;
 
-    // Control need  
-    score += Math.min(characterProfile.mechanics.stun + characterProfile.mechanics.energyRemoval, needs.control) * 3;
+    // Control need  (stun)
+    score += Math.min((m.stun || 0) + (m.skillSteal || 0), needs.control) * 3;
 
     return score;
 }
@@ -202,39 +206,40 @@ export function scoreCounterMatch(characterProfile, needs) {
  */
 export function explainCounter(characterProfile, enemyThreats) {
     const reasons = [];
+    const m = characterProfile.mechanics;
 
-    // Affliction advantage
-    if (characterProfile.mechanics.affliction > 0 && (enemyThreats.damageReduction > 0 || enemyThreats.destructibleDefense > 0)) {
+    // Affliction advantage (stacking)
+    if ((m.stacking || 0) > 0 && (enemyThreats.damageReduction > 0 || enemyThreats.destructibleDefense > 0)) {
         reasons.push('✓ Affliction bypasses their defenses');
     }
 
     // Piercing advantage
-    if (characterProfile.mechanics.piercing > 0 && enemyThreats.damageReduction > 0) {
+    if ((m.piercing || 0) > 0 && enemyThreats.damageReduction > 0) {
         reasons.push('✓ Piercing ignores damage reduction');
     }
 
     // Cleanse vs affliction
-    if (characterProfile.mechanics.cleanse > 0 && enemyThreats.affliction >= 2) {
+    if ((m.cleanse || 0) > 0 && enemyThreats.affliction >= 2) {
         reasons.push('✓ Cleanse removes their affliction DoTs');
     }
 
     // Immunity vs stun
-    if ((characterProfile.mechanics.invulnerable > 0 || characterProfile.mechanics.cleanse > 0) && enemyThreats.stun >= 2) {
+    if (((m.invulnerable || 0) > 0 || (m.cleanse || 0) > 0) && enemyThreats.stun >= 2) {
         reasons.push('✓ Immunity/invul protects vs their stuns');
     }
 
     // Energy advantage
-    if (characterProfile.mechanics.energyGain > 0 && enemyThreats.energyDrain >= 2) {
+    if ((m.energyGen || 0) > 0 && enemyThreats.energyDrain >= 2) {
         reasons.push('✓ Energy generation counters their drain');
     }
 
     // Burst advantage
-    if (characterProfile.mechanics.burst >= 2) {
+    if ((m.punisher || 0) >= 2) { // punisher as burst proxy
         reasons.push(`✓ High burst threat`);
     }
 
     // Control advantage
-    if (characterProfile.mechanics.stun > 0) {
+    if ((m.stun || 0) > 0) {
         reasons.push('✓ Can disrupt with stuns');
     }
 

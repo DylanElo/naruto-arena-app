@@ -92,8 +92,20 @@ async function analyzeCoverage() {
         const weakAnalysis = analyzeTeam(weakTeam);
         console.log('Weak Team Synergy Score:', weakAnalysis.synergyScore);
         console.log('Missing Capabilities:', weakAnalysis.missingCapabilities);
-    } else {
-        console.log('Could not find weak team members.');
+    }
+
+    // Test MetaBuilder Integration
+    console.log('\n--- Analyzing MetaBuilder Logic ---');
+    try {
+        const { generateMetaTeams } = await import('../src/utils/metaBuilder.js');
+        const metaTeams = generateMetaTeams(team, [], {});
+        // passing team as 'allCharacters' just to test function, usually takes huge list
+        console.log(`Meta Builder found ${metaTeams.length} teams (sanity check)`);
+        if (metaTeams.length > 0) {
+            console.log('Sample Meta Score:', metaTeams[0].metaScore);
+        }
+    } catch (e) {
+        console.log('MetaBuilder verification failed:', e.message);
     }
 }
 

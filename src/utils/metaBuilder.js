@@ -1,4 +1,4 @@
-import { analyzeTeam } from './recommendationEngine';
+import { analyzeTeam } from './recommendationEngine.js';
 
 /**
  * Generate top meta teams from character pool
@@ -100,7 +100,9 @@ const hasRoleBalance = (team) => {
 
         char.skills.forEach(skill => {
             const desc = (skill.description || '').toLowerCase();
-            const classes = (skill.classes || '').toLowerCase();
+            const classes = Array.isArray(skill.classes)
+                ? skill.classes.join(' ').toLowerCase()
+                : (skill.classes || '').toLowerCase();
 
             // Control indicators
             if (desc.includes('stun') || classes.includes('control') || classes.includes('mental')) {
