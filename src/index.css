@@ -1,2 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap');
 @import "tailwindcss";
 @config "../tailwind.config.js";
+
+@layer base {
+    body {
+        @apply bg-konoha-950 text-light-primary font-sans antialiased;
+        background-image:
+            radial-gradient(circle at 50% 0%, #142847 0%, transparent 40%),
+            linear-gradient(rgba(5, 10, 20, 0.3) 2px, transparent 2px),
+            linear-gradient(90deg, rgba(5, 10, 20, 0.3) 2px, transparent 2px);
+        background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+}
+
+@layer utilities {
+    .glass-panel {
+        @apply bg-glass-base backdrop-blur-xl border border-glass-border;
+    }
+
+    .glass-card {
+        @apply bg-konoha-800/80 backdrop-blur-sm border border-konoha-700/50 hover:border-chakra-blue/50 transition-all duration-300;
+    }
+
+    .neon-text-blue {
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    .neon-text-red {
+        text-shadow: 0 0 10px rgba(255, 42, 0, 0.5);
+    }
+
+    .clip-tech {
+        clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}

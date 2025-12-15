@@ -868,19 +868,69 @@ const scorePartnerFit = (mainChar, candidate) => {
   if (mainPrimary === 'staller' && candPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
   if (candPrimary === 'staller' && mainPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
 
-  // Energy distribution analysis
-  const mainEnergy = mainProfile.energy.colors;
-  const candEnergy = candProfile.energy.colors;
-  let energyPenalty = 0;
-  Object.keys(mainEnergy).forEach(color => {
-    if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
-      energyPenalty += 15;
+  // --- REFINED ENERGY LOGIC (User Model) ---
+  const mainSkills = mainChar.skills || [];
+  const candSkills = candidate.skills || [];
+
+  // 1. Identify Spammable Colors (0 Cooldown)
+  const mainSpammableColors = new Set();
+  const mainHeavyColors = new Set(); // Colors used frequently
+
+  mainSkills.forEach(s => {
+    // Ignore generic/black energy
+    const cost = (s.energy || []).filter(e => e !== 'random' && e !== 'specific');
+    if (cost.length === 0) return;
+
+    if (s.cooldown === 0 || s.cooldown === 'None') {
+      cost.forEach(c => mainSpammableColors.add(c));
+    }
+    cost.forEach(c => mainHeavyColors.add(c));
+  });
+
+  // 2. Check Candidate for Conflicts or complements
+  let energyScore = 0;
+
+  candSkills.forEach(s => {
+    const cost = (s.energy || []).filter(e => e !== 'random' && e !== 'specific');
+    if (cost.length === 0) return;
+
+    const isSpammable = (s.cooldown === 0 || s.cooldown === 'None');
+
+    // CONFLICT: Candidate needs spammable energy of a color Main also spams
+    const hasConflict = cost.some(c => mainSpammableColors.has(c));
+    if (hasConflict && isSpammable) {
+      energyScore -= 25;
+      notes.push(`Warning: High competition for ${cost[0]} energy`);
+    }
+
+    // COMPLEMENT: Candidate uses Red/White when Main uses Blue/Green (or vice versa)
+    // Heuristic: If candidate mostly uses colors Main DOESN'T use.
+    const uniqueColors = cost.filter(c => !mainHeavyColors.has(c));
+    if (uniqueColors.length > 0) {
+      energyScore += 5; // Slight bonus for diversification
+      // If spammable unique color, big bonus
+      if (isSpammable) {
+        energyScore += 10;
+        notes.push(`Synergy: Exploits unused ${uniqueColors[0]} energy`);
+      }
     }
   });
-  score -= energyPenalty;
-  if (energyPenalty > 0) {
-    notes.push('Warning: Shares a heavy energy color load');
-  }
+
+  // 3. Economy Check (Simple)
+  // If both are generally heavy on the same color, still apply a small penalty
+  // even if cooldowns align, because probability of having 4+ of one color is low.
+  const mainEnergy = mainProfile.energy.colors;
+  const candEnergy = candProfile.energy.colors;
+  Object.keys(mainEnergy).forEach(color => {
+    if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
+      energyScore -= 10; // Reduced from 15 as cooldown logic covers specific conflicts
+      if (!notes.some(n => n.includes('competition'))) {
+        notes.push('Warning: Heavy load on same energy color');
+      }
+    }
+  });
+
+  score += energyScore;
 
   return { score, notes };
 };
@@ -893,6 +943,7 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
     : null
 
   const candidates = allCharacters
+    .filter(c => c && c.id && c.name) // Filter out empty data
     .filter(c => c.id !== mainChar.id)
     .filter(c => !ownedSet || ownedSet.has(c.id))
 
@@ -938,7 +989,11 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
     const topInRole = roleGroups[role].find(c => !seenIds.has(c.id));
     if (topInRole) {
       // Only include if it's not terrible compared to the best
-      if (topInRole.buildAroundScore > scored[0].buildAroundScore * 0.6) {
+      // AND has a positive score (don't recommend 0-score trash just for diversity)
+      const isViable = topInRole.buildAroundScore > 0 &&
+        topInRole.buildAroundScore > scored[0].buildAroundScore * 0.4;
+
+      if (isViable) {
         finalDiverseSelection.push(topInRole);
         seenIds.add(topInRole.id);
       }

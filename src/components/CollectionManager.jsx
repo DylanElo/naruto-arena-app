@@ -36,7 +36,6 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
             const knowledge = getCharacterKnowledge(c.id)
             if (!knowledge) return false
 
-            // Using V2 profile if available, falling back to legacy mechanics
             const mech = knowledge.profile?.mechanics || knowledge.mechanics
 
             switch (activeFilter) {
@@ -55,9 +54,9 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     if (showSetup) {
         return (
-            <div className="bg-dark-secondary rounded-3xl border border-dark-tertiary p-8 shadow-2xl max-w-lg mx-auto backdrop-blur-xl relative overflow-hidden">
-                <h2 className="text-3xl font-black text-brand-primary mb-3 tracking-tight">🎮 Collection Setup</h2>
-                <p className="text-light-secondary mb-6 leading-relaxed">Tell us your Naruto-Arena level and we'll auto-mark everything you've unlocked so your builder starts warm.</p>
+            <div className="glass-panel p-8 max-w-lg mx-auto rounded-xl relative overflow-hidden">
+                <h2 className="text-2xl font-display font-bold text-chakra-blue mb-2">🎮 Collection Setup</h2>
+                <p className="text-gray-400 mb-6 text-sm">Tell us your Naruto-Arena level and we'll auto-mark everything you've unlocked.</p>
                 <input
                     type="number"
                     min="1"
@@ -66,14 +65,14 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                     onChange={(e) => setUserLevel(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLevelSetup()}
                     placeholder="Enter level (1-40)"
-                    className="w-full p-3 bg-dark-primary border border-dark-tertiary rounded-xl text-light-primary mb-4 focus:border-brand-primary focus:ring-2 focus:ring-brand-secondary focus:outline-none"
+                    className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white mb-4 focus:border-chakra-blue outline-none"
                 />
                 <div className="flex gap-2">
-                    <button onClick={handleLevelSetup} className="flex-1 bg-gradient-to-r from-brand-primary to-brand-secondary hover:shadow-lg text-dark-primary py-3 rounded-xl font-semibold transition-all">
-                        Auto-import characters
+                    <button onClick={handleLevelSetup} className="flex-1 bg-chakra-blue text-black py-3 font-bold uppercase clip-tech hover:bg-white transition-colors">
+                        Auto-import
                     </button>
-                    <button onClick={() => setShowSetup(false)} className="flex-1 bg-dark-secondary border border-dark-tertiary hover:border-rose-500 hover:text-rose-500 text-light-secondary py-3 rounded-xl font-semibold transition-all">
-                        Skip (Manual)
+                    <button onClick={() => setShowSetup(false)} className="flex-1 bg-konoha-800 border border-konoha-700 text-gray-400 py-3 font-bold uppercase clip-tech hover:text-white hover:border-white transition-colors">
+                        Skip
                     </button>
                 </div>
             </div>
@@ -82,87 +81,79 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     return (
         <div className="space-y-6">
-            <div className="bg-dark-secondary rounded-3xl border border-dark-tertiary p-6 shadow-2xl backdrop-blur-xl">
-                <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+            <div className="glass-panel p-6 rounded-xl">
+                <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                     <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-brand-primary">Collection vault</p>
-                        <h2 className="text-3xl font-black text-light-primary">📚 My Character Collection</h2>
-                        <p className="text-light-secondary text-sm mt-1">Tap any card to toggle ownership. The grid lights up when you own it.</p>
+                        <p className="text-[10px] uppercase tracking-widest text-chakra-blue mb-1">Archive Access</p>
+                        <h2 className="text-2xl font-display font-bold text-white">Your Arsenal</h2>
                     </div>
-                    <div className="flex items-center gap-3 bg-dark-primary border border-dark-tertiary rounded-2xl px-4 py-3 shadow-inner">
-                        <div className="text-xs uppercase text-brand-primary">Owned</div>
-                        <div className="text-3xl font-black text-brand-secondary">{stats.owned}</div>
-                        <div className="text-sm text-light-secondary">/ {stats.total} ({stats.percentage}%)</div>
+                    <div className="flex items-center gap-3 bg-konoha-900 border border-konoha-700 rounded-lg px-4 py-2">
+                        <div className="text-[10px] uppercase text-gray-500">Unlocked</div>
+                        <div className="text-xl font-display text-chakra-blue">{stats.owned}</div>
+                        <div className="text-xs text-gray-600">/ {stats.total}</div>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3 mb-4">
-                    <div className="flex flex-wrap gap-3">
-                        <div className="flex-1 min-w-[220px] relative">
-                            <input
-                                type="text"
-                                placeholder="Search characters or titles..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full p-3 bg-dark-primary border border-dark-tertiary rounded-xl text-light-primary focus:border-brand-primary focus:ring-2 focus:ring-brand-secondary focus:outline-none"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-light-secondary text-sm">⌕</span>
-                        </div>
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <input
+                            type="text"
+                            placeholder="Search archive..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="flex-1 p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                        />
                         <button
                             onClick={() => setShowSetup(true)}
-                            className="bg-gradient-to-r from-brand-primary to-brand-secondary text-dark-primary px-5 py-3 rounded-xl font-semibold shadow-lg hover:scale-[1.01] transition-all"
+                            className="bg-konoha-800 border border-konoha-700 text-chakra-blue px-6 py-2 rounded-lg font-bold hover:bg-konoha-700 transition-colors"
                         >
-                            Reset by level
+                            Reset Level
                         </button>
                     </div>
 
-                    {/* MECHANIC FILTERS */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                        <FilterButton label="All" filterKey="ALL" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="⚡ Stun" filterKey="STUN" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="💥 AoE" filterKey="AOE" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="💚 Heal" filterKey="HEAL" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="🗡️ Pierce" filterKey="PIERCING" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="☠️ DoT" filterKey="AFFLICTION" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="🛡️ Defense" filterKey="DEFENSE" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
-                        <FilterButton label="🔋 Energy" filterKey="ENERGY" activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
+                    <div className="flex flex-wrap gap-2">
+                        {['ALL', 'STUN', 'AOE', 'HEAL', 'PIERCING', 'AFFLICTION', 'DEFENSE', 'ENERGY'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setActiveFilter(f)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase transition-all border ${activeFilter === f
+                                    ? 'bg-chakra-blue/20 border-chakra-blue text-chakra-blue shadow-neon-blue'
+                                    : 'bg-konoha-900 border-konoha-700 text-gray-500 hover:border-gray-400'
+                                    }`}
+                            >
+                                {f}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 {filteredChars.map(char => {
                     const owned = ownedIds.includes(char.id)
                     return (
                         <div
                             key={char.id}
-                            className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all group ${owned
-                                ? 'border-2 border-brand-secondary bg-dark-tertiary shadow-lg'
-                                : 'border border-dark-tertiary bg-dark-secondary shadow-sm hover:shadow-md'
+                            className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border group ${owned
+                                ? 'border-chakra-blue/50 bg-konoha-800 shadow-neon-blue'
+                                : 'border-konoha-700 bg-konoha-900/50 opacity-60 hover:opacity-100 hover:border-gray-500'
                                 }`}
                             onClick={() => handleToggle(char.id)}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-b from-dark-primary/40 via-transparent to-dark-primary/80 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <img
-                                src={assetPath(`images/characters/${char.id}.png`)}
-                                alt={char.name}
-                                onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=?' }}
-                                className="w-full h-32 object-cover"
-                            />
-                            <div className="p-3 bg-dark-secondary/90 backdrop-blur flex items-center justify-between">
-                                <div>
-                                    <div className="text-xs text-light-primary font-bold truncate">{char.name}</div>
-                                    <div className="text-[11px] uppercase tracking-wide text-light-secondary">#{char.id}</div>
-                                </div>
-                                <div className={`text-[10px] px-2 py-1 rounded-full border ${owned ? 'bg-brand-primary border-brand-secondary text-dark-primary' : 'bg-dark-tertiary border-dark-tertiary text-light-secondary'}`}>
-                                    {owned ? 'Owned' : 'Locked'}
-                                </div>
+                            <div className="aspect-square relative">
+                                <img
+                                    src={assetPath(`images/characters/${char.id}.png`)}
+                                    loading="lazy"
+                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=?' }}
+                                    className={`w-full h-full object-cover transition-transform duration-500 ${!owned && 'grayscale'} group-hover:scale-110`}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-konoha-950 via-transparent to-transparent"></div>
+                                {owned && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-chakra-blue shadow-neon-blue"></div>}
                             </div>
-                            {owned && (
-                                <div className="absolute top-2 right-2 bg-brand-primary text-dark-primary rounded-full w-7 h-7 flex items-center justify-center font-bold shadow-lg">
-                                    ✓
-                                </div>
-                            )}
+
+                            <div className="p-2 absolute bottom-0 w-full">
+                                <div className={`text-xs font-bold truncate ${owned ? 'text-white' : 'text-gray-500'}`}>{char.name}</div>
+                            </div>
                         </div>
                     )
                 })}
@@ -171,18 +162,6 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
     )
 }
 
-// This component is defined outside of CollectionManager to prevent re-creation on every render.
-// It receives activeFilter and setActiveFilter as props to manage state.
-const FilterButton = ({ label, filterKey, activeFilter, setActiveFilter }) => (
-    <button
-        onClick={() => setActiveFilter(filterKey)}
-        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${activeFilter === filterKey
-                ? `bg-brand-primary border-brand-secondary text-dark-primary shadow-md`
-                : 'bg-dark-secondary border-dark-tertiary text-light-secondary hover:bg-dark-tertiary'
-            }`}
-    >
-        {label}
-    </button>
-);
+// Keeping it inline above for standardizing styles.
 
 export default CollectionManager
