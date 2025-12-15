@@ -355,13 +355,13 @@ function App() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-sm truncate text-light-primary">{char.name}</div>
                                   <div className="text-[11px] text-light-secondary/70 truncate">{char.skills.map(s => s.name).slice(0, 2).join(' • ')}</div>
-                                    <div className="flex gap-1 mt-2">
-                                      {(char.skills?.[0]?.energy ?? []).map((e, i) => (
-                                        <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
-                                          {e === 'none' ? '-' : e[0].toUpperCase()}
-                                        </span>
-                                      ))}
-                                    </div>
+                                  <div className="flex gap-1 mt-2">
+                                    {(char.skills?.[0]?.energy ?? []).map((e, i) => (
+                                      <span key={i} className={`w-6 h-6 rounded border text-[10px] font-bold flex items-center justify-center ${ENERGY_BG_COLORS[e] || 'bg-dark-tertiary'}`}>
+                                        {e === 'none' ? '-' : e[0].toUpperCase()}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-1">
                                   <button onClick={() => setViewCharacter(char)} className="text-xs text-brand-primary hover:text-brand-secondary">Open card</button>
@@ -498,6 +498,13 @@ function App() {
                       <span className="text-xs bg-dark-primary px-3 py-1 rounded-full border border-dark-tertiary">Live</span>
                     </div>
                     <div className="space-y-2 text-sm text-light-secondary">
+                      {/* Gap Analysis / Missing Capabilities */}
+                      {(fullTeamAnalysis.missingCapabilities || []).slice(0, 3).map((gap, idx) => (
+                        <div key={`gap-${idx}`} className="flex gap-2 items-start text-orange-300">
+                          <span>⚠</span>
+                          <p className="leading-snug">{gap.replace('Missing: ', '')}</p>
+                        </div>
+                      ))}
                       {(fullTeamAnalysis.strengths || []).slice(0, 2).map((s, idx) => (
                         <div key={idx} className="flex gap-2 items-start">
                           <span className="text-emerald-400">●</span>

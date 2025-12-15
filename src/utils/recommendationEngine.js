@@ -169,8 +169,76 @@ export const analyzeCharacter = (char) => {
 
   const hasStructuredEffects = (char.skills || []).some(skill => skill.effects && skill.effects.length > 0);
 
-  if (hasStructuredEffects) {
-    // New structured data path
+  if (knowledge.trueMechanics) {
+    // 1. Dependency Analysis Logic
+    const creates = new Set();
+    const needs = new Set();
+
+    knowledge.trueMechanics.skills.forEach(skill => {
+      // What do we create?
+      // From Classes
+      (skill.classes || []).forEach(cls => {
+        if (cls === 'Stun') creates.add('stun');
+        if (cls === 'Bane') { creates.add('affliction'); creates.add('stacking'); }
+      });
+      // From Synergies (e.g. "Create Stun") - not strictly in synergy object yet, usually in descriptions/classes.
+
+      // What do we need?
+      (skill.synergies || []).forEach(syn => {
+        // syn.condition: "targetHas Stunned"
+        if (!syn.condition) return;
+        const cond = syn.condition.toLowerCase();
+
+        if (cond.includes('stun')) needs.add('stun');
+        if (cond.includes('lock')) needs.add('stun'); // roughly
+        // Add more parsers as needed
+      });
+    });
+
+    // Calculate Unmet Needs
+    const unmetNeeds = {};
+    needs.forEach(need => {
+      if (!creates.has(need)) {
+        unmetNeeds[need] = true;
+      }
+    });
+
+    // Store in knowledge for partner scoring
+    if (!analysis.knowledge.dependencies) {
+      analysis.knowledge.dependencies = {
+        creates: Array.from(creates),
+        needs: Array.from(needs),
+        unmet: Object.keys(unmetNeeds)
+      };
+    }
+
+    // 2. Map True Mechanics Classes to Internal Buckets (Existing Logic)
+    knowledge.trueMechanics.skills.forEach(skill => {
+      (skill.classes || []).forEach(cls => {
+        if (cls === 'Mental' || cls === 'Stun') analysis.mechanics.stun++;
+        if (cls === 'Bane') analysis.mechanics.stacking++; // Dot/Affliction
+        if (cls === 'Bypassing' || cls === 'Piercing') analysis.mechanics.piercing++;
+        if (cls === 'Uncounterable') analysis.mechanics.counter--;
+        if (cls === 'Invisible') analysis.mechanics.invisible++;
+        if (cls === 'Chakra') analysis.mechanics.energyGen++;
+      });
+
+      // 3. Map True Mechanics Synergies (Synergy Hooks)
+      (skill.synergies || []).forEach(syn => {
+        if (syn.condition && syn.condition.toLowerCase().includes('stun')) {
+          // Only count as punisher if it's an UNMET need (or generic bonus)
+          // Use dependency data?
+          analysis.mechanics.punisher++;
+        }
+      });
+
+      // 4. Map Transformations (Alternate)
+      if (skill.transformations && skill.transformations.length > 0) {
+        analysis.mechanics.setup++;
+      }
+    });
+  } else if (hasStructuredEffects) {
+    // New structured data path (Legacy V4)
     (char.skills || []).forEach(skill => {
       (skill.effects || []).forEach(effect => {
         if (analysis.mechanics[effect.type] !== undefined) {
@@ -422,10 +490,29 @@ export const analyzeTeam = (team) => {
     energyTeamPenalty = (dominantRatio - 0.5) * 60  // max ~18 pts penalty if 80%+
   }
 
-  // Synergy score: roles + mechanics + combos + a bit of tempo - energy concentration
+
+  // Coverage Logic (User Feedback: Versatility)
+  const KEY_CAPABILITIES = [
+    'piercing', 'affliction', 'stun', 'heal', 'cleanse', 'counter',
+    'invulnerable', 'energyGen', 'aoe', 'invisible', 'statusShield',
+    'antiTank'
+  ];
+  const capabilitiesMet = new Set();
+
+  KEY_CAPABILITIES.forEach(cap => {
+    if (mechanics[cap] > 0) {
+      capabilitiesMet.add(cap);
+    }
+  });
+
+  const uniqueCapabilities = capabilitiesMet.size;
+  const coverageScore = uniqueCapabilities * 5;
+
+  // Synergy score: roles + mechanics + combos + coverage + a bit of tempo - energy concentration
   const synergyScoreRaw =
     roleScore +
     mechanicScore +
+    coverageScore +
     Math.min(comboScore, 30) +
     pressureRating * 0.3 -
     energyTeamPenalty;
@@ -434,6 +521,7 @@ export const analyzeTeam = (team) => {
     roleScore,
     mechanicScore,
     comboScore,
+    coverageScore,
     pressureRating,
     energyTeamPenalty,
   };
@@ -450,27 +538,27 @@ export const analyzeTeam = (team) => {
   // Granular role analysis
   const granularRoles = { nuker: 0, aoe_specialist: 0, dot_specialist: 0, protector: 0, staller: 0, disruptor: 0, enabler: 0 };
   team.forEach(member => {
-      const knowledge = getCharacterKnowledge(member.id);
-      if (knowledge?.profile?.granularRoles) {
-          Object.keys(granularRoles).forEach(r => {
-              granularRoles[r] += knowledge.profile.granularRoles[r] || 0;
-          });
-      }
+    const knowledge = getCharacterKnowledge(member.id);
+    if (knowledge?.profile?.granularRoles) {
+      Object.keys(granularRoles).forEach(r => {
+        granularRoles[r] += knowledge.profile.granularRoles[r] || 0;
+      });
+    }
   });
 
 
   // Highlights / strengths based on granular roles
   if (granularRoles.nuker > 0 && granularRoles.enabler > 0) {
-      synergyHighlights.push('Energy Battery for Nuker');
+    synergyHighlights.push('Energy Battery for Nuker');
   }
   if (granularRoles.staller > 0 && granularRoles.dot_specialist > 0) {
-      synergyHighlights.push('Stall & Attrition Combo');
+    synergyHighlights.push('Stall & Attrition Combo');
   }
   if (granularRoles.disruptor > 0 && (granularRoles.nuker > 0 || granularRoles.dot_specialist > 0)) {
-      synergyHighlights.push('Disruption Creates Openings for Damage');
+    synergyHighlights.push('Disruption Creates Openings for Damage');
   }
   if (granularRoles.protector > 0 && (roles.dps > 2.5 || team.some(m => getCharacterKnowledge(m.id)?.profile?.isGlassCannon))) {
-      synergyHighlights.push('Protection for High-Value Threats');
+    synergyHighlights.push('Protection for High-Value Threats');
   }
 
 
@@ -488,28 +576,55 @@ export const analyzeTeam = (team) => {
 
   // Role-based weaknesses
   if (roles.dps < 1.5 && dmgProfile.burstDamage < 90) {
-      weaknesses.push('Very low damage output, may struggle to secure kills.');
-      warnings.push('⚠️ Lacks a clear win condition.');
+    weaknesses.push('Very low damage output, may struggle to secure kills.');
+    warnings.push('⚠️ Lacks a clear win condition.');
   }
   if (roles.dps > 2.5 && granularRoles.protector === 0 && granularRoles.staller === 0) {
-      weaknesses.push('Glass Cannon: High damage but extremely fragile.');
+    weaknesses.push('Glass Cannon: High damage but extremely fragile.');
   }
   if (granularRoles.disruptor < 1) {
-      weaknesses.push('Vulnerable to enemy combos and control.');
+    weaknesses.push('Vulnerable to enemy combos and control.');
   }
   if (granularRoles.protector < 1) {
-      weaknesses.push('No healing or cleansing, struggles in long fights.');
+    weaknesses.push('No healing or cleansing, struggles in long fights.');
   }
 
   // Mechanic Gaps
   if (mechanics.antiTank === 0 && mechanics.piercing === 0) weaknesses.push('No tools to deal with heavy defense (DR/DD).');
   if (mechanics.cleanse === 0 && mechanics.statusShield === 0) weaknesses.push('Susceptible to stun-locks and affliction damage.');
 
+  // Explicit Coverage Gaps (User Feedback)
+  const CAPABILITY_FEEDBACK = {
+    'piercing': 'Missing: Piercing Damage (Struggles vs Damage Reduction)',
+    'affliction': 'Missing: Afflictions/Stacking (Struggles vs High Defense)',
+    'stun': 'Missing: Stun/Control (Cannot stop enemy actions)',
+    'heal': 'Missing: Sustain/Healing (Vulnerable to attrition)',
+    'cleanse': 'Missing: Cleanse (Vulnerable to debuffs)',
+    'counter': 'Missing: Counter/Reflect (Vulnerable to aggressive burst)',
+    'invulnerable': 'Missing: Defensive Safety (Invulnerability)',
+    'energyGen': 'Missing: Energy Generation',
+    'aoe': 'Missing: AoE Damage (Struggles vs multiple threats)'
+  };
+
+  KEY_CAPABILITIES.forEach(cap => {
+    if ((mechanics[cap] || 0) === 0 && CAPABILITY_FEEDBACK[cap]) {
+      // Only add as warning if team size is 3 (full team context)
+      if (team.length === 3) {
+        // We can be selective here or just list them. 
+        // To avoid clutter, maybe only list top 3 missing?
+      }
+    }
+  });
+
+  // Let's add them to a specific analysis field to distinct from generic weaknesses
+  const missingCapabilities = KEY_CAPABILITIES.filter(cap => (mechanics[cap] || 0) === 0);
+
+
 
   // Energy problems
   if (hookCounts.highCostThreats > 1 && mechanics.energyGen === 0) {
-      weaknesses.push('Energy hungry: many high-cost skills but no energy generation');
-      warnings.push('⚠️ High energy requirements without support');
+    weaknesses.push('Energy hungry: many high-cost skills but no energy generation');
+    warnings.push('⚠️ High energy requirements without support');
   }
 
   // Energy color bottleneck
@@ -517,32 +632,34 @@ export const analyzeTeam = (team) => {
   const energyEntries = Object.entries(energyDistribution)
   const dominantEnergy = energyEntries.find(([, count]) => count >= totalEnergy * 0.6)
   if (dominantEnergy && totalEnergy >= 6) {
-      warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
+    warnings.push(`⚠️ Heavy reliance on ${dominantEnergy[0]} energy (${dominantEnergy[1]}/${totalEnergy} skills)`)
   }
 
   // Energy concentration warning
   if (energyTeamPenalty > 0) {
-      weaknesses.push('Very concentrated chakra colors – team is prone to bad rolls')
+    weaknesses.push('Very concentrated chakra colors – team is prone to bad rolls')
   }
 
   // Too setup-heavy (no payoff)
   if (hookCounts.setups >= 2 && hookCounts.payoffs < 1) {
-      warnings.push('⚠️ Multiple setup characters but weak payoff. Add a finisher or burst damage.')
+    warnings.push('⚠️ Multiple setup characters but weak payoff. Add a finisher or burst damage.')
   }
+
+
 
   // Strategies / gameplans
   if (granularRoles.nuker > 1.5) {
-      strategies.push('Focus on eliminating a key enemy threat quickly with single-target burst.');
+    strategies.push('Focus on eliminating a key enemy threat quickly with single-target burst.');
   } else if (granularRoles.aoe_specialist > 1.5) {
-      strategies.push('Apply consistent pressure to the entire enemy team with AoE damage.');
+    strategies.push('Apply consistent pressure to the entire enemy team with AoE damage.');
   } else if (granularRoles.dot_specialist > 1.2 && granularRoles.staller > 1) {
-      strategies.push('Win through attrition by stalling defensively while DoTs wear down the enemy.');
+    strategies.push('Win through attrition by stalling defensively while DoTs wear down the enemy.');
   } else if (granularRoles.disruptor > 1.5 && roles.dps > 1.5) {
-      strategies.push('Control the flow of the game by disrupting enemies, then capitalize on openings.');
+    strategies.push('Control the flow of the game by disrupting enemies, then capitalize on openings.');
   }
 
   if (strategies.length === 0) {
-      strategies.push('Flexible composition: adapt your plan to the matchup')
+    strategies.push('Flexible composition: adapt your plan to the matchup')
   }
 
   return {
@@ -565,6 +682,7 @@ export const analyzeTeam = (team) => {
     synergyScore,
     synergyScoreRaw,
     synergyBreakdown,
+    missingCapabilities, // New Field for UI
   }
 }
 
@@ -637,7 +755,7 @@ export const getSuggestions = (allCharacters, currentTeam, count = 5, ownedIds =
 const getPrimaryRoles = (char) => {
   const knowledge = getCharacterKnowledge(char.id);
   const roles = knowledge?.profile?.granularRoles || {};
-  
+
   const entries = Object.entries(roles)
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -653,75 +771,118 @@ const getPrimaryRoles = (char) => {
 };
 
 const scorePartnerFit = (mainChar, candidate) => {
-    const mainProfile = getCharacterKnowledge(mainChar.id)?.profile;
-    const candProfile = getCharacterKnowledge(candidate.id)?.profile;
+  const mainKnowledge = getCharacterKnowledge(mainChar.id);
+  const candKnowledge = getCharacterKnowledge(candidate.id);
+  const mainProfile = mainKnowledge?.profile;
+  const candProfile = candKnowledge?.profile;
 
-    if (!mainProfile || !candProfile) return { score: 0, notes: [] };
+  if (!mainProfile || !candProfile) return { score: 0, notes: [] };
 
-    const mainRoles = getPrimaryRoles(mainChar);
-    const candRoles = getPrimaryRoles(candidate);
+  const mainRoles = getPrimaryRoles(mainChar);
+  const candRoles = getPrimaryRoles(candidate);
 
-    let score = 0;
-    const notes = [];
+  let score = 0;
+  const notes = [];
 
-    // Role complementarity using granular roles
-    const mainPrimary = mainRoles.primary;
-    const candPrimary = candRoles.primary;
+  // Role complementarity using granular roles
+  const mainPrimary = mainRoles.primary;
+  const candPrimary = candRoles.primary;
 
-    if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(mainPrimary)) {
-        if (candPrimary === 'protector') { score += 30; notes.push('Protects the main damage dealer'); }
-        if (candPrimary === 'staller') { score += 25; notes.push('Buys time for the damage dealer to scale'); }
-        if (candPrimary ==='disruptor') { score += 20; notes.push('Disrupts enemies, creating openings'); }
-        if (candPrimary === 'enabler') { score += 25; notes.push('Provides energy for expensive skills'); }
-    } else if (mainPrimary === 'protector' || mainPrimary === 'enabler') {
-        if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(candPrimary)) {
-            score += 30; notes.push('Provides a clear win condition');
-        }
-    } else if (mainPrimary === 'disruptor') {
-        if (candPrimary === 'nuker' || candPrimary === 'dot_specialist') {
-            score += 28; notes.push('Capitalizes on disruptions with heavy damage');
-        }
+  if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(mainPrimary)) {
+    if (candPrimary === 'protector') { score += 30; notes.push('Protects the main damage dealer'); }
+    if (candPrimary === 'staller') { score += 25; notes.push('Buys time for the damage dealer to scale'); }
+    if (candPrimary === 'disruptor') { score += 20; notes.push('Disrupts enemies, creating openings'); }
+    if (candPrimary === 'enabler') { score += 25; notes.push('Provides energy for expensive skills'); }
+  } else if (mainPrimary === 'protector' || mainPrimary === 'enabler') {
+    if (['nuker', 'aoe_specialist', 'dot_specialist'].includes(candPrimary)) {
+      score += 30; notes.push('Provides a clear win condition');
     }
+  } else if (mainPrimary === 'disruptor') {
+    if (candPrimary === 'nuker' || candPrimary === 'dot_specialist') {
+      score += 28; notes.push('Capitalizes on disruptions with heavy damage');
+    }
+  }
 
-    // Explicit mechanic synergies
-    const mHooks = mainProfile.hooks;
-    const cHooks = candProfile.hooks;
-    const mMech = mainProfile.mechanics;
-    const cMech = candProfile.mechanics;
+  // Explicit mechanic synergies
+  const mHooks = mainProfile.hooks;
+  const cHooks = candProfile.hooks;
 
-    // Setup -> Payoff
+  // TRUE MECHANICS SYNERGIES (Revised Dependency Logic)
+  if (mainKnowledge?.dependencies && candKnowledge?.dependencies) {
+    const mainNeeds = mainKnowledge.dependencies.unmet || [];
+    const candProvides = candKnowledge.dependencies.creates || [];
+    mainNeeds.forEach(need => {
+      if (candProvides.includes(need)) {
+        score += 50;
+        notes.push(`Synergy: Provides needed ${need.toUpperCase()}`);
+      }
+    });
+    const candNeeds = candKnowledge.dependencies.unmet || [];
+    const mainProvides = mainKnowledge.dependencies.creates || [];
+    candNeeds.forEach(need => {
+      if (mainProvides.includes(need)) {
+        score += 50;
+        notes.push(`Synergy: Solves partner's need for ${need.toUpperCase()}`);
+      }
+    });
+  } else {
+    // Setup -> Payoff (Legacy Hooks)
     if (mHooks.createsStun && cHooks.needsStunnedTarget) { score += 35; notes.push('Synergy: Sets up stuns for payoff'); }
     if (cHooks.createsStun && mHooks.needsStunnedTarget) { score += 35; notes.push('Synergy: Sets up stuns for payoff'); }
     if (mHooks.createsMark && cHooks.needsMarkedTarget) { score += 35; notes.push('Synergy: Applies marks for payoff'); }
     if (cHooks.createsMark && mHooks.needsMarkedTarget) { score += 35; notes.push('Synergy: Applies marks for payoff'); }
+  }
 
-    // Enabler -> High-Cost Finisher
-    if (mainProfile.isEnergyHungry && candPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
-    if (candProfile.isEnergyHungry && mainPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
+  // TRUE MECHANICS SYNERGIES (New Granular Logic)
+  // We look for 'targetHas' conditions which imply external setup needs.
+  // We DO NOT score 'userHas' as it implies self-sufficiency (handled by character power, not synergy).
 
-    // Protector -> Glass Cannon
-    if (mainProfile.isGlassCannon && candPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
-    if (candProfile.isGlassCannon && mainPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
-    
-    // Staller + DOT Specialist
-    if (mainPrimary === 'staller' && candPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
-    if (candPrimary === 'staller' && mainPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
+  const checkTrueSynergy = (profileA, profileB, direction) => {
+    let bonus = 0;
+    const notesFound = [];
 
-    // Energy distribution analysis
-    const mainEnergy = mainProfile.energy.colors;
-    const candEnergy = candProfile.energy.colors;
-    let energyPenalty = 0;
-    Object.keys(mainEnergy).forEach(color => {
-        if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
-            energyPenalty += 15;
-        }
-    });
-    score -= energyPenalty;
-    if (energyPenalty > 0) {
-        notes.push('Warning: Shares a heavy energy color load');
+    // If profileA has true mechanics skills
+    // We need to access the raw skills from the knowledge object?
+    // Actually profile doesn't carry the raw skills easily.
+    // Let's rely on the aggregated hooks if we mapped them?
+    // In analyzeCharacter we mapped 'punisher' but didn't store the raw map.
+  };
+
+  // NOTE: For now, the legacy hooks (createsStun / needsStunnedTarget) cover the most important cross-synergies
+  // found in the game (Stun/Mark). The Haskell logic 'targetHas "Stunned"' maps to 'needsStunnedTarget' 
+  // if we updated mapHooks properly. 
+
+  // Let's ensure mapHooks captures the new granular synergies.
+  // In knowledgeEngine.js, we did mapHooks(profile). 
+  // But strictly speaking, we need to ensure 'targetHas "Stun"' sets needsStunnedTarget.
+
+  // Enabler -> High-Cost Finisher
+  if (mainProfile.isEnergyHungry && candPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
+  if (candProfile.isEnergyHungry && mainPrimary === 'enabler') { score += 30; notes.push('Synergy: Energy battery for high-cost skills'); }
+
+  // Protector -> Glass Cannon
+  if (mainProfile.isGlassCannon && candPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
+  if (candProfile.isGlassCannon && mainPrimary === 'protector') { score += 30; notes.push('Synergy: Protects a fragile damage-dealer'); }
+
+  // Staller + DOT Specialist
+  if (mainPrimary === 'staller' && candPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
+  if (candPrimary === 'staller' && mainPrimary === 'dot_specialist') { score += 25; notes.push('Synergy: Stalls while DoTs wear down the enemy'); }
+
+  // Energy distribution analysis
+  const mainEnergy = mainProfile.energy.colors;
+  const candEnergy = candProfile.energy.colors;
+  let energyPenalty = 0;
+  Object.keys(mainEnergy).forEach(color => {
+    if (mainEnergy[color] >= 2 && candEnergy[color] >= 2) {
+      energyPenalty += 15;
     }
+  });
+  score -= energyPenalty;
+  if (energyPenalty > 0) {
+    notes.push('Warning: Shares a heavy energy color load');
+  }
 
-    return { score, notes };
+  return { score, notes };
 };
 
 export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = null, maxResults = 15) => {
@@ -746,8 +907,55 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
   })
 
   return scored
-    .sort((a, b) => b.buildAroundScore - a.buildAroundScore)
-    .slice(0, maxResults)
+
+  // Diversity Logic: Ensure we don't just return 5 of the exact same archetype
+  scored.sort((a, b) => b.buildAroundScore - a.buildAroundScore);
+
+  // Group by primary role to ensure variety
+  const roleGroups = { tank: [], support: [], control: [], dps: [] };
+  const finalDiverseSelection = [];
+  const seenIds = new Set();
+
+  scored.forEach(c => {
+    const roles = c.synergyBreakdown?.roles || {};
+    // Determine primary role
+    let primary = 'dps';
+    let maxVal = 0;
+    Object.entries(roles).forEach(([r, v]) => { if (v > maxVal) { maxVal = v; primary = r; } });
+
+    if (maxVal > 0) roleGroups[primary].push(c);
+    else roleGroups['dps'].push(c); // Fallback
+  });
+
+  // 1. Pick top overall (Best in Slot)
+  if (scored[0]) {
+    finalDiverseSelection.push(scored[0]);
+    seenIds.add(scored[0].id);
+  }
+
+  // 2. Pick top from each other role (if high enough score)
+  ['tank', 'support', 'control', 'dps'].forEach(role => {
+    const topInRole = roleGroups[role].find(c => !seenIds.has(c.id));
+    if (topInRole) {
+      // Only include if it's not terrible compared to the best
+      if (topInRole.buildAroundScore > scored[0].buildAroundScore * 0.6) {
+        finalDiverseSelection.push(topInRole);
+        seenIds.add(topInRole.id);
+      }
+    }
+  });
+
+  // 3. Fill the rest with highest score remaining
+  for (const c of scored) {
+    if (finalDiverseSelection.length >= maxResults) break;
+    if (!seenIds.has(c.id)) {
+      finalDiverseSelection.push(c);
+      seenIds.add(c.id);
+    }
+  }
+
+  // Re-sort final selection by score
+  return finalDiverseSelection.sort((a, b) => b.buildAroundScore - a.buildAroundScore);
 }
 
 // --- COUNTER LOGIC (TAGS-BASED) --------------------------------------------
@@ -934,6 +1142,20 @@ export const explainCounterFitByTags = (candidate, enemyTeam) => {
     reasons.push('✓ Extra energy to keep up in longer matches')
   }
 
+  // Diversity / Coverage Highlight (New)
+  const CAPABILITY_FEEDBACK = {
+    'piercing': 'Piercing', 'affliction': 'Affliction', 'stun': 'Control',
+    'heal': 'Sustain', 'cleanse': 'Cleanse', 'counter': 'Counter',
+    'invulnerable': 'Safety', 'energyGen': 'Energy', 'aoe': 'AoE'
+  };
+  const covered = [];
+  Object.keys(CAPABILITY_FEEDBACK).forEach(cap => {
+    if (m[cap] > 0) covered.push(CAPABILITY_FEEDBACK[cap]);
+  });
+  if (covered.length >= 4) {
+    reasons.push(`★ High Versatility: Covers ${covered.length} mechanics`);
+  }
+
   if (!reasons.length) {
     reasons.push('General good mechanics vs this team')
   }
@@ -1020,7 +1242,7 @@ export const analyzeTeamWithSimulation = (team, enemyTeam = null) => {
         killThreat: simAnalysis.killThreat,
         energyEfficiency: simAnalysis.energyEfficiency,
         cooldownPressure: simAnalysis.cooldownPressure,
-        overallScore: sim.overallScore
+        overallScore: simAnalysis.overallScore
       }
     }
   } catch (error) {

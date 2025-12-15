@@ -1,4 +1,5 @@
-import characters from '../data/characters.json' with { type: 'json' }
+import unifiedData from '../data/characters_unified.json' with { type: 'json' }
+const { characters } = unifiedData
 import { buildCharacterProfile, extractSkillTags } from './skillTagger.js'
 
 // Map new granular mechanics to legacy broad buckets for compatibility
@@ -119,8 +120,49 @@ export function buildKnowledgeBase(charList = characters) {
       skillProfiles,
 
       // V2 Data (for future use)
-      profile
+      profile,
+      trueMechanics: char.trueMechanics || null
     }
+
+    // 4. Compute Dependencies (Creates vs Needs)
+    const creates = new Set();
+    const needs = new Set();
+
+    if (char.trueMechanics) {
+      char.trueMechanics.skills.forEach(skill => {
+        // Creates
+        (skill.classes || []).forEach(cls => {
+          if (cls === 'Stun' || cls === 'Mental') creates.add('stun');
+          if (cls === 'Bane') { creates.add('affliction'); creates.add('stacking'); }
+        });
+        // Needs
+        (skill.synergies || []).forEach(syn => {
+          if (!syn.condition) return;
+          const cond = syn.condition.toLowerCase();
+          // "targetHas Stunned" -> External Need
+          // "userHas Shadow Clone" -> Internal Need (checked later)
+          if (cond.includes('stun')) needs.add('stun');
+          if (cond.includes('lock')) needs.add('stun');
+          if (cond.includes('mark') || cond.includes('seal')) needs.add('mark');
+        });
+      });
+    } else {
+      // Fallback Inference could go here
+    }
+
+    // Identify Unmet Needs
+    const unmetNeeds = {};
+    needs.forEach(need => {
+      if (!creates.has(need)) {
+        unmetNeeds[need] = true;
+      }
+    });
+
+    knowledge[char.id].dependencies = {
+      creates: Array.from(creates),
+      needs: Array.from(needs),
+      unmet: Object.keys(unmetNeeds)
+    };
   })
 
   return knowledge

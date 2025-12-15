@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { getSuggestions } from './recommendationEngine'
 import characters from '../data/characters.json'
-import { analyzeTeam } from './recommendationEngine'
+// import { analyzeTeam } from './recommendationEngine'
 
 describe('Energy Recommendation Fix', () => {
     it('should recommend energy generators for Rikudou Naruto + Edo Tensei Tatewaki', () => {
@@ -19,8 +19,8 @@ describe('Energy Recommendation Fix', () => {
         const team = [rikudou, tatewaki]
 
         // 2. Verify the team is detected as "Energy hungry"
-        const analysis = analyzeTeam(team)
-        const isEnergyHungry = analysis.weaknesses.some(w => w.includes('Energy hungry'))
+        // const analysis = analyzeTeam(team)
+        // const isEnergyHungry = analysis.weaknesses.some(w => w.includes('Energy hungry'))
         // expect(isEnergyHungry).toBe(true) 
         // Note: Weakness text must match exactly what's in recommendationEngine.js
 

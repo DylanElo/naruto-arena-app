@@ -122,7 +122,7 @@ export const HOOK_PATTERNS = {
  */
 export function extractSkillTags(skill) {
     const desc = skill.description || '';
-    const classes = (skill.classes || '').toLowerCase();
+    const classes = (Array.isArray(skill.classes) ? skill.classes.join(' ') : (skill.classes || '')).toLowerCase();
     const energy = skill.energy || [];
 
     const tags = {
@@ -307,7 +307,7 @@ export function buildCharacterProfile(character) {
         if (tags.control.energyRemoval) profile.mechanics.energyRemoval++;
         if (tags.control.counter) profile.mechanics.counter++;
         if (tags.control.reflect) profile.mechanics.reflect++;
-        
+
         if (tags.resource.energyGain > 0) profile.mechanics.energyGain += tags.resource.energyGain;
 
         Object.keys(tags.hooks).forEach(hook => {
@@ -343,7 +343,7 @@ export function buildCharacterProfile(character) {
 
         if (tags.resource.energyGain > 0) profile.roles.enabler += 1.5;
     });
-    
+
     // --- Role Normalization & Legacy Mapping ---
     const granularRoles = { ...profile.roles };
     const legacyRoles = { dps: 0, tank: 0, support: 0, control: 0 };
@@ -351,7 +351,7 @@ export function buildCharacterProfile(character) {
     legacyRoles.tank = granularRoles.staller;
     legacyRoles.support = granularRoles.protector + granularRoles.enabler;
     legacyRoles.control = granularRoles.disruptor;
-    
+
     profile.roles = legacyRoles;
     profile.granularRoles = granularRoles;
 
