@@ -119,7 +119,11 @@ function App() {
         </nav>
 
         {/* Mobile Toggle */}
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-chakra-blue">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="md:hidden p-2 text-chakra-blue"
+          aria-label="Toggle navigation menu"
+        >
           ☰
         </button>
       </header>
@@ -184,7 +188,13 @@ function App() {
                             </div>
                             <div className="flex justify-between items-center">
                               <button onClick={() => setViewCharacter(char)} className="text-[10px] uppercase tracking-wider text-chakra-blue hover:underline">Intel</button>
-                              <button onClick={() => removeFromTeam(char.id)} className="text-red-500 hover:text-red-400">✕</button>
+                              <button
+                                onClick={() => removeFromTeam(char.id)}
+                                className="text-red-500 hover:text-red-400"
+                                aria-label={`Remove ${char.name} from team`}
+                              >
+                                ✕
+                              </button>
                             </div>
                           </div>
                         </>
@@ -235,7 +245,9 @@ function App() {
 
                 {/* Save Team */}
                 <div className="flex gap-2 pt-2 border-t border-white/5">
+                  <label htmlFor="team-name-input" className="sr-only">Operation Name</label>
                   <input
+                    id="team-name-input"
                     className="bg-konoha-900 border border-konoha-700 rounded px-3 py-2 text-xs w-full text-white placeholder-gray-600 focus:border-chakra-blue outline-none"
                     placeholder="Operation Name..."
                     value={teamName}
@@ -254,7 +266,9 @@ function App() {
               {/* Controls */}
               <div className="glass-panel p-4 rounded-lg flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative w-full md:w-auto flex-1">
+                  <label htmlFor="search-archive" className="sr-only">Search archive</label>
                   <input
+                    id="search-archive"
                     className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
@@ -321,7 +335,11 @@ function App() {
                       </div>
                       {/* Add Button Overlay */}
                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => { e.stopPropagation(); addToTeam(char) }} className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); addToTeam(char) }}
+                          className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue"
+                          aria-label={`Add ${char.name} to team`}
+                        >
                           +
                         </button>
                       </div>
