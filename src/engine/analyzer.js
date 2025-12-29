@@ -119,6 +119,30 @@ function calculateCooldownPressure(myTeam, enemyTeam) {
 function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
     let maxThreat = 0;
 
+    // OPTIMIZATION: Calculate total potential damage once, as it's independent of the specific enemy
+    // (unless target-specific logic exists, which is not the case for basic total sum here).
+    let totalInstantDamage = 0;
+    let totalPiercingDamage = 0;
+
+    myTeam.forEach(char => {
+        if (!char.isAlive()) return;
+
+        char.skills.forEach((skill, index) => {
+            if (!char.canUseSkill(index, gameState.energyPools[teamIndex])) return;
+
+            // Only count instant skills
+            if (skill.classes.includes('Instant')) {
+                if (skill.damageType === 'piercing') {
+                    totalPiercingDamage += skill.damage;
+                } else {
+                    totalInstantDamage += skill.damage;
+                }
+            }
+        });
+    });
+
+    const combinedDamage = totalInstantDamage + totalPiercingDamage;
+
     // For each enemy character
     // We assume enemy has infinite/unknown energy for threat calculation to be safe, 
     // OR we can pass a dummy pool if we want to be realistic. 
@@ -136,29 +160,6 @@ function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
         // If enemy has counter, threat is 0
         if (hasCounter) return;
 
-        // Calculate total instant damage we can deal
-        let totalInstantDamage = 0;
-        let totalPiercingDamage = 0;
-
-        myTeam.forEach(char => {
-            if (!char.isAlive()) return;
-
-            char.skills.forEach((skill, index) => {
-                if (!char.canUseSkill(index, gameState.energyPools[teamIndex])) return;
-
-                // Only count instant skills
-                if (skill.classes.includes('Instant')) {
-                    if (skill.damageType === 'piercing') {
-                        totalPiercingDamage += skill.damage;
-                    } else {
-                        totalInstantDamage += skill.damage;
-                    }
-                }
-            });
-        });
-
-        const combinedDamage = totalInstantDamage + totalPiercingDamage;
-
         // Check if we can kill this enemy
         if (enemy.hp < combinedDamage) {
             // Higher threat if enemy is lower HP (prioritize finishing kills)
@@ -168,6 +169,27 @@ function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
     });
 
     return maxThreat;
+}
+
+/**
+ * Helper to clone a character for simulation
+ * Shallow copies mostly, deep copies mutable state
+ */
+function cloneCharacter(char) {
+    // Create new object with same prototype
+    const clone = Object.create(Object.getPrototypeOf(char));
+
+    // Copy properties
+    Object.assign(clone, char);
+
+    // Deep copy mutable state
+    clone.statusEffects = { ...char.statusEffects };
+    clone.activeStatuses = new Set(char.activeStatuses);
+    clone.cooldowns = [...char.cooldowns];
+
+    // Skills are assumed immutable structure-wise for simulation
+
+    return clone;
 }
 
 /**
@@ -196,8 +218,12 @@ export function findBestMove(gameState, teamIndex) {
             enemyTeam.forEach((target, targetIndex) => {
                 if (!target.isAlive()) return;
 
+                // Clone participants to avoid side effects on actual game state
+                const simChar = cloneCharacter(char);
+                const simTarget = cloneCharacter(target);
+
                 // Simulate outcome
-                const outcome = calculateOutcome(char, target, skill);
+                const outcome = calculateOutcome(simChar, simTarget, skill);
 
                 // Simple value function: damage dealt + kill bonus
                 let value = outcome.damageDealt;
