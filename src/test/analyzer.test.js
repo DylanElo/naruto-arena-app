@@ -1,26 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeGameState, findBestMove } from '../engine/analyzer.js';
 
-// Mock character factory for controlled testing
-const createMockCharacter = (id, hp, skills = [], cooldowns = [0, 0, 0, 0], statusEffects = {}) => ({
-    id,
-    hp,
-    maxHP: 100, // Added for heal
-    skills,
-    cooldowns,
-    activeStatuses: new Set(), // Added for resolution.js
-    statusEffects: {
-        stunned: false,
-        invulnerable: false,
-        damageReduction: 0,
-        destructibleDefense: 0,
-        increaseDamage: 0,
-        decreaseDamage: 0,
-        increaseDamagePercent: 0,
-        decreaseDamagePercent: 0,
-        ...statusEffects
-    },
-    isAlive: function() { return this.hp > 0; }, // changed to function to access this
+// Mock character prototype with methods
+const mockCharacterProto = {
+    isAlive: function() { return this.hp > 0; },
     canUseSkill: function(skillIndex) {
         if (this.statusEffects.stunned || (this.cooldowns && this.cooldowns[skillIndex] > 0)) {
             return false;
@@ -33,7 +16,32 @@ const createMockCharacter = (id, hp, skills = [], cooldowns = [0, 0, 0, 0], stat
     heal: function(amount) {
         this.hp = Math.min(this.maxHP, this.hp + amount);
     }
-});
+};
+
+// Mock character factory for controlled testing
+const createMockCharacter = (id, hp, skills = [], cooldowns = [0, 0, 0, 0], statusEffects = {}) => {
+    const char = Object.create(mockCharacterProto);
+    Object.assign(char, {
+        id,
+        hp,
+        maxHP: 100, // Added for heal
+        skills,
+        cooldowns,
+        activeStatuses: new Set(), // Added for resolution.js
+        statusEffects: {
+            stunned: false,
+            invulnerable: false,
+            damageReduction: 0,
+            destructibleDefense: 0,
+            increaseDamage: 0,
+            decreaseDamage: 0,
+            increaseDamagePercent: 0,
+            decreaseDamagePercent: 0,
+            ...statusEffects
+        }
+    });
+    return char;
+};
 
 // Mock skill factory
 const createMockSkill = (damage, hasSideEffect = false) => {
