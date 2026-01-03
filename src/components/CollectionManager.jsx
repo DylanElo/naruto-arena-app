@@ -69,6 +69,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                     onChange={(e) => setUserLevel(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleLevelSetup()}
                     placeholder="Enter level (1-40)"
+                    aria-label="User level"
                     className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white mb-4 focus:border-chakra-blue outline-none"
                 />
                 <div className="flex gap-2">
@@ -103,6 +104,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                         <input
                             type="text"
                             placeholder="Search archive..."
+                            aria-label="Search archive"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="flex-1 p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
@@ -147,6 +149,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                             <div className="aspect-square relative">
                                 <img
                                     src={assetPath(`images/characters/${char.id}.png`)}
+                                    alt={char.name}
                                     loading="lazy"
                                     onError={(e) => { e.target.src = 'https://via.placeholder.com/100?text=?' }}
                                     className={`w-full h-full object-cover transition-transform duration-500 ${!owned && 'grayscale'} group-hover:scale-110`}

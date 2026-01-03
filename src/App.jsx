@@ -172,6 +172,7 @@ function App() {
                           <div className="w-24 relative overflow-hidden">
                             <img
                               src={assetPath(`images/characters/${char.id}.png`)}
+                              alt={char.name}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                               onError={(e) => { e.target.style.display = 'none' }}
                             />
@@ -307,7 +308,7 @@ function App() {
                         <div className="text-[10px] font-mono text-chakra-blue">{char.synergyScore} SYN</div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <img src={assetPath(`images/characters/${char.id}.png`)} className="w-10 h-10 rounded border border-yellow-500/50 object-cover" onError={(e) => e.target.style.display = 'none'} />
+                        <img src={assetPath(`images/characters/${char.id}.png`)} alt={char.name} className="w-10 h-10 rounded border border-yellow-500/50 object-cover" onError={(e) => e.target.style.display = 'none'} />
                         <div>
                           <div className="font-bold text-sm text-white leading-tight">{char.name}</div>
                           <div className="text-[10px] text-gray-400">{char.skills[0].classes.split(',')[0]}</div>
@@ -326,6 +327,7 @@ function App() {
                     <div className="aspect-square relative overflow-hidden bg-konoha-900">
                       <img
                         src={assetPath(`images/characters/${char.id}.png`)}
+                        alt={char.name}
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
                         loading="lazy"
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=?' }}
@@ -372,7 +374,7 @@ function App() {
 
             {/* Header */}
             <div className="relative h-48">
-              <img src={assetPath(`images/characters/${viewCharacter.id}.png`)} className="w-full h-full object-cover opacity-60" />
+              <img src={assetPath(`images/characters/${viewCharacter.id}.png`)} alt={viewCharacter.name} className="w-full h-full object-cover opacity-60" />
               <div className="absolute inset-0 bg-gradient-to-t from-konoha-900 to-transparent"></div>
               <div className="absolute bottom-4 left-6">
                 <h2 className="text-4xl font-display font-bold text-white mb-1">{viewCharacter.name}</h2>
@@ -380,7 +382,7 @@ function App() {
                   {(viewCharacter.tags || []).map(t => <span key={t} className="px-2 py-0.5 rounded bg-white/10 text-[10px] uppercase tracking-wider">{t}</span>)}
                 </div>
               </div>
-              <button onClick={() => setViewCharacter(null)} className="absolute top-4 right-4 text-white hover:text-chakra-blue text-2xl">✕</button>
+              <button onClick={() => setViewCharacter(null)} className="absolute top-4 right-4 text-white hover:text-chakra-blue text-2xl" aria-label="Close character details">✕</button>
             </div>
 
             {/* Skills */}
