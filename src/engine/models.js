@@ -3,6 +3,8 @@
  * Data Models for Turn-Based State Machine
  */
 
+import { getSecureRandomElement } from '../utils/random';
+
 // Energy Types (mapped to game terminology)
 export const EnergyType = {
     TAIJUTSU: 'green',     // Physical
