@@ -179,15 +179,17 @@ function cloneCharacter(char) {
     // Create new object with same prototype
     const clone = Object.create(Object.getPrototypeOf(char));
 
-    // Copy properties
-    Object.assign(clone, char);
+    // Manual copy for performance (faster than Object.assign)
+    clone.id = char.id;
+    clone.name = char.name;
+    clone.hp = char.hp;
+    clone.maxHP = char.maxHP;
+    clone.skills = char.skills; // Reference copy (immutable config)
 
     // Deep copy mutable state
     clone.statusEffects = { ...char.statusEffects };
     clone.activeStatuses = new Set(char.activeStatuses);
     clone.cooldowns = [...char.cooldowns];
-
-    // Skills are assumed immutable structure-wise for simulation
 
     return clone;
 }
