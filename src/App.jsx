@@ -323,11 +323,19 @@ function App() {
 
                 {/* Standard List */}
                 {filteredCharacters.map(char => (
-                  <div key={char.id} onClick={() => setViewCharacter(char)} className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue transition-all duration-300 group flex flex-col h-full">
+                  <div
+                    key={char.id}
+                    onClick={() => setViewCharacter(char)}
+                    onKeyDown={(e) => e.key === 'Enter' && setViewCharacter(char)}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`View details for ${char.name}`}
+                    className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue transition-all duration-300 group flex flex-col h-full focus-visible:ring-2 focus-visible:ring-chakra-blue focus-visible:outline-none"
+                  >
                     <div className="aspect-square relative overflow-hidden bg-konoha-900">
                       <img
                         src={assetPath(`images/characters/${char.id}.png`)}
-                        alt={char.name}
+                        alt=""
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
                         loading="lazy"
                         onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=?' }}
@@ -336,10 +344,10 @@ function App() {
                         <div className="font-bold text-sm text-white truncate">{char.name}</div>
                       </div>
                       {/* Add Button Overlay */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => { e.stopPropagation(); addToTeam(char) }}
-                          className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue"
+                          className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue focus:outline-none focus:ring-2 focus:ring-white"
                           aria-label={`Add ${char.name} to team`}
                         >
                           +
