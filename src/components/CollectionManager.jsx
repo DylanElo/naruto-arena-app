@@ -138,9 +138,12 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                 {filteredChars.map(char => {
                     const owned = ownedIds.includes(char.id)
                     return (
-                        <div
+                        <button
                             key={char.id}
-                            className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border group ${owned
+                            type="button"
+                            aria-label={`${char.name} - ${owned ? 'Owned' : 'Not Owned'}`}
+                            aria-pressed={owned}
+                            className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border group w-full text-left p-0 ${owned
                                 ? 'border-chakra-blue/50 bg-konoha-800 shadow-neon-blue'
                                 : 'border-konoha-700 bg-konoha-900/50 opacity-60 hover:opacity-100 hover:border-gray-500'
                                 }`}
@@ -161,7 +164,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                             <div className="p-2 absolute bottom-0 w-full">
                                 <div className={`text-xs font-bold truncate ${owned ? 'text-white' : 'text-gray-500'}`}>{char.name}</div>
                             </div>
-                        </div>
+                        </button>
                     )
                 })}
             </div>
