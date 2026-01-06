@@ -195,6 +195,46 @@ function cloneCharacter(char) {
 }
 
 /**
+ * OPTIMIZATION: Reusable state copy for simulation loop
+ * Avoids object allocation/GC overhead by copying state into reusable objects
+ */
+function copyCharacterState(source, target) {
+    target.id = source.id;
+    target.name = source.name;
+    target.hp = source.hp;
+    target.maxHP = source.maxHP;
+    target.skills = source.skills;
+
+    // Robust copy of statusEffects
+    // 1. Copy/Overwrite all keys from source
+    for (const key in source.statusEffects) {
+        target.statusEffects[key] = source.statusEffects[key];
+    }
+    // 2. Delete keys in target that are not in source to avoid state pollution
+    for (const key in target.statusEffects) {
+        if (!(key in source.statusEffects)) {
+            delete target.statusEffects[key];
+        }
+    }
+
+    // Optimized Set copy
+    target.activeStatuses.clear();
+    for (const status of source.activeStatuses) {
+        target.activeStatuses.add(status);
+    }
+
+    // Robust Array copy for cooldowns
+    // Handle potential length mismatches (though unlikely in this specific game logic)
+    if (target.cooldowns.length !== source.cooldowns.length) {
+        target.cooldowns = [...source.cooldowns];
+    } else {
+        for (let i = 0; i < source.cooldowns.length; i++) {
+            target.cooldowns[i] = source.cooldowns[i];
+        }
+    }
+}
+
+/**
  * Find best move for current game state
  * Returns { characterIndex, skillIndex, targetIndex, expectedValue }
  */
@@ -209,6 +249,16 @@ export function findBestMove(gameState, teamIndex) {
         expectedValue: -Infinity
     };
 
+    // Optimization: Create reusable objects once to avoid allocation inside the loop
+    // Use the first alive character as a prototype template
+    const templateChar = myTeam.find(c => c) || enemyTeam.find(c => c);
+
+    // Fallback if teams are empty (shouldn't happen in valid game state)
+    if (!templateChar) return bestMove;
+
+    const simChar = cloneCharacter(templateChar);
+    const simTarget = cloneCharacter(templateChar);
+
     // Evaluate all possible moves
     myTeam.forEach((char, charIndex) => {
         if (!char.isAlive()) return;
@@ -220,9 +270,9 @@ export function findBestMove(gameState, teamIndex) {
             enemyTeam.forEach((target, targetIndex) => {
                 if (!target.isAlive()) return;
 
-                // Clone participants to avoid side effects on actual game state
-                const simChar = cloneCharacter(char);
-                const simTarget = cloneCharacter(target);
+                // Optimization: reuse existing objects instead of creating new ones
+                copyCharacterState(char, simChar);
+                copyCharacterState(target, simTarget);
 
                 // Simulate outcome
                 const outcome = calculateOutcome(simChar, simTarget, skill);
