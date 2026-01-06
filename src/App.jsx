@@ -300,7 +300,15 @@ function App() {
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {/* Suggestions (Highlighted) */}
                 {selectedTeam.length > 0 && selectedTeam.length < 3 && suggestions.map(char => (
-                  <div key={char.id} onClick={() => setViewCharacter(char)} className="relative group cursor-pointer">
+                  <div
+                    key={char.id}
+                    onClick={() => setViewCharacter(char)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewCharacter(char); } }}
+                    className="relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View details for ${char.name}`}
+                  >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-500 to-chakra-blue opacity-50 blur group-hover:opacity-100 transition duration-500"></div>
                     <div className="relative h-full bg-konoha-900 border border-yellow-500/30 rounded-lg p-3 flex flex-col gap-2 hover:bg-konoha-800">
                       <div className="flex justify-between items-start">
@@ -314,7 +322,11 @@ function App() {
                           <div className="text-[10px] text-gray-400">{char.skills[0].classes.split(',')[0]}</div>
                         </div>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); addToTeam(char) }} className="mt-auto w-full py-1 bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 text-xs font-bold rounded hover:bg-yellow-500 hover:text-black transition-colors">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); addToTeam(char) }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="mt-auto w-full py-1 bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 text-xs font-bold rounded hover:bg-yellow-500 hover:text-black transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      >
                         RECRUIT
                       </button>
                     </div>
