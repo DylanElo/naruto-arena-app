@@ -3,7 +3,7 @@
  * Data Models for Turn-Based State Machine
  */
 
-import { getSecureRandomElement } from '../utils/random';
+import { getSecureRandomElement } from '../utils/random.js';
 
 // Energy Types (mapped to game terminology)
 export const EnergyType = {
