@@ -8,7 +8,7 @@ import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
-    const [showSetup, setShowSetup] = useState(ownedIds.length === 0)
+    const [showSetup, setShowSetup] = useState((ownedIds.size ?? ownedIds.length) === 0)
     const [search, setSearch] = useState('')
     const [activeFilter, setActiveFilter] = useState('ALL')
 
@@ -136,11 +136,14 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 {filteredChars.map(char => {
-                    const owned = ownedIds.includes(char.id)
+                    const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
                     return (
-                        <div
+                        <button
                             key={char.id}
-                            className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border group ${owned
+                            type="button"
+                            aria-label={`${char.name} - ${owned ? 'Owned' : 'Not Owned'}`}
+                            aria-pressed={owned}
+                            className={`relative rounded-lg overflow-hidden cursor-pointer transition-all border group w-full text-left p-0 ${owned
                                 ? 'border-chakra-blue/50 bg-konoha-800 shadow-neon-blue'
                                 : 'border-konoha-700 bg-konoha-900/50 opacity-60 hover:opacity-100 hover:border-gray-500'
                                 }`}
@@ -161,7 +164,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                             <div className="p-2 absolute bottom-0 w-full">
                                 <div className={`text-xs font-bold truncate ${owned ? 'text-white' : 'text-gray-500'}`}>{char.name}</div>
                             </div>
-                        </div>
+                        </button>
                     )
                 })}
             </div>

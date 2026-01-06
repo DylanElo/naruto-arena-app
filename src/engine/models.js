@@ -3,7 +3,7 @@
  * Data Models for Turn-Based State Machine
  */
 
-import { getSecureRandomElement } from '../utils/random';
+import { getSecureRandomElement } from '../utils/random.js';
 
 // Energy Types (mapped to game terminology)
 export const EnergyType = {
@@ -97,34 +97,10 @@ export class GameState {
         ];
 
         for (let i = 0; i < aliveCount; i++) {
-            const randomColor = energyColors[secureRandomIndex(energyColors.length)];
+            const randomColor = getSecureRandomElement(energyColors);
             pool[randomColor]++;
         }
     }
-}
-
-/**
- * Generates a cryptographically secure random index
- * @param {number} length - The length of the array to select from
- * @returns {number} A random index between 0 and length-1
- */
-function secureRandomIndex(length) {
-    if (length <= 0) return 0;
-
-    // Create a typed array to hold the random value
-    const array = new Uint32Array(1);
-
-    // Get cryptographically secure random values
-    // Check if crypto API is available (browser context)
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-        crypto.getRandomValues(array);
-        // Use modulo to map to the range (slight bias but negligible for small ranges like 4)
-        return array[0] % length;
-    }
-
-    // Fallback for non-browser environments (like older Node tests if crypto global is missing)
-    // or if crypto API is unavailable for some reason
-    return Math.floor(Math.random() * length);
 }
 
 /**
