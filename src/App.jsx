@@ -381,7 +381,7 @@ function App() {
         )}
 
         {/* --- OTHER TABS (Placeholder Wrapper) --- */}
-        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={charactersData} ownedIds={Array.from(ownedCharacters)} onToggle={handleToggleCharacter} /></div>}
+        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={charactersData} ownedIds={ownedCharacters} onToggle={handleToggleCharacter} /></div>}
         {activeTab === 'meta' && <div className="glass-panel p-8 rounded-xl"><MetaBuilder allCharacters={charactersData} /></div>}
         {activeTab === 'counter' && <div className="glass-panel p-8 rounded-xl"><CounterBuilder allCharacters={charactersData} /></div>}
 

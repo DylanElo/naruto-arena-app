@@ -8,7 +8,7 @@ import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
-    const [showSetup, setShowSetup] = useState(ownedIds.length === 0)
+    const [showSetup, setShowSetup] = useState((ownedIds.size ?? ownedIds.length) === 0)
     const [search, setSearch] = useState('')
     const [activeFilter, setActiveFilter] = useState('ALL')
 
@@ -136,7 +136,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 {filteredChars.map(char => {
-                    const owned = ownedIds.includes(char.id)
+                    const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
                     return (
                         <button
                             key={char.id}

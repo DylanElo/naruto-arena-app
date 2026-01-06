@@ -95,9 +95,10 @@ export const toggleCharacter = (characterId) => {
  */
 export const getCollectionStats = (allCharacters, ownedIds = null) => {
     const owned = ownedIds !== null ? ownedIds : loadCollection();
+    const count = owned.size ?? owned.length;
     return {
-        owned: owned.length,
+        owned: count,
         total: allCharacters.length,
-        percentage: Math.round((owned.length / allCharacters.length) * 100)
+        percentage: Math.round((count / allCharacters.length) * 100)
     };
 };
