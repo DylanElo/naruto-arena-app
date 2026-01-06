@@ -300,7 +300,14 @@ function App() {
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {/* Suggestions (Highlighted) */}
                 {selectedTeam.length > 0 && selectedTeam.length < 3 && suggestions.map(char => (
-                  <div key={char.id} onClick={() => setViewCharacter(char)} className="relative group cursor-pointer">
+                  <div
+                    key={char.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setViewCharacter(char)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewCharacter(char)}
+                    className="relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 rounded-lg"
+                  >
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-500 to-chakra-blue opacity-50 blur group-hover:opacity-100 transition duration-500"></div>
                     <div className="relative h-full bg-konoha-900 border border-yellow-500/30 rounded-lg p-3 flex flex-col gap-2 hover:bg-konoha-800">
                       <div className="flex justify-between items-start">
@@ -323,7 +330,14 @@ function App() {
 
                 {/* Standard List */}
                 {filteredCharacters.map(char => (
-                  <div key={char.id} onClick={() => setViewCharacter(char)} className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue transition-all duration-300 group flex flex-col h-full">
+                  <div
+                    key={char.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setViewCharacter(char)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setViewCharacter(char)}
+                    className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue focus-visible:ring-2 focus-visible:ring-chakra-blue focus-visible:outline-none transition-all duration-300 group flex flex-col h-full"
+                  >
                     <div className="aspect-square relative overflow-hidden bg-konoha-900">
                       <img
                         src={assetPath(`images/characters/${char.id}.png`)}
