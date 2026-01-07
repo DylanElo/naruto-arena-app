@@ -101,14 +101,25 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col md:flex-row gap-4">
-                        <input
-                            type="text"
-                            placeholder="Search archive..."
-                            aria-label="Search archive"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="flex-1 p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
-                        />
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search archive..."
+                                aria-label="Search archive"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch('')}
+                                    aria-label="Clear search"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
                         <button
                             onClick={() => setShowSetup(true)}
                             className="bg-konoha-800 border border-konoha-700 text-chakra-blue px-6 py-2 rounded-lg font-bold hover:bg-konoha-700 transition-colors"
