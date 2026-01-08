@@ -270,12 +270,21 @@ function App() {
                   <label htmlFor="search-archive" className="sr-only">Search archive</label>
                   <input
                     id="search-archive"
-                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
+                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500"><Icons.Search /></div>
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute right-3 top-2 text-gray-500 hover:text-white"
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
