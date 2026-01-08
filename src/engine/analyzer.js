@@ -205,17 +205,10 @@ function copyCharacterState(source, target) {
     target.maxHP = source.maxHP;
     target.skills = source.skills;
 
-    // Robust copy of statusEffects
-    // 1. Copy/Overwrite all keys from source
-    for (const key in source.statusEffects) {
-        target.statusEffects[key] = source.statusEffects[key];
-    }
-    // 2. Delete keys in target that are not in source to avoid state pollution
-    for (const key in target.statusEffects) {
-        if (!(key in source.statusEffects)) {
-            delete target.statusEffects[key];
-        }
-    }
+    // Optimized copy of statusEffects
+    // We assume statusEffects shape is stable (defined in Character constructor and never gains new keys dynamically).
+    // This allows us to use Object.assign (optimized in V8) and skip the expensive deletion loop.
+    Object.assign(target.statusEffects, source.statusEffects);
 
     // Optimized Set copy
     target.activeStatuses.clear();
