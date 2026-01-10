@@ -132,6 +132,24 @@ export class Character {
 
         // Parse skills from character data
         this.skills = (data.skills || []).map(skillData => new Skill(skillData));
+
+        // Pre-calculate energy profile (optimization for analyzer)
+        this.energyProfile = {
+            [EnergyType.TAIJUTSU]: 0,
+            [EnergyType.BLOODLINE]: 0,
+            [EnergyType.NINJUTSU]: 0,
+            [EnergyType.GENJUTSU]: 0
+        };
+
+        this.skills.forEach(skill => {
+            skill.energyCost.forEach(type => {
+                // Ensure we only count valid energy types that match our profile keys
+                // Some data might have 'random' or 'specific' which we skip for this profile
+                if (this.energyProfile[type] !== undefined) {
+                    this.energyProfile[type]++;
+                }
+            });
+        });
     }
 
     isAlive() {
@@ -204,6 +222,9 @@ export class Skill {
         this.effects = (data.effects && data.effects.length > 0)
             ? data.effects
             : this.parseEffectsFromDescription(this.description);
+
+        // Pre-calculate counter status to avoid regex in hot paths
+        this.isCounter = /counter|reflect/i.test(this.description);
     }
 
     parseCooldown(cd) {

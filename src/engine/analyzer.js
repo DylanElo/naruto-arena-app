@@ -74,13 +74,24 @@ function calculateEnergyEfficiency(team) {
     team.forEach(char => {
         if (!char.isAlive()) return;
 
-        char.skills.forEach(skill => {
-            skill.energyCost.forEach(energyType => {
-                if (energyType !== EnergyType.RANDOM && energyGenerators[energyType] !== undefined) {
-                    energyGenerators[energyType]++;
+        // Optimization: Use pre-calculated energy profile instead of nested loops
+        // This reduces O(Skills * Cost) to O(EnergyTypes) per character
+        if (char.energyProfile) {
+            for (const type in char.energyProfile) {
+                if (energyGenerators[type] !== undefined) {
+                    energyGenerators[type] += char.energyProfile[type];
                 }
+            }
+        } else {
+            // Fallback for objects that might not have energyProfile initialized (e.g. tests or legacy objects)
+            char.skills.forEach(skill => {
+                skill.energyCost.forEach(energyType => {
+                    if (energyType !== EnergyType.RANDOM && energyGenerators[energyType] !== undefined) {
+                        energyGenerators[energyType]++;
+                    }
+                });
             });
-        });
+        }
     });
 
     // Calculate probability for each energy type
@@ -152,9 +163,14 @@ function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
 
         // Check if enemy has counter skill available
         const hasCounter = enemy.skills.some((skill, index) => {
-            const isCounter = /counter|reflect/i.test(skill.description);
+            // Optimization: Use pre-calculated isCounter flag
+            // Fallback to regex if property is missing (backward compatibility)
+            const isCounterSkill = (skill.isCounter !== undefined)
+                ? skill.isCounter
+                : /counter|reflect/i.test(skill.description);
+
             const isAvailable = enemy.canUseSkill(index, gameState.energyPools[1 - teamIndex]); // Approximation for enemy energy
-            return isCounter && isAvailable;
+            return isCounterSkill && isAvailable;
         });
 
         // If enemy has counter, threat is 0
@@ -185,6 +201,7 @@ function cloneCharacter(char) {
     clone.hp = char.hp;
     clone.maxHP = char.maxHP;
     clone.skills = char.skills; // Reference copy (immutable config)
+    clone.energyProfile = char.energyProfile; // Reference copy (immutable config)
 
     // Deep copy mutable state
     clone.statusEffects = { ...char.statusEffects };
@@ -204,6 +221,11 @@ function copyCharacterState(source, target) {
     target.hp = source.hp;
     target.maxHP = source.maxHP;
     target.skills = source.skills;
+
+    // Static properties that don't change during simulation but might differ between chars
+    if (source.energyProfile) {
+        target.energyProfile = source.energyProfile;
+    }
 
     // Robust copy of statusEffects
     // 1. Copy/Overwrite all keys from source
