@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import {
     initializeCollectionByLevel,
     getCollectionStats
@@ -11,6 +11,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
     const [showSetup, setShowSetup] = useState((ownedIds.size ?? ownedIds.length) === 0)
     const [search, setSearch] = useState('')
     const [activeFilter, setActiveFilter] = useState('ALL')
+    const searchInputRef = useRef(null)
 
     // Bolt Optimization: Memoize stats to avoid recalc on unrelated renders
     const stats = useMemo(() => getCollectionStats(allCharacters, ownedIds), [allCharacters, ownedIds])
@@ -26,6 +27,11 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     const handleToggle = (charId) => {
         onToggle(charId)
+    }
+
+    const clearSearch = () => {
+        setSearch('')
+        searchInputRef.current?.focus()
     }
 
     // Bolt Optimization: Memoize filtering to prevent O(N) lookup on every render (e.g. when toggling cards)
@@ -101,14 +107,28 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col md:flex-row gap-4">
-                        <input
-                            type="text"
-                            placeholder="Search archive..."
-                            aria-label="Search archive"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="flex-1 p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
-                        />
+                        <div className="relative flex-1">
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                placeholder="Search archive..."
+                                aria-label="Search archive"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full p-3 pr-10 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                            />
+                            {search && (
+                                <button
+                                    onClick={clearSearch}
+                                    aria-label="Clear search"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
                         <button
                             onClick={() => setShowSetup(true)}
                             className="bg-konoha-800 border border-konoha-700 text-chakra-blue px-6 py-2 rounded-lg font-bold hover:bg-konoha-700 transition-colors"
