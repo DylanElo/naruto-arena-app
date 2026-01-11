@@ -30,11 +30,23 @@ function App() {
   // --- PERSISTENCE ---
   const [savedTeams, setSavedTeams] = useState(() => {
     const saved = localStorage.getItem('narutoArena_savedTeams')
-    return saved ? JSON.parse(saved) : []
+    if (!saved) return []
+    try {
+      return JSON.parse(saved)
+    } catch (e) {
+      console.error('Failed to parse saved teams:', e)
+      return []
+    }
   })
   const [ownedCharacters, setOwnedCharacters] = useState(() => {
     const saved = localStorage.getItem('narutoArena_ownedCharacters')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
+    if (!saved) return new Set()
+    try {
+      return new Set(JSON.parse(saved))
+    } catch (e) {
+      console.error('Failed to parse owned characters:', e)
+      return new Set()
+    }
   })
   const [teamName, setTeamName] = useState('')
 
@@ -252,6 +264,7 @@ function App() {
                     className="bg-konoha-900 border border-konoha-700 rounded px-3 py-2 text-xs w-full text-white placeholder-gray-600 focus:border-chakra-blue outline-none"
                     placeholder="Operation Name..."
                     value={teamName}
+                    maxLength={30}
                     onChange={(e) => setTeamName(e.target.value)}
                   />
                   <button onClick={saveTeam} className="bg-chakra-blue text-konoha-950 px-4 py-2 text-xs font-bold rounded hover:bg-white transition-colors clip-tech">
@@ -273,6 +286,7 @@ function App() {
                     className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
+                    maxLength={50}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500"><Icons.Search /></div>
