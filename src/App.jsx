@@ -29,12 +29,22 @@ function App() {
 
   // --- PERSISTENCE ---
   const [savedTeams, setSavedTeams] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_savedTeams')
-    return saved ? JSON.parse(saved) : []
+    try {
+      const saved = localStorage.getItem('narutoArena_savedTeams')
+      return saved ? JSON.parse(saved) : []
+    } catch (e) {
+      console.error('Failed to parse saved teams:', e)
+      return []
+    }
   })
   const [ownedCharacters, setOwnedCharacters] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_ownedCharacters')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
+    try {
+      const saved = localStorage.getItem('narutoArena_ownedCharacters')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch (e) {
+      console.error('Failed to parse owned characters:', e)
+      return new Set()
+    }
   })
   const [teamName, setTeamName] = useState('')
 
