@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import {
     initializeCollectionByLevel,
     getCollectionStats
@@ -14,6 +14,9 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     // Bolt Optimization: Memoize stats to avoid recalc on unrelated renders
     const stats = useMemo(() => getCollectionStats(allCharacters, ownedIds), [allCharacters, ownedIds])
+
+    // Use a ref to focus the search input after clearing
+    const searchInputRef = useRef(null)
 
     const handleLevelSetup = () => {
         const level = parseInt(userLevel)
@@ -101,14 +104,26 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col md:flex-row gap-4">
-                        <input
-                            type="text"
-                            placeholder="Search archive..."
-                            aria-label="Search archive"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="flex-1 p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
-                        />
+                        <div className="relative flex-1">
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                placeholder="Search archive..."
+                                aria-label="Search archive"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full p-3 pr-10 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
+                                    className="absolute right-3 top-3 text-gray-500 hover:text-white"
+                                    aria-label="Clear search"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            )}
+                        </div>
                         <button
                             onClick={() => setShowSetup(true)}
                             className="bg-konoha-800 border border-konoha-700 text-chakra-blue px-6 py-2 rounded-lg font-bold hover:bg-konoha-700 transition-colors"
