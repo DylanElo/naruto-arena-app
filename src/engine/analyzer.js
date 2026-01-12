@@ -206,16 +206,18 @@ function copyCharacterState(source, target) {
     target.skills = source.skills;
 
     // Robust copy of statusEffects
-    // 1. Copy/Overwrite all keys from source
-    for (const key in source.statusEffects) {
-        target.statusEffects[key] = source.statusEffects[key];
-    }
-    // 2. Delete keys in target that are not in source to avoid state pollution
-    for (const key in target.statusEffects) {
-        if (!(key in source.statusEffects)) {
-            delete target.statusEffects[key];
-        }
-    }
+    // Optimization: Unrolled assignment for fixed shape object (faster than for..in and delete)
+    const tStats = target.statusEffects;
+    const sStats = source.statusEffects;
+
+    tStats.stunned = sStats.stunned;
+    tStats.invulnerable = sStats.invulnerable;
+    tStats.damageReduction = sStats.damageReduction;
+    tStats.destructibleDefense = sStats.destructibleDefense;
+    tStats.increaseDamage = sStats.increaseDamage;
+    tStats.decreaseDamage = sStats.decreaseDamage;
+    tStats.increaseDamagePercent = sStats.increaseDamagePercent;
+    tStats.decreaseDamagePercent = sStats.decreaseDamagePercent;
 
     // Optimized Set copy
     target.activeStatuses.clear();
