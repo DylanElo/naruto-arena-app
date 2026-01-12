@@ -68,8 +68,13 @@ export const saveCollection = (ownedCharacterIds) => {
  * Load collection from localStorage
  */
 export const loadCollection = () => {
-    const stored = localStorage.getItem('narutoArena_ownedCharacters');
-    return stored ? JSON.parse(stored) : [];
+    try {
+        const stored = localStorage.getItem('narutoArena_ownedCharacters');
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Error loading collection from localStorage:', error);
+        return [];
+    }
 };
 
 
