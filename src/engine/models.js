@@ -204,6 +204,9 @@ export class Skill {
         this.effects = (data.effects && data.effects.length > 0)
             ? data.effects
             : this.parseEffectsFromDescription(this.description);
+
+        // Pre-calculate counter status for performance in analysis loops
+        this.isCounter = /counter|reflect/i.test(this.description);
     }
 
     parseCooldown(cd) {
