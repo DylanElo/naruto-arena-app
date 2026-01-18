@@ -6,6 +6,7 @@ import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
+import { safeGet, safeSet } from './utils/storage'
 
 // --- ASSETS & ICONS ---
 const Icons = {
@@ -28,18 +29,12 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // --- PERSISTENCE ---
-  const [savedTeams, setSavedTeams] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_savedTeams')
-    return saved ? JSON.parse(saved) : []
-  })
-  const [ownedCharacters, setOwnedCharacters] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_ownedCharacters')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
-  })
+  const [savedTeams, setSavedTeams] = useState(() => safeGet('narutoArena_savedTeams', []))
+  const [ownedCharacters, setOwnedCharacters] = useState(() => new Set(safeGet('narutoArena_ownedCharacters', [])))
   const [teamName, setTeamName] = useState('')
 
-  useEffect(() => { localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams)) }, [savedTeams])
-  useEffect(() => { localStorage.setItem('narutoArena_ownedCharacters', JSON.stringify(Array.from(ownedCharacters))) }, [ownedCharacters])
+  useEffect(() => { safeSet('narutoArena_savedTeams', savedTeams) }, [savedTeams])
+  useEffect(() => { safeSet('narutoArena_ownedCharacters', Array.from(ownedCharacters)) }, [ownedCharacters])
 
   // --- HANDLERS ---
   const addToTeam = (char) => {
