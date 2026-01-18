@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -49,11 +49,14 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = (id) => {
-    const newSet = new Set(ownedCharacters)
-    newSet.has(id) ? newSet.delete(id) : newSet.add(id)
-    setOwnedCharacters(newSet)
-  }
+  // Bolt Optimization: Stable handler + functional update prevents parent re-renders breaking child memoization
+  const handleToggleCharacter = useCallback((id) => {
+    setOwnedCharacters(prev => {
+      const newSet = new Set(prev)
+      newSet.has(id) ? newSet.delete(id) : newSet.add(id)
+      return newSet
+    })
+  }, [])
   const saveTeam = () => {
     if (selectedTeam.length > 0 && teamName.trim()) {
       setSavedTeams([...savedTeams, { name: teamName, members: selectedTeam }])
