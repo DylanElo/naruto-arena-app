@@ -16,6 +16,13 @@ const Icons = {
   Filter: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>,
 }
 
+// Bolt Optimization: Move EnergyIcon outside to prevent re-definition on every render
+const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
+  <div className={`${size} rounded flex items-center justify-center font-bold text-[10px] uppercase border border-white/10 ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
+    {type === 'none' ? '-' : type[0]}
+  </div>
+)
+
 function App() {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('builder')
@@ -67,11 +74,12 @@ function App() {
 
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
+    // Bolt Optimization: Compute search term once
+    const q = search.toLowerCase()
     return charactersData.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
-        const q = search.toLowerCase()
         if (!char.name.toLowerCase().includes(q) &&
           !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
       }
@@ -82,13 +90,6 @@ function App() {
       return true
     })
   }, [search, energyFilter, ownedOnly, ownedCharacters])
-
-  // --- RENDER HELPERS ---
-  const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
-    <div className={`${size} rounded flex items-center justify-center font-bold text-[10px] uppercase border border-white/10 ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
-      {type === 'none' ? '-' : type[0]}
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-konoha-950 text-light-primary selection:bg-chakra-blue selection:text-konoha-950">
