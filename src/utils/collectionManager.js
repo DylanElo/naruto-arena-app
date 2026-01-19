@@ -69,7 +69,13 @@ export const saveCollection = (ownedCharacterIds) => {
  */
 export const loadCollection = () => {
     const stored = localStorage.getItem('narutoArena_ownedCharacters');
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    try {
+        return JSON.parse(stored);
+    } catch (e) {
+        console.error('Failed to parse collection from localStorage', e);
+        return [];
+    }
 };
 
 
