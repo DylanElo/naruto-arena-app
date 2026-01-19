@@ -13,6 +13,7 @@ const Icons = {
   Energy: () => <span className="text-yellow-400">⚡</span>,
   Fire: () => <span className="text-chakra-red">🔥</span>,
   Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+  Close: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
   Filter: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>,
 }
 
@@ -270,12 +271,21 @@ function App() {
                   <label htmlFor="search-archive" className="sr-only">Search archive</label>
                   <input
                     id="search-archive"
-                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
+                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500"><Icons.Search /></div>
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-white"
+                      aria-label="Clear search"
+                    >
+                      <Icons.Close />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
@@ -334,6 +344,14 @@ function App() {
                 ))}
 
                 {/* Standard List */}
+                {filteredCharacters.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-gray-500 bg-konoha-800/30 rounded-lg border border-dashed border-konoha-700">
+                    <p className="text-lg mb-2">No shinobi found</p>
+                    <button onClick={clearFilters} className="text-chakra-blue hover:underline text-sm font-bold uppercase tracking-wider">
+                      Clear filters
+                    </button>
+                  </div>
+                )}
                 {filteredCharacters.map(char => (
                   <div
                     key={char.id}
