@@ -51,11 +51,13 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = (id) => {
-    const newSet = new Set(ownedCharacters)
-    newSet.has(id) ? newSet.delete(id) : newSet.add(id)
-    setOwnedCharacters(newSet)
-  }
+  const handleToggleCharacter = React.useCallback((id) => {
+    setOwnedCharacters(prev => {
+      const newSet = new Set(prev)
+      newSet.has(id) ? newSet.delete(id) : newSet.add(id)
+      return newSet
+    })
+  }, [])
   const saveTeam = () => {
     if (selectedTeam.length > 0 && teamName.trim()) {
       setSavedTeams([...savedTeams, { name: teamName, members: selectedTeam }])
