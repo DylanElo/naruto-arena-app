@@ -1,5 +1,6 @@
 // Collection Manager - Maps missions to characters
 import missionsData from '../data/missions.json';
+import { safeGet, safeSet } from './storage';
 
 /**
  * Extract character name from mission rewards
@@ -60,16 +61,15 @@ export const initializeCollectionByLevel = (userLevel, allCharacters) => {
  */
 
 export const saveCollection = (ownedCharacterIds) => {
-    localStorage.setItem('narutoArena_ownedCharacters', JSON.stringify(ownedCharacterIds));
-    localStorage.setItem('collectionLastUpdated', new Date().toISOString());
+    safeSet('narutoArena_ownedCharacters', ownedCharacterIds);
+    safeSet('collectionLastUpdated', new Date().toISOString());
 };
 
 /**
  * Load collection from localStorage
  */
 export const loadCollection = () => {
-    const stored = localStorage.getItem('narutoArena_ownedCharacters');
-    return stored ? JSON.parse(stored) : [];
+    return safeGet('narutoArena_ownedCharacters', []);
 };
 
 
