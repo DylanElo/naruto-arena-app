@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -6,6 +6,7 @@ import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
+import { safeGet, safeSet } from './utils/storage'
 
 // --- ASSETS & ICONS ---
 const Icons = {
@@ -14,12 +15,14 @@ const Icons = {
   Fire: () => <span className="text-chakra-red">🔥</span>,
   Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
   Filter: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>,
+  Close: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
 }
 
 function App() {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('builder')
   const [search, setSearch] = useState('')
+  const searchInputRef = useRef(null)
   const [energyFilter, setEnergyFilter] = useState('all')
   const [classFilter, setClassFilter] = useState('all')
   const [ownedOnly, setOwnedOnly] = useState(false)
@@ -29,17 +32,16 @@ function App() {
 
   // --- PERSISTENCE ---
   const [savedTeams, setSavedTeams] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_savedTeams')
-    return saved ? JSON.parse(saved) : []
+    return safeGet('narutoArena_savedTeams', [])
   })
   const [ownedCharacters, setOwnedCharacters] = useState(() => {
-    const saved = localStorage.getItem('narutoArena_ownedCharacters')
-    return saved ? new Set(JSON.parse(saved)) : new Set()
+    const saved = safeGet('narutoArena_ownedCharacters', [])
+    return new Set(saved)
   })
   const [teamName, setTeamName] = useState('')
 
-  useEffect(() => { localStorage.setItem('narutoArena_savedTeams', JSON.stringify(savedTeams)) }, [savedTeams])
-  useEffect(() => { localStorage.setItem('narutoArena_ownedCharacters', JSON.stringify(Array.from(ownedCharacters))) }, [ownedCharacters])
+  useEffect(() => { safeSet('narutoArena_savedTeams', savedTeams) }, [savedTeams])
+  useEffect(() => { safeSet('narutoArena_ownedCharacters', Array.from(ownedCharacters)) }, [ownedCharacters])
 
   // --- HANDLERS ---
   const addToTeam = (char) => {
@@ -271,13 +273,23 @@ function App() {
                 <div className="relative w-full md:w-auto flex-1">
                   <label htmlFor="search-archive" className="sr-only">Search archive</label>
                   <input
+                    ref={searchInputRef}
                     id="search-archive"
-                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
+                    className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500"><Icons.Search /></div>
+                  {search && (
+                    <button
+                      onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
+                      aria-label="Clear search"
+                      className="absolute right-3 top-2.5 text-gray-500 hover:text-white transition-colors"
+                    >
+                      <Icons.Close />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-hide">
