@@ -10,3 +10,8 @@
 **Vulnerability:** Client-side Denial of Service (DoS) caused by unhandled JSON parsing errors when `localStorage` data is malformed.
 **Learning:** React state initializers that directly parse `localStorage` without error handling can cause the entire application to crash (white screen) if the data is corrupted, requiring manual user intervention (clearing cache) to fix.
 **Prevention:** Always wrap `localStorage` access and `JSON.parse` in try-catch blocks with safe fallback values. Use a centralized storage utility (`safeGet`/`safeSet`) to enforce this pattern.
+
+## 2025-12-17 - Input Length Limits (DoS Prevention)
+**Vulnerability:** Unbounded input fields allow attackers (or users pasting large data) to trigger client-side Denial of Service (DoS) by exhausting memory or freezing the UI during filtering/rendering.
+**Learning:** Simple text inputs without `maxLength` can accept megabytes of text. If this text is bound to React state and used in expensive calculations (like real-time search filtering), it freezes the main thread.
+**Prevention:** Always add `maxLength` attributes to text inputs. Use reasonable limits (e.g., 30-50 chars for names/search) to prevent resource exhaustion.
