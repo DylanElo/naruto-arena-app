@@ -6,6 +6,8 @@ import {
 import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 import CollectionCard from './CollectionCard'
 
+const CloseIcon = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
     const [showSetup, setShowSetup] = useState((ownedIds.size ?? ownedIds.length) === 0)
@@ -112,7 +114,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                                     aria-label="Clear search"
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                                 >
-                                    ✕
+                                    <CloseIcon />
                                 </button>
                             )}
                         </div>
@@ -141,19 +143,35 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                {filteredChars.map(char => {
-                    const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
-                    return (
-                        <CollectionCard
-                            key={char.id}
-                            char={char}
-                            owned={owned}
-                            onToggle={onToggle}
-                        />
-                    )
-                })}
-            </div>
+            {filteredChars.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-12 bg-konoha-900/30 rounded-xl border border-konoha-700/50">
+                    <div className="text-4xl mb-4 grayscale opacity-50">🥷</div>
+                    <h3 className="text-xl font-display font-bold text-white mb-2">No shinobi found</h3>
+                    <p className="text-gray-400 mb-6 text-center max-w-sm">
+                        We couldn't find any characters matching your current search or filters.
+                    </p>
+                    <button
+                        onClick={() => { setSearch(''); setActiveFilter('ALL'); }}
+                        className="px-6 py-2 bg-konoha-800 border border-konoha-600 text-chakra-blue rounded-lg font-bold hover:bg-konoha-700 hover:border-chakra-blue transition-all"
+                    >
+                        Clear Filters
+                    </button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {filteredChars.map(char => {
+                        const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
+                        return (
+                            <CollectionCard
+                                key={char.id}
+                                char={char}
+                                owned={owned}
+                                onToggle={onToggle}
+                            />
+                        )
+                    })}
+                </div>
+            )}
         </div>
     )
 }
