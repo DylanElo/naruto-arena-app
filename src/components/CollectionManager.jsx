@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import {
     initializeCollectionByLevel,
     getCollectionStats
@@ -10,6 +10,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
     const [userLevel, setUserLevel] = useState('')
     const [showSetup, setShowSetup] = useState((ownedIds.size ?? ownedIds.length) === 0)
     const [search, setSearch] = useState('')
+    const searchInputRef = useRef(null)
     const [activeFilter, setActiveFilter] = useState('ALL')
 
     // Bolt Optimization: Memoize stats to avoid recalc on unrelated renders
@@ -99,20 +100,24 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
                             <input
+                                ref={searchInputRef}
                                 type="text"
                                 placeholder="Search archive..."
                                 aria-label="Search archive"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                                className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-3 text-white focus:border-chakra-blue outline-none"
                             />
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            </div>
                             {search && (
                                 <button
-                                    onClick={() => setSearch('')}
+                                    onClick={() => { setSearch(''); searchInputRef.current?.focus() }}
                                     aria-label="Clear search"
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                                 >
-                                    ✕
+                                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
                             )}
                         </div>
