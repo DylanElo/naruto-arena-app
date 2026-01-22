@@ -10,3 +10,8 @@
 **Vulnerability:** Client-side Denial of Service (DoS) caused by unhandled JSON parsing errors when `localStorage` data is malformed.
 **Learning:** React state initializers that directly parse `localStorage` without error handling can cause the entire application to crash (white screen) if the data is corrupted, requiring manual user intervention (clearing cache) to fix.
 **Prevention:** Always wrap `localStorage` access and `JSON.parse` in try-catch blocks with safe fallback values. Use a centralized storage utility (`safeGet`/`safeSet`) to enforce this pattern.
+
+## 2025-12-17 - Input Length Limits
+**Vulnerability:** Unbounded text inputs (Search, Team Name) allowing excessive string lengths, posing a Denial of Service (DoS) risk via memory exhaustion (persisted state) and UI freezing.
+**Learning:** `localStorage` has a quota (typically 5MB). Persisting unlimited user input without validation can quickly fill this quota, causing application failures. Additionally, long strings can break UI layouts or hang the main thread during rendering/filtering.
+**Prevention:** Always enforce strict `maxLength` attributes on all user inputs (e.g., 50 chars for search, 30 chars for names) to provide a defense-in-depth layer against client-side resource exhaustion.
