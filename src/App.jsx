@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
+import EmptyState from './components/EmptyState'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
 import { safeGet, safeSet } from './utils/storage'
@@ -51,7 +52,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -348,47 +349,51 @@ function App() {
                 ))}
 
                 {/* Standard List */}
-                {filteredCharacters.map(char => (
-                  <div
-                    key={char.id}
-                    onClick={() => setViewCharacter(char)}
-                    onKeyDown={(e) => e.key === 'Enter' && setViewCharacter(char)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`View details for ${char.name}`}
-                    className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue transition-all duration-300 group flex flex-col h-full focus-visible:ring-2 focus-visible:ring-chakra-blue focus-visible:outline-none"
-                  >
-                    <div className="aspect-square relative overflow-hidden bg-konoha-900">
-                      <img
-                        src={assetPath(`images/characters/${char.id}.png`)}
-                        alt=""
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
-                        loading="lazy"
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=?' }}
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-konoha-950 to-transparent">
-                        <div className="font-bold text-sm text-white truncate">{char.name}</div>
-                      </div>
-                      {/* Add Button Overlay */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); addToTeam(char) }}
-                          className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue focus:outline-none focus:ring-2 focus:ring-white"
-                          aria-label={`Add ${char.name} to team`}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-2 bg-konoha-800 flex gap-1 flex-wrap">
-                      {char.skills.slice(0, 2).map((s, idx) => (
-                        <div key={idx} className="flex gap-0.5">
-                          {s.energy.map((e, i) => <div key={i} className={`w-2 h-2 rounded-full ${ENERGY_BG_COLORS[e]}`}></div>)}
+                {filteredCharacters.length === 0 ? (
+                  <EmptyState onClear={clearFilters} />
+                ) : (
+                  filteredCharacters.map(char => (
+                    <div
+                      key={char.id}
+                      onClick={() => setViewCharacter(char)}
+                      onKeyDown={(e) => e.key === 'Enter' && setViewCharacter(char)}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`View details for ${char.name}`}
+                      className="bg-konoha-800 border border-konoha-700 rounded-lg overflow-hidden cursor-pointer hover:border-chakra-blue/50 hover:shadow-neon-blue transition-all duration-300 group flex flex-col h-full focus-visible:ring-2 focus-visible:ring-chakra-blue focus-visible:outline-none"
+                    >
+                      <div className="aspect-square relative overflow-hidden bg-konoha-900">
+                        <img
+                          src={assetPath(`images/characters/${char.id}.png`)}
+                          alt=""
+                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500"
+                          loading="lazy"
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=?' }}
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-konoha-950 to-transparent">
+                          <div className="font-bold text-sm text-white truncate">{char.name}</div>
                         </div>
-                      ))}
+                        {/* Add Button Overlay */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); addToTeam(char) }}
+                            className="bg-chakra-blue text-black w-8 h-8 rounded flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95 transition-transform shadow-neon-blue focus:outline-none focus:ring-2 focus:ring-white"
+                            aria-label={`Add ${char.name} to team`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-2 bg-konoha-800 flex gap-1 flex-wrap">
+                        {char.skills.slice(0, 2).map((s, idx) => (
+                          <div key={idx} className="flex gap-0.5">
+                            {s.energy.map((e, i) => <div key={i} className={`w-2 h-2 rounded-full ${ENERGY_BG_COLORS[e]}`}></div>)}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

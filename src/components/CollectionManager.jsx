@@ -5,6 +5,7 @@ import {
 } from '../utils/collectionManager'
 import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 import CollectionCard from './CollectionCard'
+import EmptyState from './EmptyState'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
@@ -142,17 +143,23 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                {filteredChars.map(char => {
-                    const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
-                    return (
-                        <CollectionCard
-                            key={char.id}
-                            char={char}
-                            owned={owned}
-                            onToggle={onToggle}
-                        />
-                    )
-                })}
+                {filteredChars.length === 0 ? (
+                    <EmptyState
+                        onClear={() => { setSearch(''); setActiveFilter('ALL') }}
+                    />
+                ) : (
+                    filteredChars.map(char => {
+                        const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
+                        return (
+                            <CollectionCard
+                                key={char.id}
+                                char={char}
+                                owned={owned}
+                                onToggle={onToggle}
+                            />
+                        )
+                    })
+                )}
             </div>
         </div>
     )
