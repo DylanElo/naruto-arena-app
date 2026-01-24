@@ -109,6 +109,7 @@ const CounterBuilder = ({ allCharacters }) => {
                     aria-label="Search characters"
                     className="w-full p-2 bg-dark-primary border border-dark-tertiary rounded text-light-primary focus:border-brand-primary focus:outline-none mb-4"
                     value={search}
+                    maxLength={50}
                     onChange={(e) => setSearch(e.target.value)}
                 />
 
