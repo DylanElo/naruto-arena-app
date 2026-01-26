@@ -5,6 +5,7 @@ import {
 } from '../utils/collectionManager'
 import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 import CollectionCard from './CollectionCard'
+import EmptyState from './EmptyState'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
@@ -14,6 +15,11 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     // Bolt Optimization: Memoize stats to avoid recalc on unrelated renders
     const stats = useMemo(() => getCollectionStats(allCharacters, ownedIds), [allCharacters, ownedIds])
+
+    const clearAllFilters = () => {
+        setSearch('')
+        setActiveFilter('ALL')
+    }
 
     const handleLevelSetup = () => {
         const level = parseInt(userLevel)
@@ -142,7 +148,13 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                {filteredChars.map(char => {
+                {filteredChars.length === 0 ? (
+                    <EmptyState
+                        message="No characters found"
+                        subtext="Try adjusting your filters to find characters."
+                        onClear={clearAllFilters}
+                    />
+                ) : filteredChars.map(char => {
                     const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
                     return (
                         <CollectionCard
