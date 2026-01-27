@@ -114,15 +114,17 @@ const CounterBuilder = ({ allCharacters }) => {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
                     {filteredChars.slice(0, 40).map(char => (
-                        <div
+                        <button
                             key={char.id}
-                            className="bg-dark-primary rounded-lg p-2 border border-dark-tertiary hover:border-brand-primary cursor-pointer transition-colors"
+                            type="button"
+                            aria-label={`Select ${char.name} as enemy`}
+                            className="w-full text-left bg-dark-primary rounded-lg p-2 border border-dark-tertiary hover:border-brand-primary cursor-pointer transition-colors"
                             onClick={() => addEnemyChar(char)}
                         >
                             <div className="flex items-center gap-2">
                                 <img
                                     src={`/naruto-arena-app/images/characters/${char.id}.png`}
-                                    alt={char.name}
+                                    alt=""
                                     onError={(e) => e.target.src = 'https://via.placeholder.com/50?text=?'}
                                     className="w-12 h-12 object-cover rounded"
                                 />
@@ -130,7 +132,7 @@ const CounterBuilder = ({ allCharacters }) => {
                                     <div className="font-bold text-sm text-light-primary truncate">{char.name}</div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
