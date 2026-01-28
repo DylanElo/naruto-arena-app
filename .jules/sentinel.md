@@ -10,3 +10,8 @@
 **Vulnerability:** Client-side Denial of Service (DoS) caused by unhandled JSON parsing errors when `localStorage` data is malformed.
 **Learning:** React state initializers that directly parse `localStorage` without error handling can cause the entire application to crash (white screen) if the data is corrupted, requiring manual user intervention (clearing cache) to fix.
 **Prevention:** Always wrap `localStorage` access and `JSON.parse` in try-catch blocks with safe fallback values. Use a centralized storage utility (`safeGet`/`safeSet`) to enforce this pattern.
+
+## 2025-10-18 - Unbounded Input Vectors
+**Vulnerability:** Missing `maxLength` attributes on user inputs allowed potential DoS via massive string payloads.
+**Learning:** Developers often forget client-side length constraints when relying purely on state management. React controls the state, but the browser still allows the user to paste massive strings if not restricted.
+**Prevention:** Enforce `maxLength` on all text inputs via shared components or linting rules. Verify with automated tests checking for the attribute.
