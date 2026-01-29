@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
-import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
+import { getSuggestions, analyzeTeam } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
@@ -18,13 +18,22 @@ const Icons = {
   Close: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
 }
 
+// --- RENDER HELPERS ---
+const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
+  <div className={`${size} rounded flex items-center justify-center font-bold text-[10px] uppercase border border-white/10 ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
+    {type === 'none' ? '-' : type[0]}
+  </div>
+)
+
 function App() {
   // --- STATE ---
   const [activeTab, setActiveTab] = useState('builder')
   const [search, setSearch] = useState('')
   const searchInputRef = useRef(null)
   const [energyFilter, setEnergyFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [classFilter, setClassFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState([])
   const [viewCharacter, setViewCharacter] = useState(null)
@@ -50,8 +59,9 @@ function App() {
     setSelectedTeam([...selectedTeam, char])
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
+  // eslint-disable-next-line no-unused-vars
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -66,16 +76,24 @@ function App() {
   }
 
   // --- ANALYSIS ---
-  const fullTeamAnalysis = useMemo(() => analyzeTeam(selectedTeam), [selectedTeam])
-  const suggestions = useMemo(() => getSuggestions(charactersData, selectedTeam, 10, ownedCharacters), [selectedTeam, ownedCharacters])
+  const fullTeamAnalysis = useMemo(() => {
+    if (activeTab !== 'builder') return {}
+    return analyzeTeam(selectedTeam)
+  }, [selectedTeam, activeTab])
+
+  const suggestions = useMemo(() => {
+    if (activeTab !== 'builder') return []
+    return getSuggestions(charactersData, selectedTeam, 10, ownedCharacters)
+  }, [selectedTeam, ownedCharacters, activeTab])
 
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
+    if (activeTab !== 'builder') return []
+    const q = search ? search.toLowerCase() : ''
     return charactersData.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
-        const q = search.toLowerCase()
         if (!char.name.toLowerCase().includes(q) &&
           !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
       }
@@ -85,14 +103,7 @@ function App() {
       }
       return true
     })
-  }, [search, energyFilter, ownedOnly, ownedCharacters])
-
-  // --- RENDER HELPERS ---
-  const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
-    <div className={`${size} rounded flex items-center justify-center font-bold text-[10px] uppercase border border-white/10 ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
-      {type === 'none' ? '-' : type[0]}
-    </div>
-  )
+  }, [search, energyFilter, ownedOnly, ownedCharacters, activeTab])
 
   return (
     <div className="min-h-screen bg-konoha-950 text-light-primary selection:bg-chakra-blue selection:text-konoha-950">
