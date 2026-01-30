@@ -65,6 +65,7 @@ const CounterBuilder = ({ allCharacters }) => {
                                                 <button
                                                     onClick={() => removeEnemyChar(char.id)}
                                                     className="text-xs text-red-400 hover:text-red-300 mt-1"
+                                                    aria-label={`Remove ${char.name} from enemy team`}
                                                 >
                                                     Remove
                                                 </button>
@@ -114,15 +115,17 @@ const CounterBuilder = ({ allCharacters }) => {
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
                     {filteredChars.slice(0, 40).map(char => (
-                        <div
+                        <button
                             key={char.id}
-                            className="bg-dark-primary rounded-lg p-2 border border-dark-tertiary hover:border-brand-primary cursor-pointer transition-colors"
+                            type="button"
+                            aria-label={`Select ${char.name}`}
+                            className="bg-dark-primary rounded-lg p-2 border border-dark-tertiary hover:border-brand-primary cursor-pointer transition-colors text-left w-full"
                             onClick={() => addEnemyChar(char)}
                         >
                             <div className="flex items-center gap-2">
                                 <img
                                     src={`/naruto-arena-app/images/characters/${char.id}.png`}
-                                    alt={char.name}
+                                    alt=""
                                     onError={(e) => e.target.src = 'https://via.placeholder.com/50?text=?'}
                                     className="w-12 h-12 object-cover rounded"
                                 />
@@ -130,7 +133,7 @@ const CounterBuilder = ({ allCharacters }) => {
                                     <div className="font-bold text-sm text-light-primary truncate">{char.name}</div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
