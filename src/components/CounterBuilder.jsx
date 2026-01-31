@@ -105,6 +105,7 @@ const CounterBuilder = ({ allCharacters }) => {
             <div className="bg-dark-secondary rounded-2xl border border-dark-tertiary p-4">
                 <input
                     type="text"
+                    maxLength={50}
                     placeholder="Search characters..."
                     aria-label="Search characters"
                     className="w-full p-2 bg-dark-primary border border-dark-tertiary rounded text-light-primary focus:border-brand-primary focus:outline-none mb-4"

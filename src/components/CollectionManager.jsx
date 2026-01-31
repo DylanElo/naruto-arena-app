@@ -100,6 +100,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                         <div className="relative flex-1">
                             <input
                                 type="text"
+                                maxLength={50}
                                 placeholder="Search archive..."
                                 aria-label="Search archive"
                                 value={search}
