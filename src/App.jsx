@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -298,13 +298,14 @@ function App() {
                       key={color}
                       onClick={() => setEnergyFilter(color)}
                       aria-label={`Filter by ${color} energy`}
+                      aria-pressed={energyFilter === color}
                       title={`Filter by ${color} energy`}
-                      className={`w-8 h-8 rounded flex items-center justify-center border transition-all ${energyFilter === color
-                        ? 'border-chakra-blue bg-chakra-blue/20 text-chakra-blue shadow-neon-blue'
-                        : 'border-konoha-700 bg-konoha-800 text-gray-500 hover:border-gray-500'
+                      className={`w-8 h-8 rounded flex items-center justify-center border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chakra-blue focus-visible:ring-offset-2 focus-visible:ring-offset-konoha-950 active:scale-95 ${energyFilter === color
+                        ? 'border-chakra-blue bg-chakra-blue/20 text-chakra-blue shadow-neon-blue scale-110'
+                        : 'border-konoha-700 bg-konoha-800 text-gray-500 hover:border-gray-500 hover:text-gray-300'
                         }`}
                     >
-                      {color === 'all' ? '*' : <div className={`w-3 h-3 rounded-full ${ENERGY_BG_COLORS[color]}`}></div>}
+                      {color === 'all' ? <span className="text-lg leading-none mt-1">*</span> : <div className={`w-3 h-3 rounded-full ${ENERGY_BG_COLORS[color]}`}></div>}
                     </button>
                   ))}
                 </div>
