@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -51,7 +51,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -255,6 +255,7 @@ function App() {
                     id="team-name-input"
                     className="bg-konoha-900 border border-konoha-700 rounded px-3 py-2 text-xs w-full text-white placeholder-gray-600 focus:border-chakra-blue outline-none"
                     placeholder="Operation Name..."
+                    maxLength={30}
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
                   />
@@ -277,6 +278,7 @@ function App() {
                     id="search-archive"
                     className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
+                    maxLength={50}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
