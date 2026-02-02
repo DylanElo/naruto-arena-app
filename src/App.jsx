@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -51,7 +51,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -257,6 +257,7 @@ function App() {
                     placeholder="Operation Name..."
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
+                    maxLength={30}
                   />
                   <button onClick={saveTeam} className="bg-chakra-blue text-konoha-950 px-4 py-2 text-xs font-bold rounded hover:bg-white transition-colors clip-tech">
                     SAVE
@@ -279,6 +280,7 @@ function App() {
                     placeholder="Search archive..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
+                    maxLength={50}
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500"><Icons.Search /></div>
                   {search && (
