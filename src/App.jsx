@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
+import EmptyState from './components/EmptyState'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
 import { safeGet, safeSet } from './utils/storage'
@@ -348,6 +349,20 @@ function App() {
                 ))}
 
                 {/* Standard List */}
+                {filteredCharacters.length === 0 && (
+                  <EmptyState
+                    message="No Shinobi Found"
+                    subtext="Try adjusting your filters or search terms."
+                    action={
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs font-bold uppercase text-chakra-blue hover:text-white underline transition-colors"
+                      >
+                        Reset Filters
+                      </button>
+                    }
+                  />
+                )}
                 {filteredCharacters.map(char => (
                   <div
                     key={char.id}
