@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
+// eslint-disable-next-line no-unused-vars
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
@@ -24,7 +25,9 @@ function App() {
   const [search, setSearch] = useState('')
   const searchInputRef = useRef(null)
   const [energyFilter, setEnergyFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [classFilter, setClassFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState([])
   const [viewCharacter, setViewCharacter] = useState(null)
@@ -50,8 +53,9 @@ function App() {
     setSelectedTeam([...selectedTeam, char])
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
+  // eslint-disable-next-line no-unused-vars
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -71,11 +75,11 @@ function App() {
 
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
+    const q = search ? search.toLowerCase() : ''
     return charactersData.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
-        const q = search.toLowerCase()
         if (!char.name.toLowerCase().includes(q) &&
           !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
       }
