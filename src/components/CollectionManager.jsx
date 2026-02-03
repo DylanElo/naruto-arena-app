@@ -5,6 +5,7 @@ import {
 } from '../utils/collectionManager'
 import { getCharacterKnowledge } from '../utils/knowledgeEngine'
 import CollectionCard from './CollectionCard'
+import EmptyState from './EmptyState'
 
 const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate }) => {
     const [userLevel, setUserLevel] = useState('')
@@ -142,6 +143,20 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                {filteredChars.length === 0 && (
+                    <EmptyState
+                        message="No characters found"
+                        subtext="Your filters are too restrictive."
+                        action={
+                            <button
+                                onClick={() => { setSearch(''); setActiveFilter('ALL') }}
+                                className="px-4 py-2 bg-chakra-blue/10 border border-chakra-blue text-chakra-blue text-xs font-bold uppercase rounded hover:bg-chakra-blue hover:text-black transition-colors"
+                            >
+                                Reset Filters
+                            </button>
+                        }
+                    />
+                )}
                 {filteredChars.map(char => {
                     const owned = ownedIds.has ? ownedIds.has(char.id) : ownedIds.includes(char.id)
                     return (

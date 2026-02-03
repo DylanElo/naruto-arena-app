@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -7,6 +7,7 @@ import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
 import { safeGet, safeSet } from './utils/storage'
+import EmptyState from './components/EmptyState'
 
 // --- ASSETS & ICONS ---
 const Icons = {
@@ -51,7 +52,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -348,6 +349,21 @@ function App() {
                 ))}
 
                 {/* Standard List */}
+                {filteredCharacters.length === 0 && (
+                  <EmptyState
+                    message="No shinobi found"
+                    subtext="Try adjusting your search filters or energy requirements."
+                    action={
+                      <button
+                        onClick={clearFilters}
+                        className="px-4 py-2 bg-chakra-blue/10 border border-chakra-blue text-chakra-blue text-xs font-bold uppercase rounded hover:bg-chakra-blue hover:text-black transition-colors"
+                      >
+                        Clear Filters
+                      </button>
+                    }
+                  />
+                )}
+
                 {filteredCharacters.map(char => (
                   <div
                     key={char.id}

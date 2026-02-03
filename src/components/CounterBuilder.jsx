@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { buildCounterTeam } from '../utils/counterBuilder';
 import { loadCollection } from '../utils/collectionManager';
+import EmptyState from './EmptyState';
 
 const CounterBuilder = ({ allCharacters }) => {
     const [enemyTeam, setEnemyTeam] = useState([]);
@@ -113,6 +114,20 @@ const CounterBuilder = ({ allCharacters }) => {
                 />
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                    {filteredChars.length === 0 && (
+                        <EmptyState
+                            message="No characters found"
+                            subtext="Try a different search term."
+                            action={
+                                <button
+                                    onClick={() => setSearch('')}
+                                    className="px-4 py-2 bg-brand-primary/10 border border-brand-primary text-brand-primary text-xs font-bold uppercase rounded hover:bg-brand-primary hover:text-black transition-colors"
+                                >
+                                    Clear Search
+                                </button>
+                            }
+                        />
+                    )}
                     {filteredChars.slice(0, 40).map(char => (
                         <div
                             key={char.id}
