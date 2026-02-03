@@ -110,6 +110,7 @@ const CounterBuilder = ({ allCharacters }) => {
                     className="w-full p-2 bg-dark-primary border border-dark-tertiary rounded text-light-primary focus:border-brand-primary focus:outline-none mb-4"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
+                    maxLength={50}
                 />
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">

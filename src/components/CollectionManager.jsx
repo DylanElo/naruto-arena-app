@@ -104,6 +104,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                                 aria-label="Search archive"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
+                                maxLength={50}
                                 className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
                             />
                             {search && (
