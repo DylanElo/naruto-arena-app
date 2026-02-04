@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -51,7 +51,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -67,15 +67,20 @@ function App() {
 
   // --- ANALYSIS ---
   const fullTeamAnalysis = useMemo(() => analyzeTeam(selectedTeam), [selectedTeam])
-  const suggestions = useMemo(() => getSuggestions(charactersData, selectedTeam, 10, ownedCharacters), [selectedTeam, ownedCharacters])
+  const suggestions = useMemo(() => {
+    if (activeTab !== 'builder') return []
+    return getSuggestions(charactersData, selectedTeam, 10, ownedCharacters)
+  }, [selectedTeam, ownedCharacters, activeTab])
 
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
+    if (activeTab !== 'builder') return []
+    const q = search.toLowerCase()
+
     return charactersData.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
-        const q = search.toLowerCase()
         if (!char.name.toLowerCase().includes(q) &&
           !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
       }
@@ -85,7 +90,7 @@ function App() {
       }
       return true
     })
-  }, [search, energyFilter, ownedOnly, ownedCharacters])
+  }, [search, energyFilter, ownedOnly, ownedCharacters, activeTab])
 
   // --- RENDER HELPERS ---
   const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
