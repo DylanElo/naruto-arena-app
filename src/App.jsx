@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -253,6 +253,7 @@ function App() {
                   <label htmlFor="team-name-input" className="sr-only">Operation Name</label>
                   <input
                     id="team-name-input"
+                    maxLength={30}
                     className="bg-konoha-900 border border-konoha-700 rounded px-3 py-2 text-xs w-full text-white placeholder-gray-600 focus:border-chakra-blue outline-none"
                     placeholder="Operation Name..."
                     value={teamName}
@@ -275,6 +276,7 @@ function App() {
                   <input
                     ref={searchInputRef}
                     id="search-archive"
+                    maxLength={50}
                     className="w-full bg-konoha-900 border border-konoha-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white focus:border-chakra-blue/50 outline-none"
                     placeholder="Search archive..."
                     value={search}
