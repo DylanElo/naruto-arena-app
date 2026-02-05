@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -7,6 +7,7 @@ import MetaBuilder from './components/MetaBuilder'
 import { assetPath } from './utils/assetPath'
 import { ENERGY_BG_COLORS } from './utils/colors'
 import { safeGet, safeSet } from './utils/storage'
+import EnergyIcon from './components/EnergyIcon'
 
 // --- ASSETS & ICONS ---
 const Icons = {
@@ -51,7 +52,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -88,11 +89,6 @@ function App() {
   }, [search, energyFilter, ownedOnly, ownedCharacters])
 
   // --- RENDER HELPERS ---
-  const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
-    <div className={`${size} rounded flex items-center justify-center font-bold text-[10px] uppercase border border-white/10 ${ENERGY_BG_COLORS[type] || 'bg-gray-700'}`}>
-      {type === 'none' ? '-' : type[0]}
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-konoha-950 text-light-primary selection:bg-chakra-blue selection:text-konoha-950">
