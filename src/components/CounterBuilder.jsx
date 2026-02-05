@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { buildCounterTeam } from '../utils/counterBuilder';
 import { loadCollection } from '../utils/collectionManager';
 
@@ -34,9 +34,13 @@ const CounterBuilder = ({ allCharacters }) => {
         }
     };
 
-    const filteredChars = allCharacters.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredChars = useMemo(() => {
+        const q = search.toLowerCase()
+        return allCharacters.filter(c => {
+            const name = c._searchName || c.name.toLowerCase()
+            return name.includes(q)
+        })
+    }, [allCharacters, search])
 
     return (
         <div className="space-y-6">

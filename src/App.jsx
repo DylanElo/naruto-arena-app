@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
+// eslint-disable-next-line no-unused-vars
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
@@ -24,7 +25,9 @@ function App() {
   const [search, setSearch] = useState('')
   const searchInputRef = useRef(null)
   const [energyFilter, setEnergyFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [classFilter, setClassFilter] = useState('all')
+  // eslint-disable-next-line no-unused-vars
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState([])
   const [viewCharacter, setViewCharacter] = useState(null)
@@ -43,6 +46,16 @@ function App() {
   useEffect(() => { safeSet('narutoArena_savedTeams', savedTeams) }, [savedTeams])
   useEffect(() => { safeSet('narutoArena_ownedCharacters', Array.from(ownedCharacters)) }, [ownedCharacters])
 
+  // --- DATA PREPARATION ---
+  // Bolt Optimization: Pre-compute search strings to avoid O(N) string ops on every render
+  const searchableCharacters = useMemo(() => {
+    return charactersData.map(c => ({
+      ...c,
+      _searchName: c.name.toLowerCase(),
+      _searchTags: (c.tags || []).map(t => t.toLowerCase())
+    }))
+  }, [])
+
   // --- HANDLERS ---
   const addToTeam = (char) => {
     if (selectedTeam.length >= 3) return
@@ -50,8 +63,9 @@ function App() {
     setSelectedTeam([...selectedTeam, char])
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
+  // eslint-disable-next-line no-unused-vars
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -71,13 +85,13 @@ function App() {
 
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
-    return charactersData.filter(char => {
+    const q = search.toLowerCase()
+    return searchableCharacters.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
-        const q = search.toLowerCase()
-        if (!char.name.toLowerCase().includes(q) &&
-          !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
+        if (!char._searchName.includes(q) &&
+          !char._searchTags.some(t => t.includes(q))) return false
       }
       if (energyFilter !== 'all') {
         const hasEnergy = char.skills.some(s => s.energy.some(e => e === energyFilter))
@@ -85,7 +99,7 @@ function App() {
       }
       return true
     })
-  }, [search, energyFilter, ownedOnly, ownedCharacters])
+  }, [searchableCharacters, search, energyFilter, ownedOnly, ownedCharacters])
 
   // --- RENDER HELPERS ---
   const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
@@ -395,9 +409,9 @@ function App() {
         )}
 
         {/* --- OTHER TABS (Placeholder Wrapper) --- */}
-        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={charactersData} ownedIds={ownedCharacters} onToggle={handleToggleCharacter} /></div>}
-        {activeTab === 'meta' && <div className="glass-panel p-8 rounded-xl"><MetaBuilder allCharacters={charactersData} /></div>}
-        {activeTab === 'counter' && <div className="glass-panel p-8 rounded-xl"><CounterBuilder allCharacters={charactersData} /></div>}
+        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={searchableCharacters} ownedIds={ownedCharacters} onToggle={handleToggleCharacter} /></div>}
+        {activeTab === 'meta' && <div className="glass-panel p-8 rounded-xl"><MetaBuilder allCharacters={searchableCharacters} /></div>}
+        {activeTab === 'counter' && <div className="glass-panel p-8 rounded-xl"><CounterBuilder allCharacters={searchableCharacters} /></div>}
 
       </main>
 
