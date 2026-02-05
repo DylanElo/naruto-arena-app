@@ -105,6 +105,7 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-full p-3 bg-konoha-900 border border-konoha-700 rounded-lg text-white focus:border-chakra-blue outline-none"
+                                maxLength={50}
                             />
                             {search && (
                                 <button
