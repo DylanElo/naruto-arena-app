@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import charactersData from './data/characters.json'
 import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
@@ -51,7 +51,7 @@ function App() {
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
   const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
-  const handleToggleCharacter = React.useCallback((id) => {
+  const handleToggleCharacter = useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)
       newSet.has(id) ? newSet.delete(id) : newSet.add(id)
@@ -69,15 +69,25 @@ function App() {
   const fullTeamAnalysis = useMemo(() => analyzeTeam(selectedTeam), [selectedTeam])
   const suggestions = useMemo(() => getSuggestions(charactersData, selectedTeam, 10, ownedCharacters), [selectedTeam, ownedCharacters])
 
+  // Bolt Optimization: Pre-compute search fields to avoid repeated toLowerCase() calls in render loops
+  const searchableCharacters = useMemo(() => {
+    return charactersData.map(c => ({
+      ...c,
+      _searchName: c.name.toLowerCase(),
+      _searchTags: (c.tags || []).map(t => t.toLowerCase())
+    }))
+  }, [])
+
   // --- FILTERING ---
   const filteredCharacters = useMemo(() => {
-    return charactersData.filter(char => {
+    return searchableCharacters.filter(char => {
       if (!char) return false
       if (ownedOnly && !ownedCharacters.has(char.id)) return false
       if (search) {
         const q = search.toLowerCase()
-        if (!char.name.toLowerCase().includes(q) &&
-          !(char.tags || []).some(t => t.toLowerCase().includes(q))) return false
+        // Optimized check using pre-computed fields
+        if (!char._searchName.includes(q) &&
+          !char._searchTags.some(t => t.includes(q))) return false
       }
       if (energyFilter !== 'all') {
         const hasEnergy = char.skills.some(s => s.energy.some(e => e === energyFilter))
@@ -85,7 +95,7 @@ function App() {
       }
       return true
     })
-  }, [search, energyFilter, ownedOnly, ownedCharacters])
+  }, [search, energyFilter, ownedOnly, ownedCharacters, searchableCharacters])
 
   // --- RENDER HELPERS ---
   const EnergyIcon = ({ type, size = 'w-4 h-4' }) => (
@@ -395,9 +405,9 @@ function App() {
         )}
 
         {/* --- OTHER TABS (Placeholder Wrapper) --- */}
-        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={charactersData} ownedIds={ownedCharacters} onToggle={handleToggleCharacter} /></div>}
-        {activeTab === 'meta' && <div className="glass-panel p-8 rounded-xl"><MetaBuilder allCharacters={charactersData} /></div>}
-        {activeTab === 'counter' && <div className="glass-panel p-8 rounded-xl"><CounterBuilder allCharacters={charactersData} /></div>}
+        {activeTab === 'collection' && <div className="glass-panel p-8 rounded-xl"><CollectionManager allCharacters={searchableCharacters} ownedIds={ownedCharacters} onToggle={handleToggleCharacter} /></div>}
+        {activeTab === 'meta' && <div className="glass-panel p-8 rounded-xl"><MetaBuilder allCharacters={searchableCharacters} /></div>}
+        {activeTab === 'counter' && <div className="glass-panel p-8 rounded-xl"><CounterBuilder allCharacters={searchableCharacters} /></div>}
 
       </main>
 

@@ -26,9 +26,10 @@ const CollectionManager = ({ allCharacters, ownedIds, onToggle, onBatchUpdate })
 
     // Bolt Optimization: Memoize filtering to prevent O(N) lookup on every render (e.g. when toggling cards)
     const filteredChars = useMemo(() => {
+        const q = search.toLowerCase()
         return allCharacters.filter(c => {
             // 1. Search text
-            if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+            if (search && !(c._searchName || c.name.toLowerCase()).includes(q)) return false
 
             // 2. Mechanic filter (requires checking knowledge base)
             if (activeFilter !== 'ALL') {
