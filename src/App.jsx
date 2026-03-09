@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import React from 'react'
 import charactersData from './data/characters.json'
-import { getSuggestions, analyzeTeam, recommendPartnersForMain } from './utils/recommendationEngine'
+import { getSuggestions, analyzeTeam } from './utils/recommendationEngine'
 import CollectionManager from './components/CollectionManager'
 import CounterBuilder from './components/CounterBuilder'
 import MetaBuilder from './components/MetaBuilder'
@@ -24,8 +25,7 @@ function App() {
   const [search, setSearch] = useState('')
   const searchInputRef = useRef(null)
   const [energyFilter, setEnergyFilter] = useState('all')
-  const [classFilter, setClassFilter] = useState('all')
-  const [ownedOnly, setOwnedOnly] = useState(false)
+  const [ownedOnly] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState([])
   const [viewCharacter, setViewCharacter] = useState(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -50,7 +50,7 @@ function App() {
     setSelectedTeam([...selectedTeam, char])
   }
   const removeFromTeam = (id) => setSelectedTeam(selectedTeam.filter(c => c.id !== id))
-  const clearFilters = () => { setSearch(''); setEnergyFilter('all'); setClassFilter('all') }
+
   const handleToggleCharacter = React.useCallback((id) => {
     setOwnedCharacters(prev => {
       const newSet = new Set(prev)

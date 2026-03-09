@@ -53,15 +53,15 @@ const CounterBuilder = ({ allCharacters }) => {
                             return (
                                 <div key={index} className="h-24 bg-dark-primary rounded-lg border-2 border-dashed border-dark-tertiary flex items-center justify-center">
                                     {char ? (
-                                        <div className="w-full h-full flex items-center bg-red-900/30 border-2 border-red-500 rounded-lg relative">
+                                        <div className="w-full h-full flex items-center bg-red-900/30 border-2 border-red-500 rounded-lg relative overflow-hidden">
                                             <img
                                                 src={`/naruto-arena-app/images/characters/${char.id}.png`}
                                                 alt={char.name}
-                                                onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=Enemy'}
+                                                onError={(e) => e.target.style.display = 'none'}
                                                 className="h-full w-24 object-cover"
                                             />
                                             <div className="p-2 flex-1 min-w-0">
-                                                <div className="font-bold text-sm truncate text-light-primary">{char.name}</div>
+                                                <div className="font-bold text-sm truncate text-white">{char.name}</div>
                                                 <button
                                                     onClick={() => removeEnemyChar(char.id)}
                                                     className="text-xs text-red-400 hover:text-red-300 mt-1"
@@ -71,7 +71,7 @@ const CounterBuilder = ({ allCharacters }) => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-light-secondary/50 text-sm">Empty</span>
+                                        <span className="text-gray-500 text-sm">Empty</span>
                                     )}
                                 </div>
                             );
@@ -85,15 +85,15 @@ const CounterBuilder = ({ allCharacters }) => {
                         <h3 className="font-bold text-green-300 mb-3">✓ Top Counter Picks</h3>
                         <div className="space-y-2">
                             {counterPicks.slice(0, 5).map(char => (
-                                <div key={char.id} className="bg-dark-primary/50 p-3 rounded border border-dark-tertiary">
+                                <div key={char.id} className="bg-konoha-900/50 p-3 rounded border border-konoha-700">
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <div className="font-bold text-light-primary">{char.name}</div>
+                                            <div className="font-bold text-white">{char.name}</div>
                                             <div className="text-xs text-green-400">Counter Score: {char.counterScore}</div>
                                         </div>
                                         <div className="text-2xl">{char.counterScore >= 50 ? '🔥' : '✓'}</div>
                                     </div>
-                                    <div className="text-sm text-light-secondary">{char.counterReason}</div>
+                                    <div className="text-sm text-gray-400">{char.counterReason}</div>
                                 </div>
                             ))}
                         </div>
@@ -102,32 +102,32 @@ const CounterBuilder = ({ allCharacters }) => {
             </div>
 
             {/* Character Selection */}
-            <div className="bg-dark-secondary rounded-2xl border border-dark-tertiary p-4">
+            <div className="bg-konoha-800 rounded-2xl border border-konoha-700 p-4">
                 <input
                     type="text"
                     placeholder="Search characters..."
                     aria-label="Search characters"
-                    className="w-full p-2 bg-dark-primary border border-dark-tertiary rounded text-light-primary focus:border-brand-primary focus:outline-none mb-4"
+                    className="w-full p-2 bg-konoha-900 border border-konoha-700 rounded text-white focus:border-chakra-blue focus:outline-none mb-4"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto pr-2">
                     {filteredChars.slice(0, 40).map(char => (
                         <div
                             key={char.id}
-                            className="bg-dark-primary rounded-lg p-2 border border-dark-tertiary hover:border-brand-primary cursor-pointer transition-colors"
+                            className="bg-konoha-900 rounded-lg p-2 border border-konoha-700 hover:border-chakra-blue cursor-pointer transition-colors"
                             onClick={() => addEnemyChar(char)}
                         >
                             <div className="flex items-center gap-2">
                                 <img
                                     src={`/naruto-arena-app/images/characters/${char.id}.png`}
                                     alt={char.name}
-                                    onError={(e) => e.target.src = 'https://via.placeholder.com/50?text=?'}
-                                    className="w-12 h-12 object-cover rounded"
+                                    onError={(e) => e.target.style.display = 'none'}
+                                    className="w-12 h-12 object-cover rounded bg-konoha-900"
                                 />
                                 <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-sm text-light-primary truncate">{char.name}</div>
+                                    <div className="font-bold text-sm text-white truncate">{char.name}</div>
                                 </div>
                             </div>
                         </div>

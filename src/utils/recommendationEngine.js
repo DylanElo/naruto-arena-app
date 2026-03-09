@@ -837,17 +837,6 @@ const scorePartnerFit = (mainChar, candidate) => {
   // We look for 'targetHas' conditions which imply external setup needs.
   // We DO NOT score 'userHas' as it implies self-sufficiency (handled by character power, not synergy).
 
-  const checkTrueSynergy = (profileA, profileB, direction) => {
-    let bonus = 0;
-    const notesFound = [];
-
-    // If profileA has true mechanics skills
-    // We need to access the raw skills from the knowledge object?
-    // Actually profile doesn't carry the raw skills easily.
-    // Let's rely on the aggregated hooks if we mapped them?
-    // In analyzeCharacter we mapped 'punisher' but didn't store the raw map.
-  };
-
   // NOTE: For now, the legacy hooks (createsStun / needsStunnedTarget) cover the most important cross-synergies
   // found in the game (Stun/Mark). The Haskell logic 'targetHas "Stunned"' maps to 'needsStunnedTarget' 
   // if we updated mapHooks properly. 
@@ -957,8 +946,6 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
     }
   })
 
-  return scored
-
   // Diversity Logic: Ensure we don't just return 5 of the exact same archetype
   scored.sort((a, b) => b.buildAroundScore - a.buildAroundScore);
 
@@ -968,11 +955,13 @@ export const recommendPartnersForMain = (mainChar, allCharacters, ownedIds = nul
   const seenIds = new Set();
 
   scored.forEach(c => {
-    const roles = c.synergyBreakdown?.roles || {};
+    const analyzed = analyzeCharacter(c);
+    const charRoles = analyzed.roles || {};
+
     // Determine primary role
     let primary = 'dps';
     let maxVal = 0;
-    Object.entries(roles).forEach(([r, v]) => { if (v > maxVal) { maxVal = v; primary = r; } });
+    Object.entries(charRoles).forEach(([r, v]) => { if (v > maxVal) { maxVal = v; primary = r; } });
 
     if (maxVal > 0) roleGroups[primary].push(c);
     else roleGroups['dps'].push(c); // Fallback

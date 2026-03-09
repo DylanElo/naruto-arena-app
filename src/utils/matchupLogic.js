@@ -268,7 +268,7 @@ export function buildCounterTeamManual(enemyTeam, allCharacters, ownedIds = [], 
     });
 
     const scored = available.map(char => {
-        const profile = buildCharacterProfile(char);
+        const profile = analyzeCharacter(char);
         if (!profile) return null;
 
         const counterScore = scoreCounterMatch(profile, needs);
@@ -276,9 +276,9 @@ export function buildCounterTeamManual(enemyTeam, allCharacters, ownedIds = [], 
 
         // Add baseline strength (don't pick weak characters just because they counter)
         const baselineStrength =
-            profile.mechanics.burst * 5 +
-            profile.mechanics.stun * 3 +
-            profile.mechanics.heal * 2;
+            (profile.mechanics.punisher || 0) * 5 +
+            (profile.mechanics.stun || 0) * 3 +
+            (profile.mechanics.heal || 0) * 2;
 
         return {
             ...char,

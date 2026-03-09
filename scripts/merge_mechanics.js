@@ -41,9 +41,6 @@ function findMatch(appChar, trueData) {
     // 2. Try Fuzzy Token Match
     // If all tokens of TrueChar are present in AppChar (or vice versa)
     // "Uzumaki Naruto" vs "Naruto Uzumaki" -> tokens {uzumaki, naruto} vs {naruto, uzumaki} -> Match
-    let bestMatch = null;
-    let maxOverlap = 0;
-
     for (const kc of trueData) {
         const kcTokens = tokenize(kc.name);
 

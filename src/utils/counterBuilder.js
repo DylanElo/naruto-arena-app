@@ -9,9 +9,9 @@ import {
   scoreCounterMatch,
   explainCounter,
   buildCounterTeamManual
-} from './matchupLogic'
+} from './matchupLogic.js'
 
-import { buildCharacterProfile } from './skillTagger'
+import { analyzeCharacter } from './recommendationEngine.js'
 
 // Simple wrapper: expose score based on tag analysis
 export const calculateCounterScore = (candidate, enemyTeam) => {
@@ -19,7 +19,7 @@ export const calculateCounterScore = (candidate, enemyTeam) => {
 
   const threats = analyzeEnemyThreats(enemyTeam);
   const needs = calculateNeeds(threats);
-  const profile = buildCharacterProfile(candidate);
+  const profile = analyzeCharacter(candidate);
 
   if (!profile) return 0;
 
@@ -32,7 +32,7 @@ export const getCounterReason = (candidate, enemyTeam) => {
 
   const threats = analyzeEnemyThreats(enemyTeam);
   const needs = calculateNeeds(threats);
-  const profile = buildCharacterProfile(candidate);
+  const profile = analyzeCharacter(candidate);
 
   if (!profile) return "";
 

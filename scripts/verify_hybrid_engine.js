@@ -3,39 +3,60 @@ import { analyzeCharacter } from '../src/utils/recommendationEngine.js';
 import unifiedData from '../src/data/characters_unified.json' with { type: 'json' };
 const { characters } = unifiedData;
 
-function verify() {
-    console.log('Verifying Hybrid Engine...');
+console.log('Verifying Hybrid Engine...');
 
-    // 1. Find a "True" character (e.g. Ino)
-    const ino = characters.find(c => c.name === 'Yamanaka Ino' || c.name === 'Ino Yamanaka');
-    if (!ino) {
-        console.error('Ino not found');
-        process.exit(1);
-    }
-
-    console.log(`Analyzing ${ino.name} (True Mechanics: ${!!ino.trueMechanics})...`);
-    const analysisIno = analyzeCharacter(ino);
-
-    // Ino should have "mental" / "stun" mechanics from True Data
-    // Skill.classes = [Mental] -> Stun
-    console.log('Ino Mechanics:', analysisIno.mechanics.stun > 0 ? 'PASS (Has Stun)' : 'FAIL', analysisIno.mechanics);
-    console.log('Ino Dependencies:', analysisIno.knowledge.dependencies);
-
-    // 2. Find an "Inferred" character (e.g. Uzumaki Naruto (S))
-    // Wait, Naruto (S) was in the "Exclusive" list.
-    const narutoS = characters.find(c => c.name === 'Uzumaki Naruto (S)');
-    if (!narutoS) {
-        console.error('Naruto (S) not found');
-    } else {
-        console.log(`Analyzing ${narutoS.name} (True Mechanics: ${!!narutoS.trueMechanics})...`);
-        const analysisNaruto = analyzeCharacter(narutoS);
-        console.log('Naruto (S) Mechanics:', analysisNaruto.mechanics);
-        console.log('Naruto (S) Dependencies:', analysisNaruto.knowledge.dependencies);
-    }
-
-    console.log('Evaluation Complete');
+// 1. Find a "True" character (e.g. Ino)
+const ino = characters.find(c => c.name === 'Yamanaka Ino' || c.name === 'Ino Yamanaka');
+if (!ino) {
+    console.error('Ino not found');
+    process.exit(1);
 }
 
+const inoAnalysis = analyzeCharacter(ino);
+
+console.log(`\n--- Verification: ${ino.name} ---`);
+console.log('Knowledge Base Data Present:', !!inoAnalysis.knowledge);
+console.log('Mechanics Extracted:');
+console.log(inoAnalysis.mechanics);
+
+// Verify specific mechanics
+const hasStun = inoAnalysis.mechanics.stun > 0;
+console.log('Has Stun (Mind Transfer)?', hasStun ? '✅ YES' : '❌ NO');
+
+// Verify Legacy character
+const legacyChar = characters.find(c => !c.trueMechanics);
+if (legacyChar) {
+    console.log(`\n--- Verification (Fallback): ${legacyChar.name} ---`);
+    const legacyAnalysis = analyzeCharacter(legacyChar);
+    console.log('Knowledge Base Data Present:', !!legacyAnalysis.knowledge);
+    console.log('Mechanics Extracted via Fallback:');
+    console.log(legacyAnalysis.mechanics);
+} else {
+    console.log('\n--- No legacy characters found (all have trueMechanics) ---');
+}
+
+// 1. Find a "True" character (e.g. Ino)
+console.log(`Analyzing ${ino.name} (True Mechanics: ${!!ino.trueMechanics})...`);
+const analysisIno = analyzeCharacter(ino);
+
+// Ino should have "mental" / "stun" mechanics from True Data
+// Skill.classes = [Mental] -> Stun
+console.log('Ino Mechanics:', analysisIno.mechanics.stun > 0 ? 'PASS (Has Stun)' : 'FAIL', analysisIno.mechanics);
+console.log('Ino Dependencies:', analysisIno.knowledge.dependencies);
+
+// 2. Find an "Inferred" character (e.g. Uzumaki Naruto (S))
+// Wait, Naruto (S) was in the "Exclusive" list.
+const narutoS = characters.find(c => c.name === 'Uzumaki Naruto (S)');
+if (!narutoS) {
+    console.error('Naruto (S) not found');
+} else {
+    console.log(`Analyzing ${narutoS.name} (True Mechanics: ${!!narutoS.trueMechanics})...`);
+    const analysisNaruto = analyzeCharacter(narutoS);
+    console.log('Naruto (S) Mechanics:', analysisNaruto.mechanics);
+    console.log('Naruto (S) Dependencies:', analysisNaruto.knowledge.dependencies);
+}
+
+console.log('Evaluation Complete');
 
 async function analyzeCoverage() {
     console.log('--- Analyzing User Example Team (Coverage) ---');
@@ -78,7 +99,6 @@ async function analyzeCoverage() {
 
     // Calculate real synergy using updated engine
     const { analyzeTeam } = await import('../src/utils/recommendationEngine.js');
-    const analysis = analyzeTeam(team);
     // Test Bad Coverage Team (e.g., 3 Nukers)
     console.log('\n--- Analyzing Weak Coverage Team ---');
     // Using random names that imply pure damage if possible, or just re-using knowns
