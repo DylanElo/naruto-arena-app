@@ -16,15 +16,6 @@ function normalize(name) {
         .replace(/[^a-z0-9]/g, ''); // Remove non-alphanumeric
 }
 
-function checkMatch(appNorm, trueData) {
-    // Try exact
-    if (trueData.has(appNorm)) return trueData.get(appNorm);
-
-    // Try flipped (Naruto Uzumaki <-> Uzumaki Naruto)
-    // Cannot easily flip "Uchiha Sasuke" without splitting words
-    return null;
-}
-
 function analyzeOverlap() {
     console.log('Loading datasets...');
 

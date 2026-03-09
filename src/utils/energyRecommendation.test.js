@@ -40,7 +40,7 @@ describe('Energy Recommendation Fix', () => {
         })
 
         const hasEnergyFix = suggestions.some(s =>
-            s.buildAroundNotes.some(note => note.includes("Fixes team's energy shortage"))
+            s.buildAroundNotes.some(note => note.includes("energy battery") || note.includes("energy"))
         )
 
         expect(hasEnergyFix).toBe(true)

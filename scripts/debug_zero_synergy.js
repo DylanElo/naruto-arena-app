@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { recommendPartnersForMain, analyzeCharacter } from '../src/utils/recommendationEngine.js';
-import { getCharacterKnowledge } from '../src/utils/knowledgeEngine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
