@@ -206,16 +206,21 @@ function copyCharacterState(source, target) {
     target.skills = source.skills;
 
     // Robust copy of statusEffects
-    // 1. Copy/Overwrite all keys from source
-    for (const key in source.statusEffects) {
-        target.statusEffects[key] = source.statusEffects[key];
-    }
-    // 2. Delete keys in target that are not in source to avoid state pollution
-    for (const key in target.statusEffects) {
-        if (!(key in source.statusEffects)) {
-            delete target.statusEffects[key];
-        }
-    }
+    // Bolt Optimization:
+    // We use explicit assignment for known properties.
+    // This is faster than Object.assign and avoids iterating keys.
+    // It is safe because Character.statusEffects has a fixed shape (defined in models.js).
+    const s = source.statusEffects;
+    const t = target.statusEffects;
+
+    t.stunned = s.stunned;
+    t.invulnerable = s.invulnerable;
+    t.damageReduction = s.damageReduction;
+    t.destructibleDefense = s.destructibleDefense;
+    t.increaseDamage = s.increaseDamage;
+    t.decreaseDamage = s.decreaseDamage;
+    t.increaseDamagePercent = s.increaseDamagePercent;
+    t.decreaseDamagePercent = s.decreaseDamagePercent;
 
     // Optimized Set copy
     target.activeStatuses.clear();
