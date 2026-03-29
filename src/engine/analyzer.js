@@ -152,7 +152,7 @@ function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
 
         // Check if enemy has counter skill available
         const hasCounter = enemy.skills.some((skill, index) => {
-            const isCounter = /counter|reflect/i.test(skill.description);
+            const isCounter = skill.isCounter;
             const isAvailable = enemy.canUseSkill(index, gameState.energyPools[1 - teamIndex]); // Approximation for enemy energy
             return isCounter && isAvailable;
         });
