@@ -74,13 +74,22 @@ function calculateEnergyEfficiency(team) {
     team.forEach(char => {
         if (!char.isAlive()) return;
 
-        char.skills.forEach(skill => {
-            skill.energyCost.forEach(energyType => {
-                if (energyType !== EnergyType.RANDOM && energyGenerators[energyType] !== undefined) {
-                    energyGenerators[energyType]++;
-                }
+        if (char.energyProfile) {
+            // OPTIMIZATION: Use pre-calculated energy profile
+            energyGenerators[EnergyType.TAIJUTSU] += char.energyProfile[EnergyType.TAIJUTSU];
+            energyGenerators[EnergyType.BLOODLINE] += char.energyProfile[EnergyType.BLOODLINE];
+            energyGenerators[EnergyType.NINJUTSU] += char.energyProfile[EnergyType.NINJUTSU];
+            energyGenerators[EnergyType.GENJUTSU] += char.energyProfile[EnergyType.GENJUTSU];
+        } else {
+            // Fallback
+            char.skills.forEach(skill => {
+                skill.energyCost.forEach(energyType => {
+                    if (energyType !== EnergyType.RANDOM && energyGenerators[energyType] !== undefined) {
+                        energyGenerators[energyType]++;
+                    }
+                });
             });
-        });
+        }
     });
 
     // Calculate probability for each energy type
@@ -152,7 +161,9 @@ function calculateKillThreat(myTeam, enemyTeam, gameState, teamIndex) {
 
         // Check if enemy has counter skill available
         const hasCounter = enemy.skills.some((skill, index) => {
-            const isCounter = /counter|reflect/i.test(skill.description);
+            const isCounter = skill.isCounter !== undefined
+                ? skill.isCounter
+                : /counter|reflect/i.test(skill.description);
             const isAvailable = enemy.canUseSkill(index, gameState.energyPools[1 - teamIndex]); // Approximation for enemy energy
             return isCounter && isAvailable;
         });
@@ -185,6 +196,7 @@ function cloneCharacter(char) {
     clone.hp = char.hp;
     clone.maxHP = char.maxHP;
     clone.skills = char.skills; // Reference copy (immutable config)
+    clone.energyProfile = char.energyProfile; // Reference copy (immutable config)
 
     // Deep copy mutable state
     clone.statusEffects = { ...char.statusEffects };

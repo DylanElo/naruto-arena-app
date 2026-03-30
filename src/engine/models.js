@@ -132,6 +132,27 @@ export class Character {
 
         // Parse skills from character data
         this.skills = (data.skills || []).map(skillData => new Skill(skillData));
+
+        // OPTIMIZATION: Pre-calculate energy profile
+        this.energyProfile = this.calculateEnergyProfile();
+    }
+
+    calculateEnergyProfile() {
+        const profile = {
+            [EnergyType.TAIJUTSU]: 0,
+            [EnergyType.BLOODLINE]: 0,
+            [EnergyType.NINJUTSU]: 0,
+            [EnergyType.GENJUTSU]: 0
+        };
+
+        this.skills.forEach(skill => {
+            skill.energyCost.forEach(type => {
+                if (profile[type] !== undefined) {
+                    profile[type]++;
+                }
+            });
+        });
+        return profile;
     }
 
     isAlive() {
@@ -199,6 +220,9 @@ export class Skill {
         this.cooldown = this.parseCooldown(data.cooldown);
         this.energyCost = this.parseEnergy(data.energy);
         this.classes = this.parseClasses(data.classes);
+
+        // OPTIMIZATION: Pre-calculate critical flags to avoid regex in hot paths
+        this.isCounter = /counter|reflect/i.test(this.description || '');
 
         // Store structured effects or parse them from text
         this.effects = (data.effects && data.effects.length > 0)
